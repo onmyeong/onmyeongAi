@@ -29,10 +29,11 @@
   <div class="wrap">
     <p class="eyebrow">Custom Order</p>
     <h1 style="margin-bottom:8px">커스텀 주문</h1>
-    <p class="lead" style="margin-bottom:26px">
+    <p class="lead" style="margin-bottom:16px">
       스튜디오에서 맞춘 치수가 그대로 주문서에 담깁니다. 아래에서 수량과 연락처만 채우면
       제작 사양서가 완성되고, 원하는 방법으로 주문을 넘길 수 있습니다.
     </p>
+    <div id="pre-open" class="notice is-hidden" style="margin-bottom:26px" role="status"></div>
 
     <div class="order-grid">
       <!-- 주문서 -->
@@ -154,12 +155,9 @@
       </div>
 
       <!-- 요약 -->
-      <aside style="display:grid;gap:16px;position:sticky;top:88px">
+      <aside style="position:sticky;top:88px">
         <div class="card">
-          <div class="preview" id="sum-preview"
-               style="aspect-ratio:1/.8;display:grid;place-items:center;border-radius:12px;
-                      background:radial-gradient(circle at 50% 42%,#2b2620,#14120f 72%);
-                      border:1px solid var(--line);padding:12px;margin-bottom:14px"></div>
+          <div class="preview-box stage-bg" id="sum-preview" style="margin-bottom:16px"></div>
           <table class="spec-table"><tbody id="sum-body"></tbody></table>
           <div style="margin-top:14px">
             <div class="small">예상 금액</div>
@@ -180,10 +178,9 @@
     </div>
 
     <div class="notice" style="margin-top:26px">
-      <b>결제 채널 안내</b> — 커스텀 주문은 수량·치수가 매번 달라 재고형 상품과 다릅니다.
-      온명은 <b>네이버 스마트스토어를 결제·배송·CS 창구로</b> 쓰고, 사양 확정은 이 사이트에서 하는 방식을 권합니다.
-      네이버페이 결제 신뢰도와 검색 노출, 교환·환불 정책을 그대로 쓸 수 있고 PG 심사나 정산을 직접 맡지 않아도 됩니다.
-      주문량이 늘어 사이트에서 바로 결제받고 싶어지면 그때 토스페이먼츠·포트원 같은 PG를 붙이면 됩니다.
+      <b>결제는 준비되는 대로 엽니다.</b> 커스텀 주문은 수량과 치수가 매번 달라 재고형 상품과 다르기 때문에,
+      결제·배송·교환 창구는 네이버 스마트스토어에 맡기고 사양 확정만 이 사이트에서 하는 방식을 준비하고 있습니다.
+      스토어가 열리면 이 페이지에 <b>결제 단계가 자동으로 추가</b>되며, 그때까지는 상담과 사전 주문서 접수로 진행합니다.
     </div>
   </div>
 </section>

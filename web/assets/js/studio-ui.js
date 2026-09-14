@@ -59,7 +59,10 @@
       .concat(all.map(function (s) { return [s, s]; }));
     fillSelect($('c-stone'), opts, spec.stone || '');
 
-    $('c-metal').innerHTML = Object.keys(CONFIG.price.metals).map(function (k) {
+    var metalKeys = Object.keys(CONFIG.price.metals);
+    // 제작 소재가 하나뿐이면 고를 것이 없으므로 선택 영역을 숨긴다
+    $('c-metal').closest('.field').classList.toggle('is-hidden', metalKeys.length < 2);
+    $('c-metal').innerHTML = metalKeys.map(function (k) {
       var v = CONFIG.price.metals[k];
       return '<button class="swatch" type="button" data-metal="' + k + '" title="' + R.esc(v.label) +
         '" aria-label="' + R.esc(v.label) + '" aria-pressed="' + (k === spec.metal) +

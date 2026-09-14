@@ -425,7 +425,7 @@
     parts.push('<linearGradient id="' + uid + 'g" x1="0" y1="0" x2="1" y2="1">' +
       '<stop offset="0%" stop-color="' + shade(metal.color, 1.18) + '"/>' +
       '<stop offset="45%" stop-color="' + metal.color + '"/>' +
-      '<stop offset="100%" stop-color="' + shade(metal.color, 0.68) + '"/></linearGradient>');
+      '<stop offset="100%" stop-color="' + shade(metal.color, 0.55) + '"/></linearGradient>');
     if (spec.texture === 'hammered' || spec.texture === 'stone' || spec.texture === 'sand') {
       parts.push('<filter id="' + uid + 'f"><feTurbulence type="fractalNoise" baseFrequency="' +
         (spec.texture === 'sand' ? '0.9' : spec.texture === 'stone' ? '0.22' : '0.14') +
@@ -461,15 +461,37 @@
         '" fill="none" stroke="#000" stroke-opacity="0.14" stroke-width="0.9"/>');
     }
 
-    // 원석
+    // 원석 — 세팅 방식에 따라 다르게 그린다
     if (stoneColor) {
-      var sr = Math.max(5, (rOut - rIn) * (spec.setting === 'prong' ? 0.75 : 0.58));
-      var sy = cy - (rOut + rIn) / 2;
-      parts.push('<circle cx="' + cx + '" cy="' + sy + '" r="' + sr + '" fill="' + stoneColor + '" stroke="' +
-        shade(metal.color, 0.8) + '" stroke-width="' + (spec.setting === 'bezel' ? 1.6 : 0.8) + '"/>');
-      parts.push('<circle cx="' + (cx - sr * 0.3) + '" cy="' + (sy - sr * 0.3) + '" r="' + (sr * 0.28) +
-        '" fill="#ffffff" fill-opacity="0.45"/>');
+      if (spec.setting === 'inlay') {
+        // 인레이는 밴드를 따라 한 줄로 흐른다
+        parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + (rIn + (rOut - rIn) * 0.68) +
+          '" fill="none" stroke="' + stoneColor + '" stroke-width="' + ((rOut - rIn) * 0.26) + '"/>');
+      } else {
+        var flush = spec.setting === 'flush';
+        var sr = Math.max(flush ? 3.5 : 5, (rOut - rIn) * (spec.setting === 'prong' ? 0.75 : flush ? 0.4 : 0.58));
+        var sy = cy - (rOut + rIn) / 2;
+        parts.push('<circle cx="' + cx + '" cy="' + sy + '" r="' + sr + '" fill="' + stoneColor + '" stroke="' +
+          shade(metal.color, 0.7) + '" stroke-width="' + (spec.setting === 'bezel' ? 1.6 : 0.8) + '"/>');
+        parts.push('<circle cx="' + (cx - sr * 0.3) + '" cy="' + (sy - sr * 0.3) + '" r="' + (sr * 0.28) +
+          '" fill="#ffffff" fill-opacity="' + (flush ? 0.3 : 0.45) + '"/>');
+        if (spec.setting === 'prong') {
+          // 발 네 개를 짧은 선으로 표시
+          for (var pi = 0; pi < 4; pi++) {
+            var pa = (pi / 4) * Math.PI * 2 + Math.PI / 4;
+            parts.push('<line x1="' + (cx + Math.cos(pa) * sr * 0.72) + '" y1="' + (sy + Math.sin(pa) * sr * 0.72) +
+              '" x2="' + (cx + Math.cos(pa) * sr * 1.12) + '" y2="' + (sy + Math.sin(pa) * sr * 1.12) +
+              '" stroke="' + shade(metal.color, 0.85) + '" stroke-width="1.6" stroke-linecap="round"/>');
+          }
+        }
+      }
     }
+
+    // 밝은 크림 배경에서도 반지 윤곽이 또렷하게 보이도록 가는 외곽선을 더한다
+    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + rOut +
+      '" fill="none" stroke="rgba(60,54,44,.22)" stroke-width="0.9"/>');
+    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + rIn +
+      '" fill="none" stroke="rgba(60,54,44,.18)" stroke-width="0.9"/>');
 
     parts.push('</svg>');
     return parts.join('');

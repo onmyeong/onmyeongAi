@@ -34,6 +34,12 @@
   $('privacy-text').textContent = CONFIG.privacy;
   $('foot-lead').textContent = '제작 기간 · ' + CONFIG.order.leadTime;
 
+  // 스토어 결제를 아직 열지 않았다면 그 사실을 먼저 알려준다
+  if (!CONFIG.order.smartstore && CONFIG.order.preOpenNotice) {
+    $('pre-open').textContent = CONFIG.order.preOpenNotice;
+    $('pre-open').classList.remove('is-hidden');
+  }
+
   /* ───────────── 상담 버튼 (설정된 채널만 노출) ───────────── */
   (function talkButtons() {
     var o = CONFIG.order, html = '';

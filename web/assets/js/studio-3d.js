@@ -268,9 +268,11 @@ function buildStone(s, group) {
 function studioEnvironment() {
   const env = new THREE.Scene();
 
+  // 은은 주변을 그대로 비추므로, 사방을 중간 톤으로 두어야
+  // 밝은 크림 배경 위에서도 반지 몸통이 또렷하게 보인다.
   const box = new THREE.Mesh(
     new THREE.BoxGeometry(80, 80, 80),
-    new THREE.MeshBasicMaterial({ color: 0x14110e, side: THREE.BackSide })
+    new THREE.MeshBasicMaterial({ color: 0x6d675d, side: THREE.BackSide })
   );
   env.add(box);
 
@@ -284,11 +286,11 @@ function studioEnvironment() {
     env.add(m);
   };
 
-  panel(40, 18, 0xffffff, 7.0, [0, 32, 6], [Math.PI / 2, 0, 0]);        // 위쪽 메인 조명
-  panel(22, 34, 0xfff2de, 3.4, [-34, 4, 6], [0, Math.PI / 2, 0]);       // 왼쪽 따뜻한 보조광
-  panel(16, 30, 0xdce9ff, 2.4, [34, -2, -6], [0, -Math.PI / 2, 0]);     // 오른쪽 차가운 보조광
-  panel(30, 14, 0xffffff, 1.3, [0, -30, 2], [-Math.PI / 2, 0, 0]);      // 바닥 반사판
-  panel(26, 20, 0xffffff, 1.0, [0, 2, -34], [0, 0, 0]);                 // 뒤쪽 분리광
+  panel(40, 18, 0xffffff, 6.5, [0, 32, 6], [Math.PI / 2, 0, 0]);        // 위쪽 메인 조명
+  panel(22, 34, 0xfff3e2, 3.2, [-34, 4, 6], [0, Math.PI / 2, 0]);       // 왼쪽 따뜻한 보조광
+  panel(16, 30, 0xe4edf6, 2.0, [34, -2, -6], [0, -Math.PI / 2, 0]);     // 오른쪽 차가운 보조광
+  panel(30, 14, 0xfff8ec, 1.8, [0, -30, 2], [-Math.PI / 2, 0, 0]);      // 바닥 반사판 (따뜻한 바운스)
+  panel(26, 20, 0xffffff, 1.1, [0, 2, -34], [0, 0, 0]);                 // 뒤쪽 분리광
 
   return env;
 }

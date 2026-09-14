@@ -32,12 +32,15 @@
   /* ───────────── 금속 셀렉트 채우기 ───────────── */
   (function fillMetals() {
     var sel = $('f-metal');
-    Object.keys(CONFIG.price.metals).forEach(function (k) {
+    var keys = Object.keys(CONFIG.price.metals);
+    keys.forEach(function (k) {
       var o = document.createElement('option');
       o.value = k;
       o.textContent = CONFIG.price.metals[k].label;
       sel.appendChild(o);
     });
+    // 제작 소재가 하나뿐이면 고를 것이 없으므로 선택칸을 숨긴다
+    if (keys.length < 2) sel.closest('.field').classList.add('is-hidden');
   })();
 
   /* ───────────── 폼 ───────────── */
@@ -87,6 +90,7 @@
 
     $('r-hanja').textContent = rec.hanja;
     $('r-name').textContent = rec.id;
+    $('r-animal').textContent = rec.branchInfo.animal + '띠 일주';
     $('r-tagline').textContent = rec.tagline;
     $('r-keywords').textContent = rec.keywords;
     $('r-summary').textContent = rec.summary;
@@ -141,10 +145,10 @@
   function pillarCard(label, ko, info) {
     return '<div class="card">' +
       '<p class="eyebrow">' + esc(label) + '</p>' +
-      '<h2 style="margin-bottom:4px">' + esc(info.hanja) + ' <span style="font-size:.62em;color:var(--muted)">' +
+      '<h2 style="margin-bottom:4px">' + esc(info.hanja) + ' <span style="font-size:.6em;color:var(--muted)">' +
       esc(ko) + ' · ' + esc(info.elem) + '</span></h2>' +
-      '<h3 style="color:var(--gold-soft)">' + esc(info.title) + '</h3>' +
-      '<p style="margin:0;color:var(--muted)">' + esc(info.desc) + '</p></div>';
+      '<h3 style="color:var(--green-deep)">' + esc(info.title) + '</h3>' +
+      '<p style="margin:0">' + esc(info.desc) + '</p></div>';
   }
 
   /* ───────────── 반지 추천 카드 ───────────── */
@@ -165,7 +169,7 @@
       var price = R.estimatePrice(spec, 1);
       var q = R.specToQuery(spec);
       return '<article class="card ring-card">' +
-        '<div class="preview">' + R.ringSvg(spec, { size: 200 }) + '</div>' +
+        '<div class="preview-box stage-bg">' + R.ringSvg(spec, { size: 200 }) + '</div>' +
         '<div>' +
           '<span class="fit">' + item.fit + '%<small> 적합도</small></span>' +
           '<h3 style="margin:4px 0 2px">' + esc(spec.modelName) + '</h3>' +

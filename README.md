@@ -16,6 +16,15 @@
 | 반지 스튜디오 | `web/studio.html` | 추천받은 반지를 3D로 돌려보며 두께·높이(폭)·호수·금속·원석·마감 조절 |
 | 커스텀 주문 | `web/order.html` | 사양서 자동 작성 → 스마트스토어 / 바로 접수 / 메시지 상담 |
 
+## 지금 상태
+
+- **소재는 실버 925 한 가지**입니다. 금 소재는 `config.js` 의 `price.metals` 에 줄을 추가하면
+  추천·스튜디오·주문서에 한 번에 반영됩니다.
+- **온라인 결제는 아직 열지 않았습니다.** 통신판매업 신고가 끝나기 전까지는 상담과 사전 주문서
+  접수만 받고, 주문 페이지에 그 안내가 뜹니다. `config.js` 의 `order.smartstore` 에 스토어 주소를
+  넣는 순간 "스마트스토어에서 결제" 단계가 자동으로 다시 나타납니다.
+- 화면 색은 캔바 "온명 Ai 자료" 리포트와 같은 **따뜻한 크림 바탕 + 세이지 그린** 톤입니다.
+
 ## 이전 버전에서 달라진 점
 
 1. **반지 추천이 고정에서 가변으로.** 일주마다 문장 하나로 끝나던 추천을, 20종 디자인에
@@ -60,13 +69,19 @@ cd web && python3 -m http.server 8765   # http://127.0.0.1:8765
 
 ```js
 order: {
-  smartstore: 'https://smartstore.naver.com/...',  // 스마트스토어 상품 주소
-  kakao: '',                                       // 비워두면 버튼이 숨겨집니다
+  smartstore: '',            // 비워두면 결제 단계가 숨겨지고 사전 접수 안내가 뜹니다
+  kakao: '',                 // 비워두면 해당 상담 버튼이 숨겨집니다
   email: 'order@onmyeong.kr',
-  leadTime: '주문 확정 후 영업일 기준 10~14일'
+  leadTime: '주문 확정 후 영업일 기준 10~14일',
+  preOpenNotice: '지금은 제작 상담과 사전 주문서 접수만 ...'
 },
-price: { metals: { ... }, perWidthMm: 9000, perThicknessMm: 22000, ... }
+price: {
+  metals: { 'silver925': { label: '실버 925', mult: 1.0, color: '#c9ccd1' } },
+  perWidthMm: 9000, perThicknessMm: 22000, ...
+}
 ```
+
+소재가 하나뿐이면 리포트와 스튜디오의 금속 선택칸은 자동으로 숨겨집니다.
 
 가격은 `기본가 + 폭 추가 + 두께 추가`에 금속 배수를 곱하고 세팅·각인을 더하는 구조입니다.
 모두 **예상가**로 표시되며 화면마다 "최종 금액은 상담에서 확정" 문구가 함께 나갑니다.
@@ -119,7 +134,7 @@ web/
 ├── index.html · studio.html · order.html
 ├── favicon.svg
 └── assets/
-    ├── css/onmyeong.css
+    ├── css/onmyeong.css  크림 + 세이지 그린 브랜드 톤
     ├── js/
     │   ├── config.js        설정 (링크 · 가격 · 연락처)
     │   ├── ilju-data.js     60개 일주 리포트 데이터

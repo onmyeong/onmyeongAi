@@ -22,26 +22,35 @@
      * 값을 빈 문자열('')로 두면 해당 버튼이 자동으로 숨겨집니다.
      */
     order: {
-      smartstore: 'https://smartstore.naver.com/onmyeong',
+      /* 스토어 결제는 통신판매업 신고가 끝난 뒤에 엽니다.
+       * 신고증이 나오면 아래 smartstore 에 상품 주소를 넣기만 하면
+       * 주문 페이지에 "스마트스토어에서 결제" 단계가 자동으로 다시 나타납니다. */
+      smartstore: '',
       smartstoreLabel: '네이버 스마트스토어',
+
       kakao: '',
       instagram: '',
       email: 'order@onmyeong.kr',
-      // /api/order 로 접수 폼을 보낼지 여부 (Vercel 배포 시 사용)
+
+      // 사이트에서 주문서를 바로 접수받을지 여부 (Vercel 환경변수 ORDER_WEBHOOK_URL 필요)
       useApi: true,
       apiPath: '/api/order',
-      // 제작 기간 안내
-      leadTime: '주문 확정 후 영업일 기준 10~14일'
+
+      leadTime: '주문 확정 후 영업일 기준 10~14일',
+
+      // 결제를 아직 열지 않은 동안 주문 페이지 상단에 띄우는 안내
+      preOpenNotice: '지금은 제작 상담과 사전 주문서 접수만 받고 있습니다. ' +
+        '온라인 결제는 스토어 준비가 끝나는 대로 안내드릴게요.'
     },
 
     /* ── 가격 (원). 모두 "예상가"이며 최종 금액은 상담에서 확정합니다. ── */
     price: {
+      /* 지금은 실버 925 한 가지만 제작합니다.
+       * 금 소재를 열 때 아래에 줄을 추가하면 추천·스튜디오·주문서에 자동으로 반영됩니다.
+       *   '14k-yellow': { label: '14K 옐로우골드', mult: 3.2, color: '#d9b25f' },
+       * mult 는 실버 기준 가격 배수입니다. */
       metals: {
-        'silver925': { label: '실버 925', mult: 1.0, color: '#c9ccd1' },
-        '14k-yellow': { label: '14K 옐로우골드', mult: 3.2, color: '#d9b25f' },
-        '14k-white': { label: '14K 화이트골드', mult: 3.3, color: '#d6d9de' },
-        '14k-rose': { label: '14K 로즈골드', mult: 3.2, color: '#d49a86' },
-        '18k-yellow': { label: '18K 옐로우골드', mult: 4.6, color: '#e0bb56' }
+        'silver925': { label: '실버 925', mult: 1.0, color: '#c9ccd1' }
       },
       // 기준 치수(이 치수를 넘어가는 만큼만 추가 요금)
       baseWidth: 3.0,       // mm

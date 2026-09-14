@@ -45,11 +45,10 @@
     <div class="studio">
       <!-- 3D 뷰 -->
       <div>
-        <div id="stage" class="is-hidden">
+        <div id="stage" class="stage-bg is-hidden">
           <div class="stage-hint">드래그: 회전 · 휠: 확대 · 더블클릭: 시점 초기화</div>
         </div>
-        <div id="preview-2d" class="card" style="display:grid;place-items:center;aspect-ratio:4/3;
-             background:radial-gradient(circle at 50% 38%,#2e2823,#100e0c 74%)"></div>
+        <div id="preview-2d" class="stage-bg"></div>
         <div id="fallback" class="notice warn is-hidden">
           이 브라우저에서는 3D 보기를 사용할 수 없어 2D 미리보기로 보여드립니다.
           치수 조절과 주문서 전달은 그대로 사용할 수 있습니다.
@@ -63,7 +62,7 @@
       </div>
 
       <!-- 조절 패널 -->
-      <aside class="card" style="display:grid;gap:16px">
+      <aside class="card" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px">
         <div class="field">
           <label for="c-model">디자인</label>
           <select id="c-model"></select>
