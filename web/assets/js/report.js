@@ -88,9 +88,18 @@
   function renderReport(res) {
     var rec = res.record;
 
-    $('r-hanja').textContent = rec.hanja;
-    $('r-name').textContent = rec.id;
-    $('r-animal').textContent = rec.branchInfo.animal + '띠 일주';
+    // 일주 색 지표(천간) + 십이지 아이콘 — 병자면 빨간 동그라미에 쥐
+    var color = ONM.zodiacColor(rec);
+    var report = $('report');
+    report.style.setProperty('--accent', color.solid);
+    report.style.setProperty('--accent-ink', color.ink);
+    report.style.setProperty('--accent-tint', color.tint);
+
+    $('r-seal').innerHTML = ONM.zodiacSvg(rec.branch, {
+      label: rec.branchInfo.animal + ' — ' + rec.id + ' 일주'
+    });
+    $('r-name').textContent = rec.id + ' (' + rec.hanja + ')';
+    $('r-animal').textContent = rec.branchInfo.animal + '띠 일주 · ' + color.name;
     $('r-tagline').textContent = rec.tagline;
     $('r-keywords').textContent = rec.keywords;
     $('r-summary').textContent = rec.summary;
@@ -111,6 +120,10 @@
 
     $('r-strength').textContent = rec.strength;
     $('r-advice').textContent = rec.advice;
+    var adviceCard = $('r-advice').closest('.card');
+    var blueStem = rec.stem === '임' || rec.stem === '계';
+    adviceCard.classList.toggle('tone-blue', !blueStem);
+    adviceCard.classList.toggle('tone-warm', blueStem);
 
     $('r-pillars').innerHTML =
       pillarCard('일간 · 천간', rec.stem, rec.stemInfo) +
@@ -142,12 +155,15 @@
       esc(label) + ' ' + esc(text) + ' · ' + esc(elem) + '</span>';
   }
 
+  /** 오행별 색 — 천간 색 지표와 같은 계열로 맞춘다 */
+  var ELEM_COLOR = { 목: '#548235', 화: '#e15b4c', 토: '#d9a92b', 금: '#7f8894', 수: '#2b7cc9' };
+
   function pillarCard(label, ko, info) {
     return '<div class="card">' +
       '<p class="eyebrow">' + esc(label) + '</p>' +
       '<h2 style="margin-bottom:4px">' + esc(info.hanja) + ' <span style="font-size:.6em;color:var(--muted)">' +
       esc(ko) + ' · ' + esc(info.elem) + '</span></h2>' +
-      '<h3 style="color:var(--green-deep)">' + esc(info.title) + '</h3>' +
+      '<h3 style="color:' + (ELEM_COLOR[info.elem] || 'var(--accent-ink)') + '">' + esc(info.title) + '</h3>' +
       '<p style="margin:0">' + esc(info.desc) + '</p></div>';
   }
 

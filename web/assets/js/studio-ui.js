@@ -158,6 +158,23 @@
   });
 
   /* ───────────── 사양 · 가격 ───────────── */
+  /** 일주가 실려 있으면 그 일주의 색과 십이지 아이콘을 패널에 얹는다 */
+  function paintIlju() {
+    var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
+    var box = $('studio-ilju');
+    if (!rec || !ONM.zodiacColor) { box.classList.add('is-hidden'); return; }
+    var color = ONM.zodiacColor(rec);
+    document.body.style.setProperty('--accent', color.solid);
+    document.body.style.setProperty('--accent-ink', color.ink);
+    document.body.style.setProperty('--accent-tint', color.tint);
+    box.innerHTML = '<span class="seal-mini">' +
+      ONM.zodiacSvg(rec.branch, { label: rec.branchInfo.animal }) + '</span>' +
+      '<span><b>' + R.esc(rec.id) + ' (' + R.esc(rec.hanja) + ')</b>' +
+      '<br><span class="small">' + R.esc(rec.branchInfo.animal) + '띠 일주 · ' +
+      R.esc(rec.tagline) + '</span></span>';
+    box.classList.remove('is-hidden');
+  }
+
   function syncPanel() {
     var model = R.getModel(spec.modelId);
     var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
@@ -228,6 +245,7 @@
   }, 6000);
 
   buildControls();
+  paintIlju();
   render2d();
   syncPanel();
 })();
