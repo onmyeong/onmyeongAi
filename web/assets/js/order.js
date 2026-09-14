@@ -41,6 +41,19 @@
   }
 
   /* ───────────── 상담 버튼 (설정된 채널만 노출) ───────────── */
+  /* 접수 서버가 살아 있는지 먼저 확인한다.
+   * GitHub Pages처럼 서버가 없는 곳에서는 이 요청이 실패하므로,
+   * "주문서 보내기" 단계를 아예 감추고 상담 경로만 남긴다. */
+  function probeOrderApi() {
+    if (!CONFIG.order.useApi) { $('step-direct').classList.add('is-hidden'); return; }
+    fetch(CONFIG.order.apiPath, { method: 'GET' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (body) {
+        if (!body || !body.ready) $('step-direct').classList.add('is-hidden');
+      })
+      .catch(function () { $('step-direct').classList.add('is-hidden'); });
+  }
+
   (function talkButtons() {
     var o = CONFIG.order, html = '';
     if (o.kakao) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(o.kakao) + '">카카오톡 채널</a>';
@@ -48,7 +61,7 @@
     if (o.email) html += '<a class="btn" id="mail-link" href="#">이메일로 보내기</a>';
     $('talk-buttons').innerHTML = html || '<span class="small">상담 채널이 아직 설정되지 않았습니다. config.js에서 추가해 주세요.</span>';
     if (!o.smartstore) $('step-store').classList.add('is-hidden');
-    if (!o.useApi) $('step-direct').classList.add('is-hidden');
+    probeOrderApi();
   })();
 
   /* ───────────── 입력 반영 ───────────── */

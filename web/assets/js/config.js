@@ -32,9 +32,12 @@
       instagram: '',
       email: 'order@onmyeong.kr',
 
-      // 사이트에서 주문서를 바로 접수받을지 여부 (Vercel 환경변수 ORDER_WEBHOOK_URL 필요)
+      /* 사이트에서 주문서를 바로 접수받을지 여부.
+       * 서버가 없는 곳(GitHub Pages 등)에 올리면 접수 단계가 스스로 숨겨지므로
+       * 이 값은 그대로 두어도 됩니다.
+       * 경로는 상대경로여야 /eeee/ 같은 하위 경로 배포에서도 맞습니다. */
       useApi: true,
-      apiPath: '/api/order',
+      apiPath: 'api/order',
 
       leadTime: '주문 확정 후 영업일 기준 10~14일',
 

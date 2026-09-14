@@ -45,11 +45,18 @@ export default async function handler(req, res) {
   }
   if (req.method === 'OPTIONS') return res.status(204).end();
 
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ ok: false, message: '이 주소는 주문서 전송(POST)만 받습니다.' });
   }
 
   const webhook = process.env.ORDER_WEBHOOK_URL;
+
+  // 주문 페이지가 "지금 접수를 받을 수 있는 상태인지" 물어보는 용도.
+  // 서버가 아예 없는 곳에 올리면 이 요청이 실패하고, 접수 단계가 화면에서 숨겨집니다.
+  if (req.method === 'GET') {
+    return res.status(200).json({ ok: true, ready: Boolean(webhook) });
+  }
+
   if (!webhook) {
     return res.status(503).json({
       ok: false,
