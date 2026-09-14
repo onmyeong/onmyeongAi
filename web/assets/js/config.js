@@ -86,7 +86,7 @@
      * SVG 로 내려받았다면 ext 를 '.svg' 로 바꾸면 됩니다.
      */
     zodiacIcons: {
-      custom: false,
+      custom: true,
       path: 'assets/icons/zodiac/',
       ext: '.png'
     },
