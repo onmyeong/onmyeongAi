@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온명 · 사주 일주 리포트와 반지 추천</title>
+<meta name="description" content="생년월일로 60갑자 일주를 찾고, 일주의 오행과 키워드에 맞는 반지 디자인을 추천받아 그 자리에서 렌더링하고 커스텀 주문까지 진행하는 온명 AI 프로그램입니다.">
+<meta property="og:title" content="온명 · 사주 일주 리포트와 반지 추천">
+<meta property="og:description" content="일주로 읽는 나의 성향, 그리고 나에게 맞는 반지.">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="온명 홈">
+      <b>ONMYEONG</b><span>온명</span>
+    </a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="./" aria-current="page">일주 리포트</a>
+      <a href="studio.html">반지 스튜디오</a>
+      <a href="order.html">커스텀 주문</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ─────────────── 입력 ─────────────── -->
+  <section id="input">
+    <div class="wrap">
+      <p class="eyebrow">Saju Day Pillar Report</p>
+      <h1>당신의 일주(日柱)를 찾고,<br>그 기운에 맞는 반지를 만나보세요.</h1>
+      <p class="lead">
+        태어난 날의 천간과 지지, 즉 <b>일주</b>는 사주에서 '나 자신'을 가리킵니다.
+        온명은 60갑자 일주별 리포트를 읽어주고, 그 일주의 오행과 키워드에 어울리는
+        반지 디자인을 여러 갈래로 추천합니다. 마음에 드는 디자인은 바로 3D로 돌려보며
+        두께와 높이를 직접 맞춘 뒤 커스텀 주문까지 이어집니다.
+      </p>
+
+      <form id="birth-form" class="card" style="margin-top:26px" novalidate>
+        <div class="grid grid-4" style="align-items:end">
+          <div class="field">
+            <label for="y">태어난 해 (양력)</label>
+            <input id="y" name="y" type="number" inputmode="numeric" placeholder="1995" min="1900" max="2100" required>
+          </div>
+          <div class="field">
+            <label for="m">월</label>
+            <input id="m" name="m" type="number" inputmode="numeric" placeholder="7" min="1" max="12" required>
+          </div>
+          <div class="field">
+            <label for="d">일</label>
+            <input id="d" name="d" type="number" inputmode="numeric" placeholder="21" min="1" max="31" required>
+          </div>
+          <div class="field">
+            <label for="h">태어난 시각</label>
+            <select id="h" name="h">
+              <option value="">모름 / 기억나지 않음</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:18px">
+          <button class="btn btn-primary" type="submit">내 일주 리포트 보기</button>
+          <button class="btn" type="button" id="sample-btn">예시로 둘러보기</button>
+        </div>
+
+        <p class="small" style="margin-top:14px">
+          ※ <b>양력(태양력) 생년월일</b> 기준입니다. 음력 생일만 아신다면 먼저 양력으로 변환한 뒤 입력해 주세요.
+          밤 11시 이후 출생은 자시(子時)로 보아 다음 날 일주로 계산합니다.
+        </p>
+        <div id="form-error" class="notice warn is-hidden" role="alert"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ─────────────── 리포트 ─────────────── -->
+  <div id="report" class="is-hidden">
+
+    <hr class="divider">
+
+    <section id="ilju">
+      <div class="wrap">
+        <div class="card ilju-hero">
+          <div class="ilju-seal">
+            <div>
+              <div class="hanja" id="r-hanja">甲子</div>
+              <div class="ko" id="r-name">갑자</div>
+            </div>
+          </div>
+          <div>
+            <p class="eyebrow" id="r-tagline">솔직 / 당당 / 능동</p>
+            <h2 id="r-keywords">추진력 ㆍ 솔직한 표현력</h2>
+            <p class="lead" id="r-summary"></p>
+            <div class="chips" id="r-elements" style="margin-top:14px"></div>
+          </div>
+        </div>
+        <div id="r-notes"></div>
+      </div>
+    </section>
+
+    <section id="traits" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Personality</p>
+          <h2>성향 분석</h2>
+        </div>
+        <div class="grid grid-2x2" id="r-traits"></div>
+      </div>
+    </section>
+
+    <section id="strength" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Strength &amp; Advice</p>
+          <h2>강점과 강화를 위한 조언</h2>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <h3 style="color:var(--gold-soft)">강점</h3>
+            <p id="r-strength" style="margin:0;color:var(--muted)"></p>
+          </div>
+          <div class="card">
+            <h3 style="color:var(--gold-soft)">조언</h3>
+            <p id="r-advice" style="margin:0;color:var(--muted)"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="elements-detail" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Elements</p>
+          <h2>천간과 지지</h2>
+        </div>
+        <div class="grid grid-2" id="r-pillars"></div>
+      </div>
+    </section>
+
+    <section id="lucky" style="padding-top:0">
+      <div class="wrap">
+        <div class="grid grid-2">
+          <div class="card">
+            <p class="eyebrow">Lucky Keywords</p>
+            <h2 style="margin-bottom:14px">행운의 키워드</h2>
+            <div class="lucky-wheel" id="r-lucky"></div>
+          </div>
+          <div class="card">
+            <p class="eyebrow">Gemstones</p>
+            <h2 style="margin-bottom:14px">추천 원석</h2>
+            <div class="grid" id="r-stones" style="gap:12px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 반지 추천 (핵심) ─────────────── -->
+    <section id="rings" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Ring Recommendation</p>
+          <h2>어울리는 반지 디자인</h2>
+          <p class="lead" id="r-ringnote"></p>
+        </div>
+
+        <div class="card no-print" style="margin-bottom:20px">
+          <div class="filters">
+            <div class="field">
+              <label for="f-mood">무드</label>
+              <select id="f-mood">
+                <option value="all">전체 보기</option>
+                <option value="데일리">데일리 — 매일 끼는</option>
+                <option value="시그니처">시그니처 — 존재감 있는</option>
+                <option value="커플">커플 — 짝을 맞추는</option>
+                <option value="선물">선물 — 건네기 좋은</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-volume">두께 취향</label>
+              <select id="f-volume">
+                <option value="normal">보통</option>
+                <option value="slim">얇게</option>
+                <option value="bold">두껍게</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-metal">금속</label>
+              <select id="f-metal"></select>
+            </div>
+            <div class="field">
+              <label for="f-count">추천 개수</label>
+              <select id="f-count">
+                <option value="6">6개</option>
+                <option value="9">9개</option>
+                <option value="12">12개</option>
+              </select>
+            </div>
+            <button class="btn" type="button" id="reshuffle">다시 추천받기</button>
+          </div>
+          <p class="small" style="margin:12px 0 0">
+            일주의 오행 궁합, 리포트 원문이 가리키는 계열, 행운의 키워드를 함께 계산해 순위를 냅니다.
+            같은 일주라도 <b>다시 추천받기</b>를 누르면 다른 조합이 나옵니다.
+          </p>
+        </div>
+
+        <div class="grid grid-3" id="r-rings"></div>
+
+        <div class="notice" style="margin-top:20px">
+          표시된 금액은 선택한 치수 기준의 <b>예상가</b>입니다. 원석 등급과 세공 난이도에 따라 달라지며,
+          최종 금액은 주문 상담에서 확정됩니다.
+        </div>
+      </div>
+    </section>
+
+    <section id="closing" style="padding-top:0">
+      <div class="wrap center">
+        <div class="card" style="padding-block:38px">
+          <p class="eyebrow">ONMYEONG</p>
+          <h2 id="r-closing" style="max-width:40ch;margin-inline:auto"></h2>
+          <div class="btn-row no-print" style="justify-content:center;margin-top:22px">
+            <a class="btn btn-primary" id="go-order" href="order.html">커스텀 주문 상담하기</a>
+            <button class="btn" type="button" id="copy-link">리포트 링크 복사</button>
+            <button class="btn" type="button" onclick="window.print()">인쇄 / PDF 저장</button>
+          </div>
+          <p class="small" id="r-source" style="margin-top:18px"></p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>© ONMYEONG · 온명</span>
+    <span>사주 해석은 전통 명리 자료를 바탕으로 한 참고용 콘텐츠입니다.</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/ilju-data.js"></script>
+<script src="assets/js/saju.js"></script>
+<script src="assets/js/rings.js"></script>
+<script src="assets/js/report.js"></script>
+</body>
+</html>

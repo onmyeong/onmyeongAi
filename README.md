@@ -1,118 +1,144 @@
-# Python Crawlee & BeautifulSoup Actor Template
+# 온명(ONMYEONG) — 사주 일주 리포트 & 반지 커스텀 주문
 
-<!-- This is an Apify template readme -->
+생년월일로 **60갑자 일주(日柱)** 를 찾아 리포트를 보여주고, 그 일주에 어울리는 반지를
+여러 갈래로 추천한 뒤, 3D로 두께·높이를 직접 맞춰 커스텀 주문까지 이어지는 웹앱입니다.
 
-This template example was built with [Crawlee for Python](https://crawlee.dev/python) to scrape data from a website using [Beautiful Soup](https://pypi.org/project/beautifulsoup4/) wrapped into [BeautifulSoupCrawler](https://crawlee.dev/python/api/class/BeautifulSoupCrawler).
+```
+리포트 (index.html)  →  반지 추천  →  스튜디오 (studio.html)  →  주문 (order.html)
+   일주 계산              20종 · 4계열        두께/높이/호수 조절        사양서 + 결제 채널
+```
 
-## Quick Start
+## 화면
 
-Once you've installed the dependencies, start the Actor:
+| 화면 | 파일 | 하는 일 |
+| --- | --- | --- |
+| 일주 리포트 | `web/index.html` | 생년월일 → 일주 계산 → 성향·강점·조언·원석·행운 키워드 + 반지 추천 |
+| 반지 스튜디오 | `web/studio.html` | 추천받은 반지를 3D로 돌려보며 두께·높이(폭)·호수·금속·원석·마감 조절 |
+| 커스텀 주문 | `web/order.html` | 사양서 자동 작성 → 스마트스토어 / 바로 접수 / 메시지 상담 |
+
+## 이전 버전에서 달라진 점
+
+1. **반지 추천이 고정에서 가변으로.** 일주마다 문장 하나로 끝나던 추천을, 20종 디자인에
+   점수를 매겨 순위를 내는 방식으로 바꿨습니다. 점수는 ① 일간·일지 오행 궁합,
+   ② 리포트 원문("어울리는 반지 디자인")이 가리키는 계열, ③ 행운 키워드 겹침,
+   ④ 사용자가 고른 무드·두께 취향을 합쳐 계산합니다. **다시 추천받기**를 누르면 같은
+   일주라도 다른 조합이 나옵니다.
+2. **웹에서 바로 주문.** 사양서를 자동으로 만들어 네이버 스마트스토어 · 온라인 접수 ·
+   메시지 상담 세 갈래로 넘깁니다.
+3. **렌더링 바로가기.** 추천 카드의 `3D로 조절하기`를 누르면 그 디자인 그대로 스튜디오가
+   열리고, 두께와 높이를 실제 mm 단위로 조절할 수 있습니다.
+
+## 배포 (Vercel)
+
+이 저장소를 Vercel 프로젝트에 연결하면 `vercel.json` 설정대로 `web/` 폴더가 정적 사이트로,
+`api/` 폴더가 서버리스 함수로 배포됩니다. 빌드 과정이 없어 따로 설정할 것이 없습니다.
+
+주문 접수(`/api/order`)를 쓰려면 Vercel → Settings → Environment Variables 에 아래를 넣습니다.
+
+| 환경변수 | 설명 |
+| --- | --- |
+| `ORDER_WEBHOOK_URL` | 주문서를 받을 웹훅 주소 (슬랙 / 디스코드 / Make / 구글 앱스 스크립트 등) |
+| `ORDER_WEBHOOK_FORMAT` | `json`(기본) · `slack` · `discord` |
+| `ORDER_ALLOW_ORIGIN` | 다른 도메인에서 접수를 받을 때만 지정 |
+
+설정하지 않으면 접수 버튼이 "지금은 온라인 접수를 사용할 수 없습니다" 안내로 바뀌고,
+스마트스토어·메시지 상담 경로는 그대로 동작합니다.
+
+### 로컬에서 열어보기
+
+ES 모듈을 쓰기 때문에 파일을 직접 여는 대신 간단한 서버를 띄워야 합니다.
 
 ```bash
-apify run
+cd web && python3 -m http.server 8765   # http://127.0.0.1:8765
 ```
 
-Once your Actor is ready, you can push it to the Apify Console:
+## 내용 고치기
 
-```bash
-apify login # first, you need to log in if you haven't already done so
+코드를 몰라도 아래 두 파일만 고치면 됩니다.
 
-apify push
+### `web/assets/js/config.js` — 링크 · 가격 · 연락처
+
+```js
+order: {
+  smartstore: 'https://smartstore.naver.com/...',  // 스마트스토어 상품 주소
+  kakao: '',                                       // 비워두면 버튼이 숨겨집니다
+  email: 'order@onmyeong.kr',
+  leadTime: '주문 확정 후 영업일 기준 10~14일'
+},
+price: { metals: { ... }, perWidthMm: 9000, perThicknessMm: 22000, ... }
 ```
 
-## Project Structure
+가격은 `기본가 + 폭 추가 + 두께 추가`에 금속 배수를 곱하고 세팅·각인을 더하는 구조입니다.
+모두 **예상가**로 표시되며 화면마다 "최종 금액은 상담에서 확정" 문구가 함께 나갑니다.
 
-```text
-.actor/
-├── actor.json # Actor config: name, version, env vars, runtime settings
-├── dataset_schema.json # Structure and representation of data produced by an Actor
-├── input_schema.json # Input validation & Console form definition
-└── output_schema.json # Specifies where an Actor stores its output
-src/
-└── main.py # Actor entry point and orchestrator
-storage/ # Local storage (mirrors Cloud during development)
-├── datasets/ # Output items (JSON objects)
-├── key_value_stores/ # Files, config, INPUT
-└── request_queues/ # Pending crawl requests
-Dockerfile # Container image definition
+### `web/assets/js/ilju-data.js` — 60개 일주 리포트 문구
+
+일주 하나가 객체 하나입니다. 텍스트만 고치면 화면에 바로 반영됩니다.
+
+```js
+ILJU['갑자'] = {
+  tagline: '솔직 / 당당 / 능동',
+  keywords: '추진력 ㆍ 솔직한 표현력 ㆍ 도전을 즐김',
+  summary: '...', traits: [['제목','설명'], ...],
+  strength: '...', advice: '...', ringNote: '...',
+  lucky: ['희망','빛', ...], stones: [['우나카이트','화합ㆍ비전'], ...],
+  closing: '...', source: 'canva'
+};
 ```
 
-For more information, see the [Actor definition](https://docs.apify.com/platform/actors/development/actor-definition) documentation.
+`source: 'canva'` 는 캔바 "온명 Ai 자료" 원문 그대로, `source: 'draft'` 는 캔바에 해당
+페이지가 없어 온명 톤으로 새로 쓴 초안입니다. **초안 3개(병자 · 병인 · 병술)** 는 검수 후
+확정해 주세요. 리포트 하단에도 어느 쪽인지 표시됩니다.
 
-## How it works
+### `web/assets/js/rings.js` — 반지 카탈로그
 
-This code is a Python script that uses BeautifulSoup to scrape data from a website. It then stores the website titles in a dataset.
+디자인 20종이 `MODELS` 배열에 들어 있습니다. 항목을 추가하면 추천 엔진과 스튜디오,
+주문서에 자동으로 반영됩니다.
 
-- The crawler starts with URLs provided from the input `startUrls` field defined by the input schema. Number of scraped pages is limited by `maxPagesPerCrawl` field from the input schema.
-- The crawler uses `requestHandler` for each URL to extract the data from the page with the BeautifulSoup library and to save the title and URL of each page to the dataset. It also logs out each result that is being saved.
+```js
+{ id: 'minimal-line', name: '정선', family: 'minimal',
+  profile: 'flat', texture: 'polish', setting: 'none',
+  width: [최소, 기본, 최대], thickness: [최소, 기본, 최대],
+  elements: ['금','수'], moods: ['데일리','커플'], tags: ['절제','정돈', ...],
+  basePrice: 98000, desc: '...' }
+```
 
-## What's included
+## 일주 계산 방식
 
-- **[Apify SDK](https://docs.apify.com/sdk/python/)** - toolkit for building [Actors](https://apify.com/actors)
-- **[Crawlee for Python](https://crawlee.dev/python/)** - web scraping and browser automation library
-- **[Input schema](https://docs.apify.com/platform/actors/development/input-schema)** - define and easily validate a schema for your Actor's input
-- **[Dataset](https://docs.apify.com/sdk/python/docs/concepts/storages#working-with-datasets)** - store structured data where each object stored has the same attributes
-- **[Beautiful Soup](https://pypi.org/project/beautifulsoup4/)** - a library for pulling data out of HTML and XML files
-- **[Proxy configuration](https://docs.apify.com/platform/proxy)** - rotate IP addresses to prevent blocking
+- 양력 날짜를 율리우스 적일(JDN)로 바꾼 뒤 `(JDN − 11) mod 60` 으로 60갑자를 구합니다.
+  (검증 기준일: 1900-01-01 갑술, 2000-01-01 무오)
+- 밤 11시 이후 출생은 자시(子時)로 보아 **다음 날** 일주로 계산합니다.
+- 한국이 동경 127.5도 표준시를 쓰던 기간(1908~1911, 1954~1961)과 서머타임 시행 기간에
+  밤 시간대에 태어난 경우, 일주가 하루 달라질 수 있다는 안내를 함께 띄웁니다.
+- **입력은 양력 기준입니다.** 음력→양력 변환은 아직 들어 있지 않습니다.
 
-## Resources
+## 폴더 구조
 
-- [Quick Start](https://docs.apify.com/platform/actors/development/quick-start) guide for building your first Actor
-- [Video introduction to Python SDK](https://www.youtube.com/watch?v=C8DmvJQS3jk)
-- [Webinar introducing to Crawlee for Python](https://www.youtube.com/live/ip8Ii0eLfRY)
-- [Apify Python SDK documentation](https://docs.apify.com/sdk/python/)
-- [Crawlee for Python documentation](https://crawlee.dev/python/docs/quick-start)
-- [Python tutorials in Academy](https://docs.apify.com/academy/python)
-- [Integration with Zapier](https://apify.com/integrations), Make, Google Drive and others
-- [Video guide on getting data using Apify API](https://www.youtube.com/watch?v=ViYYDHSBAKM)
+```
+web/
+├── index.html · studio.html · order.html
+├── favicon.svg
+└── assets/
+    ├── css/onmyeong.css
+    ├── js/
+    │   ├── config.js        설정 (링크 · 가격 · 연락처)
+    │   ├── ilju-data.js     60개 일주 리포트 데이터
+    │   ├── saju.js          일주 계산
+    │   ├── rings.js         반지 카탈로그 · 추천 엔진 · 2D 미리보기 · 가격
+    │   ├── report.js        리포트 화면
+    │   ├── studio-ui.js     스튜디오 조절 패널 (3D 없이도 동작)
+    │   ├── studio-3d.js     3D 렌더러 (WebGL)
+    │   └── order.js         주문서 · 전송
+    └── vendor/three/        three.js r169 (MIT)
+api/order.js                 주문 접수 (Vercel 서버리스)
+vercel.json                  배포 설정
+```
 
-## Creating Actors with templates
+`studio-ui.js`와 `studio-3d.js`를 나눠 둔 이유는, WebGL을 못 쓰는 기기에서도 치수 조절과
+주문이 그대로 되게 하기 위해서입니다. 3D가 뜨지 않으면 같은 수치로 그린 2D 미리보기로
+자동 전환됩니다.
 
-[How to create Apify Actors with web scraping code templates](https://www.youtube.com/watch?v=u-i-Korzf8w)
+---
 
-
-## Getting started
-
-For complete information [see this article](https://docs.apify.com/platform/actors/development#build-actor-at-apify-console). In short, you will:
-
-1. Build the Actor
-2. Run the Actor
-
-## Pull the Actor for local development
-
-If you would like to develop locally, you can pull the existing Actor from Apify console using Apify CLI:
-
-1. Install `apify-cli`
-
-    **Using Homebrew**
-
-    ```bash
-    brew install apify-cli
-    ```
-
-    **Using NPM**
-
-    ```bash
-    npm -g install apify-cli
-    ```
-
-2. Pull the Actor by its unique `<ActorId>`, which is one of the following:
-    - unique name of the Actor to pull (e.g. "apify/hello-world")
-    - or ID of the Actor to pull (e.g. "E2jjCZBezvAZnX8Rb")
-
-    You can find both by clicking on the Actor title at the top of the page, which will open a modal containing both Actor unique name and Actor ID.
-
-    This command will copy the Actor into the current directory on your local machine.
-
-    ```bash
-    apify pull <ActorId>
-    ```
-
-## Documentation reference
-
-To learn more about Apify and Actors, take a look at the following resources:
-
-- [Apify SDK for JavaScript documentation](https://docs.apify.com/sdk/js)
-- [Apify SDK for Python documentation](https://docs.apify.com/sdk/python)
-- [Apify Platform documentation](https://docs.apify.com/platform)
-- [Join our developer community on Discord](https://discord.com/invite/jyEM2PRvMU)
+> 이 저장소에는 처음 생성 시의 Apify Actor 템플릿(`my_actor/`, `.actor/`, `Dockerfile`,
+> `requirements.txt`)이 함께 들어 있습니다. 위 웹앱과는 관련이 없습니다.
