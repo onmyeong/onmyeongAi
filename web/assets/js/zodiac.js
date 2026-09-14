@@ -63,12 +63,12 @@
   // 인(寅) 호랑이 — 이마의 세 줄무늬와 볼털
   ICONS['인'] =
     '<circle cx="16" cy="21" r="7.5"/><circle cx="48" cy="21" r="7.5"/>' +
-    '<path d="M11 32c0-10 9-17 21-17s21 7 21 17c0 13-9 21-21 21s-21-8-21-21Z"/>' +
-    '<path d="M24 20v8M32 17v9M40 20v8"/>' +
-    '<path d="M12 36l-5 1.5M13 41l-4.5 3M52 36l5 1.5M51 41l4.5 3"/>' +
-    '<path d="M29.5 40.5h5L32 44Z" fill="currentColor" stroke="none"/>' +
-    '<path d="M32 44.5c0 2.4-2.4 3.8-4.5 2.4M32 44.5c0 2.4 2.4 3.8 4.5 2.4"/>' +
-    dot(23.5, 33) + dot(40.5, 33);
+    '<circle cx="16" cy="21" r="3.4"/><circle cx="48" cy="21" r="3.4"/>' +
+    '<path d="M12 32c0-10 9-16 20-16s20 6 20 16c0 12.5-9 20-20 20s-20-7.5-20-20Z"/>' +
+    '<path d="M25 22v4.5M32 20v5.5M39 22v4.5"/>' +
+    '<path d="M29.5 39.5h5L32 43Z" fill="currentColor" stroke="none"/>' +
+    '<path d="M32 43.5c0 2.2-2.2 3.5-4 2.2M32 43.5c0 2.2 2.2 3.5 4 2.2"/>' +
+    dot(24, 32) + dot(40, 32);
 
   // 묘(卯) 토끼 — 길게 선 두 귀
   ICONS['묘'] =
@@ -149,16 +149,32 @@
     '<ellipse cx="35.4" cy="39" rx="1.8" ry="2.5" fill="currentColor" stroke="none"/>';
 
   /**
-   * 십이지 아이콘 SVG 문자열
+   * 십이지 아이콘
+   *
+   * config 의 zodiacIcons.custom 이 켜져 있으면 캔바에서 내려받아 넣어 둔
+   * 파일을 씁니다. 파일은 마스크로 얹기 때문에 글자색(currentColor)을 그대로
+   * 따라가므로, 색 동그라미 안에서는 흰색으로, 다른 곳에서는 그 자리 색으로 나옵니다.
+   * 파일을 아직 안 넣었으면 코드에 그려 둔 기본 아이콘이 나옵니다.
+   *
    * @param {string} branch 지지 한 글자 (자·축·인 …)
    * @param {Object} opts   { size, stroke, label }
    */
-  function zodiacSvg(branch, opts) {
+  function zodiacIcon(branch, opts) {
     opts = opts || {};
     var body = ICONS[branch];
     if (!body) return '';
-    var size = opts.size ? ' width="' + opts.size + '" height="' + opts.size + '"' : '';
+
+    var cfg = (ONM.CONFIG && ONM.CONFIG.zodiacIcons) || {};
     var label = opts.label ? ' role="img" aria-label="' + opts.label + '"' : ' aria-hidden="true"';
+
+    if (cfg.custom) {
+      var url = (cfg.path || '') + encodeURIComponent(branch) + (cfg.ext || '.png');
+      var box = opts.size ? 'width:' + opts.size + 'px;height:' + opts.size + 'px;' : '';
+      return '<span class="zodiac-img"' + label + ' style="' + box +
+        '-webkit-mask-image:url(&quot;' + url + '&quot;);mask-image:url(&quot;' + url + '&quot;)"></span>';
+    }
+
+    var size = opts.size ? ' width="' + opts.size + '" height="' + opts.size + '"' : '';
     return '<svg viewBox="0 0 64 64"' + size + label +
       ' fill="none" stroke="currentColor" stroke-width="' + (opts.stroke || 2.4) +
       '" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
@@ -170,7 +186,8 @@
   }
 
   ONM.STEM_COLOR = STEM_COLOR;
-  ONM.zodiacSvg = zodiacSvg;
+  ONM.zodiacIcon = zodiacIcon;
+  ONM.zodiacSvg = zodiacIcon;   // 예전 이름도 그대로 동작하게 둔다
   ONM.zodiacColor = colorOf;
   ONM.ZODIAC_BRANCHES = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
 })(typeof window !== 'undefined' ? window : globalThis);

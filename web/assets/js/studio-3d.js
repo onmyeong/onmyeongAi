@@ -94,29 +94,24 @@ function buildBand(s, model) {
   const rot = new Array(P);
   let n = 0, m = 0;
 
-  // 비틀림은 한 바퀴 돌았을 때 단면이 제자리로 돌아와야 이음매가 생기지 않는다.
-  // 그래서 "몇 바퀴 비틀지"를 정수로 맞춘다.
-  const turns = Math.round(twist * 4);
+  /* 비틀림은 단면을 통째로 돌리는 대신 바깥면을 따라 도는 "나선 홈"으로 표현한다.
+   * 단면을 돌리면 밴드가 스스로를 파고들어 면이 깨지고 명암이 뒤집힌다.
+   * 홈은 바깥면을 안쪽으로 깎기만 하므로 반지가 언제나 온전한 고체로 남는다.
+   * 홈 개수를 정수로 두어 한 바퀴 돌아와도 무늬가 어긋나지 않는다. */
+  const grooves = twist > 0 ? Math.max(2, Math.round(twist * 5)) : 0;
+  const grooveDepth = twist * 0.34;
+  const groovePitch = 1.1;   // 폭 방향으로 기울어진 정도 — 클수록 비스듬해진다
 
   for (let i = 0; i <= SEG; i++) {
     const th = (i / SEG) * Math.PI * 2;
     const wScale = 1 - taper * (0.5 - 0.5 * Math.sin(th));
     // 웨이브는 안쪽으로만 들어가므로 최대 두께는 그대로 유지된다
     const uScale = 1 - wave * 0.3 * (0.5 + 0.5 * Math.sin(3 * th));
-    const tw = turns * th;
-    const ct = Math.cos(tw), st = Math.sin(tw);
 
-    // 안쪽 면은 건드리지 않아 반지 구멍(호수)이 정확히 유지되고,
-    // 바깥 면만 비틀린 뒤 최대 반경이 두께를 넘지 않도록 되돌린다.
-    let uMax = 0;
     for (let j = 0; j < P; j++) {
       const p = profile[j];
-      if (!p.outer) { rot[j] = { u: 0, v: p.v * wScale, outer: false }; continue; }
-      const cu = p.u - t / 2, cv = p.v * wScale;
-      rot[j] = { u: cu * ct - cv * st + t / 2, v: cu * st + cv * ct, outer: true };
-      if (rot[j].u > uMax) uMax = rot[j].u;
+      rot[j] = { u: p.u, v: p.v * wScale, outer: p.outer };
     }
-    const shrink = uMax > t ? t / uMax : 1;
 
     let facetR = 1;
     if (facets > 0) {
@@ -129,9 +124,14 @@ function buildBand(s, model) {
       const p = rot[j];
       let radius = innerR;
       if (p.outer) {
-        let u = Math.max(0, p.u * shrink) * uScale;
+        let u = p.u * uScale;
         // 각진 면(패싯)은 모서리가 가장 두꺼워지므로, 모서리가 정확히 두께에 닿게 맞춘다
         if (facets > 0) u *= facetR * Math.cos(Math.PI / facets);
+        if (grooves > 0) {
+          const spiral = Math.sin(grooves * th + p.v * groovePitch);
+          u -= grooveDepth * t * (0.5 + 0.5 * spiral);
+        }
+        if (u < 0) u = 0;
         radius += u;
         if (bump.amp > 0) {
           // 둘레 방향으로 주기적인 노이즈 — 한 바퀴 돌아와도 결이 어긋나지 않는다
@@ -226,18 +226,27 @@ function buildStone(s, group) {
   const metalMat = metalMaterial(s);
 
   if (s.setting === 'prong') {
-    // 발에 물린 원석은 밴드 위로 솟기 때문에, 베젤보다 한 치수 작게 잡아야 균형이 맞는다
-    const gemR = size * 0.8;
-    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(gemR, 0), mat);
-    gem.position.set(0, topR + gemR * 0.42, 0);
-    gem.scale.y = 1.15;
-    group.add(gem);
+    /* 발에 물린 원석은 밴드 위로 솟으므로 베젤보다 한 치수 작게 잡는다.
+     * 아래는 뾰족한 파빌리온, 위는 평평한 크라운 — 실제 커팅 원석의 형태다. */
+    const gemR = size * 0.76;
+    const girdle = topR + gemR * 0.5;           // 원석의 가장 넓은 허리 높이
+
+    const pavilion = new THREE.Mesh(new THREE.ConeGeometry(gemR, gemR * 1.2, 8), mat);
+    pavilion.position.set(0, girdle - gemR * 0.6, 0);
+    pavilion.rotation.x = Math.PI;               // 뾰족한 쪽이 아래로
+    group.add(pavilion);
+
+    const crown = new THREE.Mesh(
+      new THREE.CylinderGeometry(gemR * 0.58, gemR, gemR * 0.44, 8), mat);
+    crown.position.set(0, girdle + gemR * 0.22, 0);
+    group.add(crown);
+
     // 발(프롱)은 원석 허리를 아래에서 물어주는 높이까지만 올라온다
     for (let i = 0; i < 4; i++) {
       const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
       const prong = new THREE.Mesh(
-        new THREE.CylinderGeometry(gemR * 0.19, gemR * 0.23, gemR * 1.0, 12), metalMat);
-      prong.position.set(Math.cos(a) * gemR * 0.72, topR + gemR * 0.2, Math.sin(a) * gemR * 0.72);
+        new THREE.CylinderGeometry(gemR * 0.17, gemR * 0.21, gemR * 1.15, 12), metalMat);
+      prong.position.set(Math.cos(a) * gemR * 0.9, girdle - gemR * 0.2, Math.sin(a) * gemR * 0.9);
       group.add(prong);
     }
   } else if (s.setting === 'inlay') {
