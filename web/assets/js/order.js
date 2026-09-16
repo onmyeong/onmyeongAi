@@ -119,6 +119,8 @@
     if (sp.sculpt) bits.push('두께');
     if (sp.sculptW) bits.push('폭');
     if (sp.matte) bits.push('부분 무광');
+    if (sp.engrave) bits.push('도안 새김');
+    if (sp.stoneAt) bits.push('알 자리 지정');
     return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
   }
 
