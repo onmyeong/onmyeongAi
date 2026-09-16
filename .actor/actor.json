@@ -8,7 +8,7 @@
     "buildTag": "latest",
     "meta": {
         "templateId": "python-crawlee-beautifulsoup",
-        "generatedBy": "<FILL-IN-MODEL>"
+        "generatedBy": "Claude Code with Claude Opus 5"
     },
     "inputSchema": "./input_schema.json",
     "outputSchema": "./output_schema.json",

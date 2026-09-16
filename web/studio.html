@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온명 · 반지 렌더링 스튜디오</title>
+<meta name="description" content="추천받은 반지를 3D로 돌려보고 두께와 높이, 호수, 금속, 원석을 직접 맞춰 예상가를 확인한 뒤 주문으로 넘길 수 있습니다.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./assets/vendor/three/three.module.min.js",
+    "three/addons/": "./assets/vendor/three/addons/"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./"><b>ONMYEONG</b><span>온명</span></a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="./">일주 리포트</a>
+      <a href="studio.html" aria-current="page">반지 스튜디오</a>
+      <a href="order.html">커스텀 주문</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Ring Studio</p>
+    <h1 style="margin-bottom:8px">두께와 높이를 직접 맞춰보세요</h1>
+    <p class="lead" style="margin-bottom:26px">
+      마우스로 끌어 돌리고, 휠로 확대할 수 있습니다. 슬라이더를 움직이면 실제 치수 그대로 반영되고
+      예상 금액도 함께 바뀝니다. 마음에 드는 상태 그대로 주문서로 넘어갈 수 있어요.
+    </p>
+
+    <div class="studio">
+      <!-- 3D 뷰 -->
+      <div>
+        <div id="stage" class="stage-bg is-hidden">
+          <div class="stage-hint">드래그: 회전 · 휠: 확대 · 더블클릭: 시점 초기화</div>
+        </div>
+        <div id="preview-2d" class="stage-bg"></div>
+        <div id="fallback" class="notice warn is-hidden">
+          이 브라우저에서는 3D 보기를 사용할 수 없어 2D 미리보기로 보여드립니다.
+          치수 조절과 주문서 전달은 그대로 사용할 수 있습니다.
+        </div>
+
+        <div class="btn-row no-print" style="margin-top:14px">
+          <button class="btn btn-sm" id="snap">이미지로 저장</button>
+          <button class="btn btn-sm" id="spin">회전 멈춤</button>
+          <button class="btn btn-sm" id="reset">치수 초기화</button>
+        </div>
+      </div>
+
+      <!-- 조절 패널 -->
+      <aside class="card" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px">
+        <div class="field">
+          <label for="c-model">반지 디자인</label>
+          <select id="c-model"></select>
+        </div>
+
+        <fieldset style="display:grid;gap:14px">
+          <legend class="eyebrow" style="margin:0 0 4px">치수</legend>
+
+          <div class="field">
+            <label for="c-thickness">두께 — 반지가 두꺼운 정도</label>
+            <div class="slider-row">
+              <input type="range" id="c-thickness" min="0.8" max="4.5" step="0.1">
+              <output id="o-thickness">2.0mm</output>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="c-width">폭 — 손가락을 감싸는 너비</label>
+            <div class="slider-row">
+              <input type="range" id="c-width" min="1.5" max="12" step="0.1">
+              <output id="o-width">4.0mm</output>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="c-size">호수 — 손가락 굵기</label>
+            <div class="slider-row">
+              <input type="range" id="c-size" min="1" max="30" step="1">
+              <output id="o-size">13호</output>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label>금속</label>
+          <div class="swatches" id="c-metal"></div>
+        </div>
+
+        <div class="grid grid-2" style="gap:12px">
+          <div class="field">
+            <label for="c-texture">표면 느낌</label>
+            <select id="c-texture"></select>
+          </div>
+          <div class="field">
+            <label for="c-profile">옆에서 본 모양</label>
+            <select id="c-profile"></select>
+          </div>
+        </div>
+
+        <fieldset style="display:grid;gap:12px">
+          <legend class="eyebrow" style="margin:0 0 4px">원석</legend>
+          <div class="field">
+            <label for="c-stonetype">어떤 원석을 올릴까요</label>
+            <select id="c-stonetype"></select>
+            <p class="small" id="stone-note" style="margin:2px 0 0"></p>
+          </div>
+          <div class="field is-hidden" id="f-stonesize">
+            <label for="c-stonesize">알 크기</label>
+            <select id="c-stonesize"></select>
+          </div>
+          <div class="field is-hidden" id="f-stone">
+            <label for="c-stone">천연석 고르기</label>
+            <select id="c-stone"></select>
+            <div class="stone-peek" id="stone-peek"></div>
+          </div>
+          <div class="field is-hidden" id="f-setting">
+            <label for="c-setting">어떻게 고정할까요</label>
+            <select id="c-setting"></select>
+          </div>
+        </fieldset>
+
+        <div class="grid grid-2" style="gap:12px">
+          <div class="field">
+            <label for="c-plating">겉면 색 (도금)</label>
+            <select id="c-plating"></select>
+          </div>
+          <div class="field">
+            <label for="c-epoxy">홈에 색 채우기</label>
+            <select id="c-epoxy"></select>
+            <p class="small" id="epoxy-note" style="margin:2px 0 0"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="c-engraving">각인 (반지 안쪽, 최대 20자)</label>
+          <input id="c-engraving" maxlength="20" placeholder="예: 2026.09.14">
+        </div>
+
+        <hr class="divider">
+
+        <div id="studio-ilju" class="seal-line is-hidden"></div>
+
+        <table class="spec-table">
+          <tbody id="spec-body"></tbody>
+        </table>
+
+        <div>
+          <div class="small">예상 금액 (1개 기준)</div>
+          <div class="price-total" id="price-out">-</div>
+          <p class="small" style="margin:6px 0 0">최종 금액은 상담에서 확정됩니다.</p>
+        </div>
+
+        <div class="btn-row">
+          <a class="btn btn-primary" id="to-order" href="order.html">이 사양으로 주문 상담</a>
+          <button class="btn" id="copy-spec" type="button">사양 복사</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>© ONMYEONG · 온명</span>
+    <span>화면의 색과 질감은 실제 제품과 다를 수 있습니다.</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/ilju-data.js"></script>
+<script src="assets/js/zodiac.js"></script>
+<script src="assets/js/stones.js"></script>
+<script src="assets/js/rings.js"></script>
+<script src="assets/js/studio-ui.js"></script>
+<script type="module" src="assets/js/studio-3d.js"></script>
+</body>
+</html>
