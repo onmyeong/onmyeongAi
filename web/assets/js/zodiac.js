@@ -180,12 +180,46 @@
       '" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
   }
 
+  /* ────────────────── 일주 한 줄 표현 ──────────────────
+   * 천간은 색이 아니라 "무엇에 빗댄 기운인가"로 읽습니다. (명리의 물상)
+   *   갑=큰 나무, 을=풀, 병=태양, 정=등불, 무=산, 기=흙,
+   *   경=무쇠, 신=보석, 임=바다, 계=이슬
+   * 여기에 지지의 동물을 붙이면 일주 하나가 한 문장이 됩니다.
+   *   병인(丙寅) → 태양처럼 뜨거운 호랑이
+   *   갑술(甲戌) → 큰 나무처럼 곧은 개
+   */
+  var STEM_IMAGE = {
+    갑: { thing: '큰 나무', adj: '곧은' },
+    을: { thing: '풀잎', adj: '유연한' },
+    병: { thing: '태양', adj: '뜨거운' },
+    정: { thing: '등불', adj: '따스한' },
+    무: { thing: '큰 산', adj: '든든한' },
+    기: { thing: '밭의 흙', adj: '품어주는' },
+    경: { thing: '무쇠', adj: '단단한' },
+    신: { thing: '보석', adj: '정교한' },
+    임: { thing: '바다', adj: '깊은' },
+    계: { thing: '이슬', adj: '맑은' }
+  };
+
+  /**
+   * 일주를 한 문장으로 — "태양처럼 뜨거운 호랑이"
+   * @param {Object} record ONMYEONG.ILJU 레코드
+   */
+  function iljuPhrase(record) {
+    var img = STEM_IMAGE[record.stem];
+    var animal = record.branchInfo && record.branchInfo.animal;
+    if (!img || !animal) return '';
+    return img.thing + '처럼 ' + img.adj + ' ' + animal;
+  }
+
   /** 일주 레코드 → 그 일주의 색 (천간 기준) */
   function colorOf(record) {
     return STEM_COLOR[record.stem] || STEM_COLOR['갑'];
   }
 
   ONM.STEM_COLOR = STEM_COLOR;
+  ONM.STEM_IMAGE = STEM_IMAGE;
+  ONM.iljuPhrase = iljuPhrase;
   ONM.zodiacIcon = zodiacIcon;
   ONM.zodiacSvg = zodiacIcon;   // 예전 이름도 그대로 동작하게 둔다
   ONM.zodiacColor = colorOf;

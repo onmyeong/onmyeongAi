@@ -99,7 +99,7 @@
       label: rec.branchInfo.animal + ' — ' + rec.id + ' 일주'
     });
     $('r-name').textContent = rec.id + ' (' + rec.hanja + ')';
-    $('r-animal').textContent = rec.branchInfo.animal + '띠 일주 · ' + color.name;
+    $('r-animal').textContent = ONM.iljuPhrase(rec);
     $('r-tagline').textContent = rec.tagline;
     $('r-keywords').textContent = rec.keywords;
     $('r-summary').textContent = rec.summary;

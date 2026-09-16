@@ -91,8 +91,11 @@ function buildBand(s, model) {
 
   const pos = new Float32Array((SEG + 1) * P * 3);
   const uv = new Float32Array((SEG + 1) * P * 2);
+  // 정점마다 "표면에서 얼마나 파였는지"(0=표면, 1=가장 깊은 곳).
+  // 홈에 색을 채우는 마감을 그릴 때 이 값을 씁니다.
+  const depth = new Float32Array((SEG + 1) * P);
   const rot = new Array(P);
-  let n = 0, m = 0;
+  let n = 0, m = 0, d = 0;
 
   /* 비틀림은 단면을 통째로 돌리는 대신 바깥면을 따라 도는 "나선 홈"으로 표현한다.
    * 단면을 돌리면 밴드가 스스로를 파고들어 면이 깨지고 명암이 뒤집힌다.
@@ -123,23 +126,29 @@ function buildBand(s, model) {
     for (let j = 0; j < P; j++) {
       const p = rot[j];
       let radius = innerR;
+      let carved = 0;                     // 이 정점이 파인 정도 (mm)
       if (p.outer) {
         let u = p.u * uScale;
         // 각진 면(패싯)은 모서리가 가장 두꺼워지므로, 모서리가 정확히 두께에 닿게 맞춘다
         if (facets > 0) u *= facetR * Math.cos(Math.PI / facets);
         if (grooves > 0) {
           const spiral = Math.sin(grooves * th + p.v * groovePitch);
-          u -= grooveDepth * t * (0.5 + 0.5 * spiral);
+          const cut = grooveDepth * t * (0.5 + 0.5 * spiral);
+          u -= cut;
+          carved += cut;
         }
         if (u < 0) u = 0;
         radius += u;
         if (bump.amp > 0) {
           // 둘레 방향으로 주기적인 노이즈 — 한 바퀴 돌아와도 결이 어긋나지 않는다
           const nz = valueNoise(Math.cos(th) * bump.ring + 31, Math.sin(th) * bump.ring + p.v * bump.axial);
-          radius -= nz * bump.amp * Math.max(t, 1.2);
+          const cut = nz * bump.amp * Math.max(t, 1.2);
+          radius -= cut;
+          carved += cut;
         }
         if (radius < innerR) radius = innerR;
       }
+      depth[d++] = carved;
       pos[n++] = radius * Math.cos(th);
       pos[n++] = radius * Math.sin(th);
       pos[n++] = p.v;
@@ -164,7 +173,33 @@ function buildBand(s, model) {
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geo.setIndex(idx);
   geo.computeVertexNormals();
+
+  // 가장 깊게 파인 곳을 1로 두고 0~1로 정규화해 둔다
+  let maxCarve = 0;
+  for (let i = 0; i < depth.length; i++) if (depth[i] > maxCarve) maxCarve = depth[i];
+  geo.userData.depth = depth;
+  geo.userData.maxCarve = maxCarve;
   return geo;
+}
+
+/** 홈에 색을 채우는 마감 — 파인 곳일수록 그 색이 짙게 남는다 */
+function paintEpoxy(geo, spec) {
+  const epoxy = spec.epoxy && CONFIG.epoxy.colors[spec.epoxy];
+  const maxCarve = geo.userData.maxCarve || 0;
+  if (!epoxy || !epoxy.color || maxCarve < 0.01) return false;
+
+  const depth = geo.userData.depth;
+  const resin = new THREE.Color(epoxy.color);
+  const colors = new Float32Array(depth.length * 3);
+  for (let i = 0; i < depth.length; i++) {
+    // 절반 이상 파인 곳부터 색이 차오르게
+    const t = Math.min(1, Math.max(0, (depth[i] / maxCarve - 0.35) / 0.65));
+    colors[i * 3] = 1 - t + resin.r * t;
+    colors[i * 3 + 1] = 1 - t + resin.g * t;
+    colors[i * 3 + 2] = 1 - t + resin.b * t;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return true;
 }
 
 /* ─────────────────── 재질 ─────────────────── */
@@ -180,10 +215,9 @@ const FINISH = {
 };
 
 function metalMaterial(s) {
-  const metal = CONFIG.price.metals[s.metal] || CONFIG.price.metals['silver925'];
   const f = FINISH[s.texture] || FINISH.polish;
-  // 거친 마감은 반사를 줄이는 것만으로는 하얗게 떠 보여서, 바탕색도 함께 눌러 준다
-  const color = new THREE.Color(metal.color).multiplyScalar(f.tone);
+  // 도금을 골랐으면 그 색으로 보여야 한다
+  const color = new THREE.Color(R.metalColor(s)).multiplyScalar(f.tone);
   return new THREE.MeshPhysicalMaterial({
     color,
     metalness: 1,
@@ -199,15 +233,17 @@ function metalMaterial(s) {
  * 맑은 보석 몇 가지만 살짝 투명하게 둡니다. */
 const CLEAR_STONES = ['아쿠아마린', '시트린', '가넷', '루비', '화이트 쿼츠', '플루오라이트', '페리도트'];
 
-function stoneMaterial(name) {
-  const c = new THREE.Color(ONM.STONE_COLOR[name] || '#7a8b9c');
-  const clear = CLEAR_STONES.indexOf(name) !== -1;
+function stoneMaterial(spec) {
+  const c = new THREE.Color(R.stoneColorOf(spec) || '#7a8b9c');
+  // 모이사나이트는 무색 투명, 천연석은 대부분 불투명한 캐보션
+  const clear = spec.stoneType === 'moissanite' || CLEAR_STONES.indexOf(spec.stone) !== -1;
   return new THREE.MeshPhysicalMaterial({
     color: c,
     metalness: 0,
     roughness: 0.05,
-    transmission: clear ? 0.35 : 0,
+    transmission: clear ? (spec.stoneType === 'moissanite' ? 0.55 : 0.35) : 0,
     thickness: clear ? 1.4 : 0,
+    iridescence: spec.stoneType === 'moissanite' ? 0.25 : 0,
     ior: 1.72,
     envMapIntensity: 1.1,
     clearcoat: 1,
@@ -217,12 +253,12 @@ function stoneMaterial(name) {
 
 /* ─────────────────── 원석 · 세팅 ─────────────────── */
 function buildStone(s, group) {
-  if (!s.stone || s.setting === 'none') return;
+  if (!s.stoneType || s.stoneType === 'none' || s.setting === 'none') return;
   const innerR = R.sizeToInnerDiameter(s.size) / 2;
   const topR = innerR + s.thickness;
-  // 알 크기는 반지 폭과 두께 안에서 자연스럽게 앉을 만큼으로 잡는다
-  const size = Math.max(1.1, Math.min(s.width * 0.62, s.thickness * 1.9, 3.6));
-  const mat = stoneMaterial(s.stone);
+  // 고른 원석의 실제 지름(mm)을 그대로 쓴다 — 화면 비율이 곧 제작 사양
+  const size = R.stoneMm(s) / 2;
+  const mat = stoneMaterial(s);
   const metalMat = metalMaterial(s);
 
   if (s.setting === 'prong') {
@@ -249,9 +285,6 @@ function buildStone(s, group) {
       prong.position.set(Math.cos(a) * gemR * 0.9, girdle - gemR * 0.2, Math.sin(a) * gemR * 0.9);
       group.add(prong);
     }
-  } else if (s.setting === 'inlay') {
-    group.add(new THREE.Mesh(
-      new THREE.TorusGeometry(innerR + s.thickness * 0.72, Math.max(0.12, s.width * 0.12), 12, 140), mat));
   } else if (s.setting === 'flush') {
     // 표면과 거의 같은 높이로 묻는 세팅 — 낮고 완만한 돔
     const gem = new THREE.Mesh(new THREE.SphereGeometry(size * 0.8, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat);
@@ -372,7 +405,12 @@ function rebuild() {
   }
   const model = R.getModel(spec.modelId);
   ringGroup = new THREE.Group();
-  ringGroup.add(new THREE.Mesh(buildBand(spec, model), metalMaterial(spec)));
+  const bandGeo = buildBand(spec, model);
+  const bandMat = metalMaterial(spec);
+  // 홈에 색을 채우는 마감은 파인 자리에만 색이 남는다 (띠를 두르는 것이 아니다)
+  if (paintEpoxy(bandGeo, spec)) bandMat.vertexColors = true;
+  ringGroup.add(new THREE.Mesh(bandGeo, bandMat));
+
   buildStone(spec, ringGroup);
   ringGroup.rotation.x = -0.12;
   scene.add(ringGroup);

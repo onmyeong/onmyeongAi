@@ -39,7 +39,7 @@
   /* ────────────────────────── 모델 카탈로그 ──────────────────────────
    * profile   : 단면 형태 flat | round | dshape | knife | wave | facet | step
    * texture   : polish(유광) | matte(유화) | hammered(해머드) | sand(샌드) | brushed(브러시) | stone(스톤)
-   * setting   : none | bezel(베젤) | inlay(인레이) | prong(프롱) | flush(플러시)
+   * setting   : none | bezel(베젤) | prong(프롱) | flush(플러시)
    * width     : [최소, 기본, 최대] mm — 반지의 "높이"(손가락을 감싸는 폭)
    * thickness : [최소, 기본, 최대] mm — 반지의 "두께"
    * elements  : 잘 맞는 오행
@@ -79,11 +79,11 @@
       elements: ['수', '목'], moods: ['데일리', '커플'], basePrice: 142000,
       tags: ['유연함', '지혜', '포용', '흐름', '조화', '통찰'],
       desc: '물결이 지나간 자리처럼 완만하게 흐르는 밴드. 손가락에 편안하게 감기는 착용감이 특징입니다.' },
-    { id: 'organic-sprout', name: '새싹', family: 'organic', profile: 'wave', texture: 'matte', setting: 'inlay',
+    { id: 'organic-sprout', name: '새싹', family: 'organic', profile: 'wave', texture: 'matte', setting: 'bezel',
       width: [2.5, 4, 7], thickness: [1.2, 1.8, 3.0], wave: 0.45, twist: 0.2, taper: 0.2, facets: 0,
       elements: ['목', '수'], moods: ['데일리', '선물'], basePrice: 166000,
       tags: ['성장', '가능성', '변화', '기회', '순수', '적응력'],
-      desc: '막 돋아난 잎의 곡선을 따라 폭이 변하는 형태. 가는 원석 인레이가 결을 따라 흐릅니다.' },
+      desc: '막 돋아난 잎의 곡선을 따라 폭이 변하는 형태. 잎끝이 모이는 자리에 원석 한 알을 앉혔습니다.' },
     { id: 'organic-tide', name: '조수', family: 'organic', profile: 'round', texture: 'hammered', setting: 'none',
       width: [3, 5, 9], thickness: [1.4, 2.2, 3.6], wave: 0.5, twist: 0, taper: 0, facets: 0,
       elements: ['수', '토'], moods: ['시그니처'], basePrice: 178000,
@@ -138,7 +138,7 @@
       elements: ['수', '금'], moods: ['시그니처', '선물'], basePrice: 226000,
       tags: ['변화', '기회', '수완', '재능', '순발', '자유'],
       desc: '한 바퀴 비틀리며 돌아가는 밴드 위에 원석이 궤도처럼 얹힙니다. 각도마다 다른 얼굴을 보여줍니다.' },
-    { id: 'signature-fragment', name: '결정', family: 'signature', profile: 'facet', texture: 'sand', setting: 'inlay',
+    { id: 'signature-fragment', name: '결정', family: 'signature', profile: 'facet', texture: 'sand', setting: 'bezel',
       width: [3.5, 5.5, 10], thickness: [1.6, 2.4, 4.0], wave: 0.3, twist: 0, taper: 0, facets: 9,
       elements: ['토', '금'], moods: ['시그니처'], basePrice: 246000,
       tags: ['독창성', '영감', '감각', '전문성', '완성', '독특'],
@@ -148,7 +148,7 @@
       elements: ['화', '토'], moods: ['시그니처', '선물'], basePrice: 258000,
       tags: ['명예', '품격', '리더십', '위엄', '포부', '중용'],
       desc: '원석 둘레를 넓은 단이 감싸 빛을 되비춥니다. 손 위에서 가장 먼저 눈에 들어오는 디자인입니다.' },
-    { id: 'signature-duet', name: '이중주', family: 'signature', profile: 'wave', texture: 'matte', setting: 'inlay',
+    { id: 'signature-duet', name: '이중주', family: 'signature', profile: 'wave', texture: 'matte', setting: 'bezel',
       width: [3, 4.5, 8], thickness: [1.4, 2.0, 3.4], wave: 0.55, twist: 0.4, taper: 0.25, facets: 0,
       elements: ['목', '화'], moods: ['커플', '시그니처'], basePrice: 208000,
       tags: ['화합', '교류', '소통', '다재', '인연', '표현력'],
@@ -329,19 +329,32 @@
     if (opts.volume === 'slim') { w = (model.width[0] + w) / 2; t = (model.thickness[0] + t) / 2; }
     if (opts.volume === 'bold') { w = (model.width[2] + w) / 2; t = (model.thickness[2] + t) / 2; }
     var stone = (record && record.stones && record.stones[0]) ? record.stones[0][0] : null;
+
+    /* 디자인이 정해 둔 고정 방식에 맞춰 원석 종류를 고릅니다.
+     *   테두리로 감싸는 자리 → 일주의 추천 원석(캐보션)
+     *   발로 물거나 묻는 자리 → 모이사나이트 2.0mm
+     * 천연석 캐보션은 감싸는 방식으로만 물릴 수 있어서 이렇게 나눕니다. */
+    var stoneType = 'none';
+    if (model.setting === 'bezel' && stone) stoneType = 'natural';
+    else if (model.setting === 'prong' || model.setting === 'flush') stoneType = 'moissanite';
+
     return {
       modelId: model.id,
       modelName: model.name,
       family: model.family,
       profile: model.profile,
       texture: model.texture,
-      setting: model.setting,
+      setting: stoneType === 'none' ? 'none' : model.setting,
       width: round1(w),
       thickness: round1(t),
       size: 13,
       metal: opts.metal || 'silver925',
+      plating: 'none',
+      epoxy: '',
       wave: model.wave, twist: model.twist, taper: model.taper, facets: model.facets,
-      stone: model.setting === 'none' ? null : stone,
+      stoneType: stoneType,
+      stone: stoneType === 'natural' ? stone : null,
+      stoneSize: stoneType === 'moissanite' ? 2.0 : CONFIG.stones.natural.mm,
       engraving: '',
       ilju: record ? record.id : null
     };
@@ -366,10 +379,25 @@
     var base = model.basePrice;
     var extraW = Math.max(0, spec.width - P.baseWidth) * P.perWidthMm;
     var extraT = Math.max(0, spec.thickness - P.baseThickness) * P.perThicknessMm;
-    var setting = spec.stone ? (P.setting[spec.setting] || 0) : 0;
+
+    // 원석값 + 물리는 공임
+    var stoneCost = 0, setting = 0;
+    if (spec.stoneType === 'moissanite') {
+      var pick = CONFIG.stones.moissanite.sizes.filter(function (z) {
+        return Math.abs(z.mm - (Number(spec.stoneSize) || 2)) < 0.01;
+      })[0];
+      stoneCost = pick ? pick.price : CONFIG.stones.moissanite.sizes[1].price;
+      setting = P.setting[spec.setting] || 0;
+    } else if (spec.stoneType === 'natural') {
+      stoneCost = CONFIG.stones.natural.price;
+      setting = P.setting[spec.setting] || 0;
+    }
+
+    var plating = (CONFIG.plating[spec.plating || 'none'] || {}).price || 0;
+    var epoxy = spec.epoxy ? CONFIG.epoxy.price : 0;
     var engrave = spec.engraving ? P.engraving : 0;
 
-    var one = (base + extraW + extraT) * metal.mult + setting + engrave;
+    var one = (base + extraW + extraT) * metal.mult + stoneCost + setting + plating + epoxy + engrave;
     var qty = Math.max(1, Number(quantity) || 1);
     var total = one * qty;
     if (qty >= 2) total *= (1 - P.couplePairDiscount);
@@ -389,16 +417,72 @@
 
   /* ────────────────────── 2D 미리보기 (SVG) ────────────────────── */
 
+  /* 화면에 나가는 말은 전문용어 대신 보이는 그대로 씁니다.
+   * 뒤의 괄호는 공방에서 쓰는 원래 용어라, 상담할 때 서로 헷갈리지 않습니다. */
   var PROFILE_LABEL = {
-    flat: '플랫', round: '라운드', dshape: 'D형', knife: '나이프 엣지',
-    wave: '웨이브', facet: '패싯', step: '스텝'
+    flat:   '납작한 면 (플랫)',
+    round:  '둥근 면 (라운드)',
+    dshape: '안쪽 평평 · 바깥 둥근 (D형)',
+    knife:  '가운데가 솟은 (나이프)',
+    wave:   '물결치는 (웨이브)',
+    facet:  '각이 진 (패싯)',
+    step:   '층이 진 (스텝)'
   };
   var TEXTURE_LABEL = {
-    polish: '유광', matte: '유화(무광)', hammered: '해머드', sand: '샌드', brushed: '브러시', stone: '스톤'
+    polish:   '거울처럼 반짝이는 (유광)',
+    matte:    '부드러운 무광 (유화)',
+    hammered: '망치로 두드린 결 (해머드)',
+    sand:     '모래처럼 거친 결 (샌드)',
+    brushed:  '고운 빗살 결 (브러시)',
+    stone:    '바위처럼 거친 결 (스톤)'
   };
   var SETTING_LABEL = {
-    none: '무석', bezel: '베젤', inlay: '인레이', prong: '프롱', flush: '플러시'
+    none:  '원석 없이',
+    bezel: '테두리로 감싼 (베젤)',
+    prong: '발로 물어 올린 (프롱)',
+    flush: '표면에 묻은 (플러시)'
   };
+  var STONE_TYPE_LABEL = { none: '원석 없이', moissanite: '모이사나이트', natural: '천연석' };
+
+  /** 도금까지 반영한 실제 금속 색 */
+  function metalColor(spec) {
+    var plating = CONFIG.plating[spec.plating || 'none'];
+    if (plating && spec.plating && spec.plating !== 'none') return plating.color;
+    var metal = CONFIG.price.metals[spec.metal] || CONFIG.price.metals['silver925'];
+    return metal.color;
+  }
+
+  /** 지금 사양의 원석 색 (없으면 null) */
+  function stoneColorOf(spec) {
+    if (spec.stoneType === 'moissanite') return CONFIG.stones.moissanite.color;
+    if (spec.stoneType === 'natural' && spec.stone) return ONM.STONE_COLOR[spec.stone] || '#7a8b9c';
+    return null;
+  }
+
+  /** 지금 사양의 원석 지름(mm) */
+  function stoneMm(spec) {
+    if (spec.stoneType === 'moissanite') return Number(spec.stoneSize) || 2.0;
+    if (spec.stoneType === 'natural') return CONFIG.stones.natural.mm;
+    return 0;
+  }
+
+  /** 이 원석에 쓸 수 있는 고정 방식 (천연석 캐보션은 감싸는 방식만) */
+  function settingsFor(stoneType) {
+    if (stoneType === 'moissanite') return CONFIG.stones.moissanite.settings;
+    if (stoneType === 'natural') return CONFIG.stones.natural.settings;
+    return ['none'];
+  }
+
+  /** 원석을 사람이 읽는 한 줄로 */
+  function stoneLabel(spec) {
+    if (spec.stoneType === 'moissanite') {
+      return '모이사나이트 ' + (Number(spec.stoneSize) || 2).toFixed(1) + 'mm (라운드)';
+    }
+    if (spec.stoneType === 'natural' && spec.stone) {
+      return spec.stone + ' ' + CONFIG.stones.natural.mm.toFixed(1) + 'mm (캐보션)';
+    }
+    return '원석 없이';
+  }
 
   /**
    * 카드용 2D 미리보기. 실제 비율(호수/폭/두께)을 반영해 그립니다.
@@ -407,8 +491,8 @@
   function ringSvg(spec, opts) {
     opts = opts || {};
     var size = opts.size || 180;
-    var metal = CONFIG.price.metals[spec.metal] || CONFIG.price.metals['silver925'];
-    var stoneColor = spec.stone ? (ONM.STONE_COLOR[spec.stone] || '#7a8b9c') : null;
+    var baseColor = metalColor(spec);            // 도금까지 반영한 금속 색
+    var stoneColor = stoneColorOf(spec);
 
     var innerD = sizeToInnerDiameter(spec.size || 13);
     var outerD = innerD + spec.thickness * 2;
@@ -422,24 +506,28 @@
     parts.push('<svg viewBox="0 0 ' + size + ' ' + size + '" width="100%" height="100%" role="img" aria-label="' +
       esc(spec.modelName || '반지') + ' 미리보기" xmlns="http://www.w3.org/2000/svg">');
     parts.push('<defs>');
+    // 마감이 거칠수록 반사가 줄어드는 만큼 전체 톤을 눌러 준다
+    var TONE = { polish: 1, brushed: 0.95, matte: 0.86, hammered: 0.98, sand: 0.82, stone: 0.76 };
+    var tone = TONE[spec.texture] || 1;
     parts.push('<linearGradient id="' + uid + 'g" x1="0" y1="0" x2="1" y2="1">' +
-      '<stop offset="0%" stop-color="' + shade(metal.color, 1.18) + '"/>' +
-      '<stop offset="45%" stop-color="' + metal.color + '"/>' +
-      '<stop offset="100%" stop-color="' + shade(metal.color, 0.55) + '"/></linearGradient>');
+      '<stop offset="0%" stop-color="' + shade(baseColor, 1.18 * tone) + '"/>' +
+      '<stop offset="45%" stop-color="' + shade(baseColor, tone) + '"/>' +
+      '<stop offset="100%" stop-color="' + shade(baseColor, 0.55 * tone) + '"/></linearGradient>');
     if (spec.texture === 'hammered' || spec.texture === 'stone' || spec.texture === 'sand') {
       parts.push('<filter id="' + uid + 'f"><feTurbulence type="fractalNoise" baseFrequency="' +
         (spec.texture === 'sand' ? '0.9' : spec.texture === 'stone' ? '0.22' : '0.14') +
         '" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="' +
-        (spec.texture === 'sand' ? 0.9 : spec.texture === 'stone' ? 1.8 : 1.4) + '"/></filter>');
+        (spec.texture === 'sand' ? 0.7 : spec.texture === 'stone' ? 1.2 : 1.0) + '"/></filter>');
     }
     parts.push('</defs>');
 
     var bandAttrs = 'fill="none" stroke="url(#' + uid + 'g)" stroke-width="' + (rOut - rIn) + '"';
     var filter = (spec.texture === 'hammered' || spec.texture === 'stone' || spec.texture === 'sand')
       ? ' filter="url(#' + uid + 'f)"' : '';
-    var opacity = spec.texture === 'matte' ? ' opacity="0.92"' : '';
 
-    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + ((rOut + rIn) / 2) + '" ' + bandAttrs + filter + opacity + '/>');
+    // 반지는 금속이라 절대 비쳐 보이면 안 된다.
+    // 무광을 표현할 때도 투명도를 쓰지 않고 색만 눌러서 그린다.
+    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + ((rOut + rIn) / 2) + '" ' + bandAttrs + filter + '/>');
 
     // 하이라이트 — 유광일수록 강하게
     var hl = spec.texture === 'polish' ? 0.5 : spec.texture === 'brushed' ? 0.26 : 0.14;
@@ -461,28 +549,39 @@
         '" fill="none" stroke="#000" stroke-opacity="0.14" stroke-width="0.9"/>');
     }
 
-    // 원석 — 세팅 방식에 따라 다르게 그린다
+    // 원석 — 모이사나이트는 각이 살아 있는 라운드 컷, 천연석은 둥근 캐보션
     if (stoneColor) {
-      if (spec.setting === 'inlay') {
-        // 인레이는 밴드를 따라 한 줄로 흐른다
-        parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + (rIn + (rOut - rIn) * 0.68) +
-          '" fill="none" stroke="' + stoneColor + '" stroke-width="' + ((rOut - rIn) * 0.26) + '"/>');
+      var mm = stoneMm(spec);
+      var sr = Math.max(3.4, mm * scale / 2);
+      var sy = cy - (rOut + rIn) / 2;
+      var rim = shade(baseColor, 0.7);
+
+      if (spec.stoneType === 'moissanite') {
+        parts.push('<circle cx="' + cx + '" cy="' + sy + '" r="' + sr +
+          '" fill="' + stoneColor + '" stroke="' + rim + '" stroke-width="0.8"/>');
+        // 컷 면을 나타내는 방사선과 테이블
+        for (var fi = 0; fi < 8; fi++) {
+          var fa = (fi / 8) * Math.PI * 2 + Math.PI / 8;
+          parts.push('<line x1="' + (cx + Math.cos(fa) * sr * 0.42) + '" y1="' + (sy + Math.sin(fa) * sr * 0.42) +
+            '" x2="' + (cx + Math.cos(fa) * sr) + '" y2="' + (sy + Math.sin(fa) * sr) +
+            '" stroke="#8fa3b8" stroke-opacity="0.5" stroke-width="0.6"/>');
+        }
+        parts.push('<circle cx="' + cx + '" cy="' + sy + '" r="' + (sr * 0.42) +
+          '" fill="#ffffff" fill-opacity="0.55"/>');
       } else {
-        var flush = spec.setting === 'flush';
-        var sr = Math.max(flush ? 3.5 : 5, (rOut - rIn) * (spec.setting === 'prong' ? 0.75 : flush ? 0.4 : 0.58));
-        var sy = cy - (rOut + rIn) / 2;
-        parts.push('<circle cx="' + cx + '" cy="' + sy + '" r="' + sr + '" fill="' + stoneColor + '" stroke="' +
-          shade(metal.color, 0.7) + '" stroke-width="' + (spec.setting === 'bezel' ? 1.6 : 0.8) + '"/>');
-        parts.push('<circle cx="' + (cx - sr * 0.3) + '" cy="' + (sy - sr * 0.3) + '" r="' + (sr * 0.28) +
-          '" fill="#ffffff" fill-opacity="' + (flush ? 0.3 : 0.45) + '"/>');
-        if (spec.setting === 'prong') {
-          // 발 네 개를 짧은 선으로 표시
-          for (var pi = 0; pi < 4; pi++) {
-            var pa = (pi / 4) * Math.PI * 2 + Math.PI / 4;
-            parts.push('<line x1="' + (cx + Math.cos(pa) * sr * 0.72) + '" y1="' + (sy + Math.sin(pa) * sr * 0.72) +
-              '" x2="' + (cx + Math.cos(pa) * sr * 1.12) + '" y2="' + (sy + Math.sin(pa) * sr * 1.12) +
-              '" stroke="' + shade(metal.color, 0.85) + '" stroke-width="1.6" stroke-linecap="round"/>');
-          }
+        // 캐보션 — 각 없이 매끈하게 부푼 돔
+        parts.push('<circle cx="' + cx + '" cy="' + sy + '" r="' + sr +
+          '" fill="' + stoneColor + '" stroke="' + rim + '" stroke-width="1.6"/>');
+        parts.push('<ellipse cx="' + (cx - sr * 0.28) + '" cy="' + (sy - sr * 0.3) +
+          '" rx="' + (sr * 0.3) + '" ry="' + (sr * 0.22) + '" fill="#ffffff" fill-opacity="0.42"/>');
+      }
+
+      if (spec.setting === 'prong') {
+        for (var pi = 0; pi < 4; pi++) {
+          var pa = (pi / 4) * Math.PI * 2 + Math.PI / 4;
+          parts.push('<line x1="' + (cx + Math.cos(pa) * sr * 0.72) + '" y1="' + (sy + Math.sin(pa) * sr * 0.72) +
+            '" x2="' + (cx + Math.cos(pa) * sr * 1.14) + '" y2="' + (sy + Math.sin(pa) * sr * 1.14) +
+            '" stroke="' + shade(baseColor, 0.85) + '" stroke-width="1.6" stroke-linecap="round"/>');
         }
       }
     }
@@ -518,12 +617,16 @@
       spec.modelName,
       metal.label,
       spec.size + '호',
-      '폭(높이) ' + spec.width + 'mm',
+      '폭 ' + spec.width + 'mm',
       '두께 ' + spec.thickness + 'mm',
       PROFILE_LABEL[spec.profile] || spec.profile,
       TEXTURE_LABEL[spec.texture] || spec.texture
     ];
-    if (spec.stone) bits.push(SETTING_LABEL[spec.setting] + ' · ' + spec.stone);
+    if (spec.stoneType && spec.stoneType !== 'none') {
+      bits.push(stoneLabel(spec) + ' · ' + SETTING_LABEL[spec.setting]);
+    }
+    if (spec.plating && spec.plating !== 'none') bits.push((CONFIG.plating[spec.plating] || {}).label);
+    if (spec.epoxy) bits.push('색 채움 ' + ((CONFIG.epoxy.colors[spec.epoxy] || {}).label || spec.epoxy));
     if (spec.engraving) bits.push('각인 "' + spec.engraving + '"');
     return bits.join(' / ');
   }
@@ -531,7 +634,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'profile',
-    'setting', 'stone', 'engraving', 'ilju', 'qty'];
+    'setting', 'stoneType', 'stone', 'stoneSize', 'plating', 'epoxy', 'engraving', 'ilju', 'qty'];
 
   /** 사양 → URL 쿼리 문자열 (리포트 → 스튜디오 → 주문으로 넘길 때 사용) */
   function specToQuery(spec, extra) {
@@ -557,6 +660,10 @@
       var v = parseFloat(p.get(k));
       if (!isNaN(v)) spec[k] = v;
     });
+    if (p.get('stoneType')) spec.stoneType = p.get('stoneType');
+    if (p.get('stoneSize')) spec.stoneSize = parseFloat(p.get('stoneSize'));
+    if (p.get('plating')) spec.plating = p.get('plating');
+    if (p.has('epoxy')) spec.epoxy = p.get('epoxy') || '';
     if (p.get('texture')) spec.texture = p.get('texture');
     if (p.get('profile')) spec.profile = p.get('profile');
     if (p.get('setting')) spec.setting = p.get('setting');
@@ -585,6 +692,12 @@
     FAMILIES: FAMILIES,
     MODELS: MODELS,
     PROFILE_LABEL: PROFILE_LABEL,
+    STONE_TYPE_LABEL: STONE_TYPE_LABEL,
+    metalColor: metalColor,
+    stoneColorOf: stoneColorOf,
+    stoneMm: stoneMm,
+    settingsFor: settingsFor,
+    stoneLabel: stoneLabel,
     TEXTURE_LABEL: TEXTURE_LABEL,
     SETTING_LABEL: SETTING_LABEL,
     recommend: recommend,

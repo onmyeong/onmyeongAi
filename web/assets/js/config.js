@@ -60,10 +60,63 @@
       baseThickness: 1.6,   // mm
       perWidthMm: 9000,     // 폭 1mm 추가당 (실버 기준)
       perThicknessMm: 22000,// 두께 1mm 추가당 (실버 기준)
-      setting: { none: 0, bezel: 45000, inlay: 38000, prong: 52000, flush: 30000 },
+      // 원석을 물리는 공임 (원석값은 따로)
+      setting: { none: 0, bezel: 30000, prong: 35000, flush: 25000 },
       engraving: 15000,
       couplePairDiscount: 0.05, // 커플 2개 주문 시 5% 할인
       currency: 'KRW'
+    },
+
+    /* ── 원석 ────────────────────────────────────────────────────
+     * 모이사나이트는 라운드 브릴리언트 컷이고, 크기는 알의 지름(mm)입니다.
+     *   1.5mm·2.0mm 은 포인트로 작게, 2.5mm·3.0mm 은 가운데 알로 씁니다.
+     *   ※ 캐럿이 아니라 지름 기준입니다. 캐럿으로 팔고 싶으시면
+     *     아래 label 과 값만 바꾸면 화면·주문서·가격에 모두 반영됩니다.
+     * 천연석은 깎지 않고 둥글게 갈아낸 캐보션만 취급합니다.
+     */
+    stones: {
+      moissanite: {
+        label: '모이사나이트',
+        note: '무색 투명한 라운드 컷. 반짝임이 가장 강합니다.',
+        cut: '라운드 브릴리언트',
+        color: '#eef2f7',
+        sizes: [
+          { mm: 1.5, label: '1.5mm', price: 28000, hint: '작게 포인트로' },
+          { mm: 2.0, label: '2.0mm', price: 42000, hint: '은은한 한 알' },
+          { mm: 2.5, label: '2.5mm', price: 66000, hint: '또렷한 한 알' },
+          { mm: 3.0, label: '3.0mm', price: 95000, hint: '가운데 주인공' }
+        ],
+        settings: ['prong', 'bezel', 'flush']
+      },
+      natural: {
+        label: '천연석',
+        note: '일주에 맞춘 원석. 각을 내지 않고 둥글게 갈아낸 캐보션입니다.',
+        cut: '캐보션',
+        mm: 5.0,
+        price: 45000,
+        settings: ['bezel']          // 캐보션은 테두리로 감싸는 방식만 가능
+      }
+    },
+
+    /* ── 마감 추가 옵션 ── */
+    plating: {
+      none:    { label: '도금 없이 (실버 그대로)', price: 0,     color: '#c9ccd1' },
+      gold:    { label: '금색 도금',              price: 45000, color: '#d9b25f' },
+      rhodium: { label: '화이트 도금',            price: 35000, color: '#dfe2e7' },
+      black:   { label: '블랙 도금',              price: 40000, color: '#4a4a4e' }
+    },
+
+    /* 홈과 결에 색을 채워 넣는 마감. 오행 색으로 고를 수 있게 했습니다. */
+    epoxy: {
+      price: 25000,
+      colors: {
+        '':     { label: '채우지 않음', color: null },
+        '먹':   { label: '먹빛 (수)',   color: '#2f3a44' },
+        '쪽':   { label: '쪽빛 (수)',   color: '#2b5a8c' },
+        '솔':   { label: '솔빛 (목)',   color: '#4a7c3f' },
+        '홍':   { label: '홍빛 (화)',   color: '#b8443a' },
+        '황토': { label: '황톳빛 (토)', color: '#b08a52' }
+      }
     },
 
     /* ── 반지 규격 한계 (스튜디오 슬라이더 범위) ── */

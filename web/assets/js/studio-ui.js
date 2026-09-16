@@ -48,16 +48,39 @@
     }), spec.modelId);
     fillSelect($('c-texture'), pairs(R.TEXTURE_LABEL), spec.texture);
     fillSelect($('c-profile'), pairs(R.PROFILE_LABEL), spec.profile);
-    fillSelect($('c-setting'), pairs(R.SETTING_LABEL), spec.setting);
 
-    // 원석 — 내 일주 추천 원석을 위로
+    // 원석 종류
+    fillSelect($('c-stonetype'), [
+      ['none', '원석 없이 — 금속만'],
+      ['moissanite', '모이사나이트 — 무색 투명, 가장 반짝임'],
+      ['natural', '천연석 — 내 일주에 맞춘 돌']
+    ], spec.stoneType || 'none');
+
+    // 모이사나이트 알 크기
+    fillSelect($('c-stonesize'), CONFIG.stones.moissanite.sizes.map(function (z) {
+      return [String(z.mm), z.label + ' — ' + z.hint + ' (+' + z.price.toLocaleString('ko-KR') + '원)'];
+    }), String(Number(spec.stoneSize) || 2));
+
+    // 천연석 — 내 일주 추천을 위로
     var rec = spec.ilju && ONM.ILJU[spec.ilju];
-    var mine = rec ? rec.stones.map(function (s) { return s[0]; }) : [];
-    var all = Object.keys(ONM.STONE_COLOR).filter(function (s) { return mine.indexOf(s) === -1; });
-    var opts = [['', '원석 없음']]
-      .concat(mine.map(function (s) { return [s, s + ' (내 일주 추천)']; }))
-      .concat(all.map(function (s) { return [s, s]; }));
-    fillSelect($('c-stone'), opts, spec.stone || '');
+    var mine = rec ? rec.stones.map(function (x) { return x[0]; }) : [];
+    var all = Object.keys(ONM.STONE_COLOR).filter(function (x) { return mine.indexOf(x) === -1; });
+    fillSelect($('c-stone'),
+      mine.map(function (x) { return [x, x + ' — 내 일주 추천']; })
+        .concat(all.map(function (x) { return [x, x]; })),
+      spec.stone || mine[0] || all[0]);
+
+    fillSelect($('c-plating'), Object.keys(CONFIG.plating).map(function (k) {
+      var v = CONFIG.plating[k];
+      return [k, v.label + (v.price ? ' (+' + v.price.toLocaleString('ko-KR') + '원)' : '')];
+    }), spec.plating || 'none');
+
+    fillSelect($('c-epoxy'), Object.keys(CONFIG.epoxy.colors).map(function (k) {
+      var v = CONFIG.epoxy.colors[k];
+      return [k, v.label + (k ? ' (+' + CONFIG.epoxy.price.toLocaleString('ko-KR') + '원)' : '')];
+    }), spec.epoxy || '');
+
+    refreshStoneFields();
 
     var metalKeys = Object.keys(CONFIG.price.metals);
     // 제작 소재가 하나뿐이면 고를 것이 없으므로 선택 영역을 숨긴다
@@ -76,6 +99,46 @@
 
   function pairs(obj) {
     return Object.keys(obj).map(function (k) { return [k, obj[k]]; });
+  }
+
+  /* 색을 채우려면 채울 홈이 있어야 한다.
+   * 매끈한 디자인에 색 채움을 고르면 값만 오르고 티가 안 나므로 미리 알려 준다. */
+  function refreshEpoxyNote() {
+    var model = R.getModel(spec.modelId) || {};
+    var deepTexture = ['hammered', 'sand', 'stone', 'matte'].indexOf(spec.texture) !== -1;
+    var hasGroove = (model.twist || 0) > 0 || deepTexture || spec.profile === 'step';
+    var note = '';
+    if (spec.epoxy && !hasGroove) {
+      note = '이 디자인은 표면이 매끈해서 채울 홈이 거의 없습니다. ' +
+        '결이 있는 마감(망치 자국 · 모래 · 바위)이나 비틀린 디자인에서 색이 또렷하게 남습니다.';
+    } else if (spec.epoxy) {
+      note = '파인 결을 따라 색이 남습니다.';
+    }
+    $('epoxy-note').textContent = note;
+  }
+
+  /* 고른 원석에 따라 필요한 칸만 남기고, 고를 수 있는 고정 방법도 추려 준다.
+   * 천연석은 캐보션이라 테두리로 감싸는 방식밖에 안 되기 때문이다. */
+  function refreshStoneFields() {
+    var type = spec.stoneType || 'none';
+    var has = type !== 'none';
+
+    $('f-stonesize').classList.toggle('is-hidden', type !== 'moissanite');
+    $('f-stone').classList.toggle('is-hidden', type !== 'natural');
+    $('f-setting').classList.toggle('is-hidden', !has);
+
+    var note = '';
+    if (type === 'moissanite') note = CONFIG.stones.moissanite.note;
+    if (type === 'natural') note = CONFIG.stones.natural.note;
+    $('stone-note').textContent = note;
+
+    refreshEpoxyNote();
+
+    if (!has) { spec.setting = 'none'; return; }
+
+    var allowed = R.settingsFor(type);
+    if (allowed.indexOf(spec.setting) === -1) spec.setting = allowed[0];
+    fillSelect($('c-setting'), allowed.map(function (k) { return [k, R.SETTING_LABEL[k]]; }), spec.setting);
   }
 
   function applyModelLimits() {
@@ -116,19 +179,35 @@
     });
   });
 
-  ['texture', 'profile', 'setting'].forEach(function (key) {
+  ['texture', 'profile', 'setting', 'plating'].forEach(function (key) {
     $('c-' + key).addEventListener('change', function () {
       spec[key] = this.value;
+      refreshEpoxyNote();
       studio.changed();
     });
   });
 
+  $('c-stonetype').addEventListener('change', function () {
+    spec.stoneType = this.value;
+    if (spec.stoneType === 'natural' && !spec.stone) spec.stone = $('c-stone').value;
+    if (spec.stoneType === 'moissanite') spec.stoneSize = parseFloat($('c-stonesize').value) || 2;
+    refreshStoneFields();
+    studio.changed();
+  });
+
+  $('c-stonesize').addEventListener('change', function () {
+    spec.stoneSize = parseFloat(this.value) || 2;
+    studio.changed();
+  });
+
   $('c-stone').addEventListener('change', function () {
     spec.stone = this.value || null;
-    if (spec.stone && spec.setting === 'none') {
-      spec.setting = 'bezel';
-      $('c-setting').value = 'bezel';
-    }
+    studio.changed();
+  });
+
+  $('c-epoxy').addEventListener('change', function () {
+    spec.epoxy = this.value;
+    refreshEpoxyNote();
     studio.changed();
   });
 
@@ -170,8 +249,7 @@
     box.innerHTML = '<span class="seal-mini">' +
       ONM.zodiacSvg(rec.branch, { label: rec.branchInfo.animal }) + '</span>' +
       '<span><b>' + R.esc(rec.id) + ' (' + R.esc(rec.hanja) + ')</b>' +
-      '<br><span class="small">' + R.esc(rec.branchInfo.animal) + '띠 일주 · ' +
-      R.esc(rec.tagline) + '</span></span>';
+      '<br><span class="small">' + R.esc(ONM.iljuPhrase(rec)) + '</span></span>';
     box.classList.remove('is-hidden');
   }
 
@@ -183,12 +261,15 @@
     rows.push(
       ['디자인', model.name + ' (' + R.FAMILIES[model.family].label + ')'],
       ['두께', spec.thickness.toFixed(1) + ' mm'],
-      ['높이 · 폭', spec.width.toFixed(1) + ' mm'],
-      ['호수', spec.size + '호 (내경 ' + R.sizeToInnerDiameter(spec.size).toFixed(1) + 'mm)'],
-      ['금속', (CONFIG.price.metals[spec.metal] || {}).label || spec.metal],
-      ['표면 마감', R.TEXTURE_LABEL[spec.texture]],
-      ['단면', R.PROFILE_LABEL[spec.profile]],
-      ['원석', spec.stone ? spec.stone + ' · ' + R.SETTING_LABEL[spec.setting] : '없음'],
+      ['폭', spec.width.toFixed(1) + ' mm'],
+      ['호수', spec.size + '호 (안지름 ' + R.sizeToInnerDiameter(spec.size).toFixed(1) + 'mm)'],
+      ['소재', (CONFIG.price.metals[spec.metal] || {}).label || spec.metal],
+      ['표면 느낌', R.TEXTURE_LABEL[spec.texture]],
+      ['옆모양', R.PROFILE_LABEL[spec.profile]],
+      ['원석', R.stoneLabel(spec)],
+      ['고정 방법', (spec.stoneType && spec.stoneType !== 'none') ? R.SETTING_LABEL[spec.setting] : '—'],
+      ['도금', (CONFIG.plating[spec.plating || 'none'] || {}).label],
+      ['색 채움', (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label],
       ['각인', spec.engraving || '없음']
     );
     $('spec-body').innerHTML = rows.map(function (r) {

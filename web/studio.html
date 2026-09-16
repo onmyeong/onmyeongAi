@@ -64,7 +64,7 @@
       <!-- 조절 패널 -->
       <aside class="card" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px">
         <div class="field">
-          <label for="c-model">디자인</label>
+          <label for="c-model">반지 디자인</label>
           <select id="c-model"></select>
         </div>
 
@@ -72,7 +72,7 @@
           <legend class="eyebrow" style="margin:0 0 4px">치수</legend>
 
           <div class="field">
-            <label for="c-thickness">두께 (반지 몸통이 두꺼운 정도)</label>
+            <label for="c-thickness">두께 — 반지가 두꺼운 정도</label>
             <div class="slider-row">
               <input type="range" id="c-thickness" min="0.8" max="4.5" step="0.1">
               <output id="o-thickness">2.0mm</output>
@@ -80,7 +80,7 @@
           </div>
 
           <div class="field">
-            <label for="c-width">높이 · 폭 (손가락을 감싸는 너비)</label>
+            <label for="c-width">폭 — 손가락을 감싸는 너비</label>
             <div class="slider-row">
               <input type="range" id="c-width" min="1.5" max="12" step="0.1">
               <output id="o-width">4.0mm</output>
@@ -88,7 +88,7 @@
           </div>
 
           <div class="field">
-            <label for="c-size">호수 (한국 표준)</label>
+            <label for="c-size">호수 — 손가락 굵기</label>
             <div class="slider-row">
               <input type="range" id="c-size" min="1" max="30" step="1">
               <output id="o-size">13호</output>
@@ -103,20 +103,45 @@
 
         <div class="grid grid-2" style="gap:12px">
           <div class="field">
-            <label for="c-texture">표면 마감</label>
+            <label for="c-texture">표면 느낌</label>
             <select id="c-texture"></select>
           </div>
           <div class="field">
-            <label for="c-profile">단면 형태</label>
+            <label for="c-profile">옆에서 본 모양</label>
             <select id="c-profile"></select>
           </div>
+        </div>
+
+        <fieldset style="display:grid;gap:12px">
+          <legend class="eyebrow" style="margin:0 0 4px">원석</legend>
           <div class="field">
-            <label for="c-stone">원석</label>
+            <label for="c-stonetype">어떤 원석을 올릴까요</label>
+            <select id="c-stonetype"></select>
+            <p class="small" id="stone-note" style="margin:2px 0 0"></p>
+          </div>
+          <div class="field is-hidden" id="f-stonesize">
+            <label for="c-stonesize">알 크기</label>
+            <select id="c-stonesize"></select>
+          </div>
+          <div class="field is-hidden" id="f-stone">
+            <label for="c-stone">천연석 고르기</label>
             <select id="c-stone"></select>
           </div>
-          <div class="field">
-            <label for="c-setting">세팅</label>
+          <div class="field is-hidden" id="f-setting">
+            <label for="c-setting">어떻게 고정할까요</label>
             <select id="c-setting"></select>
+          </div>
+        </fieldset>
+
+        <div class="grid grid-2" style="gap:12px">
+          <div class="field">
+            <label for="c-plating">겉면 색 (도금)</label>
+            <select id="c-plating"></select>
+          </div>
+          <div class="field">
+            <label for="c-epoxy">홈에 색 채우기</label>
+            <select id="c-epoxy"></select>
+            <p class="small" id="epoxy-note" style="margin:2px 0 0"></p>
           </div>
         </div>
 

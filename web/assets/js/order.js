@@ -88,21 +88,24 @@
       '작성일 : ' + new Date().toLocaleDateString('ko-KR'),
       ''
     ];
-    if (rec) lines.push('일주      : ' + rec.id + ' (' + rec.hanja + ') · ' + rec.tagline);
+    if (rec) lines.push('일주       : ' + rec.id + ' (' + rec.hanja + ') · ' + ONM.iljuPhrase(rec));
     lines.push(
-      '디자인    : ' + model.name + ' (' + R.FAMILIES[model.family].label + ')',
-      '금속      : ' + (CONFIG.price.metals[spec.metal] || {}).label,
-      '두께      : ' + spec.thickness.toFixed(1) + ' mm',
-      '높이(폭)  : ' + spec.width.toFixed(1) + ' mm',
-      '단면      : ' + R.PROFILE_LABEL[spec.profile],
-      '표면 마감 : ' + R.TEXTURE_LABEL[spec.texture],
-      '원석      : ' + (spec.stone ? spec.stone + ' (' + R.SETTING_LABEL[spec.setting] + ')' : '없음'),
-      '각인      : ' + (spec.engraving || '없음'),
-      '호수      : ' + spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : ''),
-      '수량      : ' + qty + '개',
+      '디자인     : ' + model.name + ' (' + R.FAMILIES[model.family].label + ')',
+      '소재       : ' + (CONFIG.price.metals[spec.metal] || {}).label,
+      '두께       : ' + spec.thickness.toFixed(1) + ' mm',
+      '폭         : ' + spec.width.toFixed(1) + ' mm',
+      '옆모양     : ' + R.PROFILE_LABEL[spec.profile],
+      '표면 느낌  : ' + R.TEXTURE_LABEL[spec.texture],
+      '원석       : ' + R.stoneLabel(spec),
+      '고정 방법  : ' + ((spec.stoneType && spec.stoneType !== 'none') ? R.SETTING_LABEL[spec.setting] : '—'),
+      '도금       : ' + (CONFIG.plating[spec.plating || 'none'] || {}).label,
+      '색 채움    : ' + (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label,
+      '각인       : ' + (spec.engraving || '없음'),
+      '호수       : ' + spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : ''),
+      '수량       : ' + qty + '개',
       '',
-      '예상 금액 : ' + (price ? R.formatKRW(price.total) : '-') + (qty >= 2 ? ' (커플 할인 적용)' : ''),
-      '제작 기간 : ' + CONFIG.order.leadTime
+      '예상 금액  : ' + (price ? R.formatKRW(price.total) : '-') + (qty >= 2 ? ' (커플 할인 적용)' : ''),
+      '제작 기간  : ' + CONFIG.order.leadTime
     );
     var memo = $('o-memo').value.trim();
     if (memo) lines.push('', '요청사항  : ' + memo);
@@ -129,8 +132,7 @@
     box.innerHTML = '<span class="seal-mini">' +
       ONM.zodiacSvg(rec.branch, { label: rec.branchInfo.animal }) + '</span>' +
       '<span><b>' + esc(rec.id) + ' (' + esc(rec.hanja) + ')</b>' +
-      '<br><span class="small">' + esc(rec.branchInfo.animal) + '띠 일주 · ' +
-      esc(rec.tagline) + '</span></span>';
+      '<br><span class="small">' + esc(ONM.iljuPhrase(rec)) + '</span></span>';
     box.classList.remove('is-hidden');
   }
 
@@ -145,11 +147,12 @@
     if (rec) rows.push(['일주', rec.id + ' (' + rec.hanja + ')']);
     rows.push(
       ['디자인', model.name],
-      ['금속', (CONFIG.price.metals[spec.metal] || {}).label],
+      ['소재', (CONFIG.price.metals[spec.metal] || {}).label],
       ['두께', spec.thickness.toFixed(1) + ' mm'],
-      ['높이 · 폭', spec.width.toFixed(1) + ' mm'],
+      ['폭', spec.width.toFixed(1) + ' mm'],
       ['호수', spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : '')],
-      ['원석', spec.stone ? spec.stone : '없음'],
+      ['원석', R.stoneLabel(spec)],
+      ['도금', (CONFIG.plating[spec.plating || 'none'] || {}).label],
       ['수량', qty + '개']
     );
     $('sum-body').innerHTML = rows.map(function (r) {
