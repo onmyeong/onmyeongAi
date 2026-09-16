@@ -114,6 +114,11 @@
   });
 
   /* ───────────── 요약 · 사양서 ───────────── */
+  function organicWord(v) {
+    var n = Number(v) || 0;
+    return n === 0 ? '반듯하게' : n < 0.35 ? '살짝' : n < 0.7 ? '뚜렷하게' : '많이';
+  }
+
   /** 반지 한 개 사양을 사양서 줄로 */
   function sheetBlock(sp, size, title) {
     var model = R.getModel(sp.modelId);
@@ -134,7 +139,11 @@
       '겉면 마감  : ' + (sp.oxidize
         ? CONFIG.oxidize.label
         : (CONFIG.plating[sp.plating || 'none'] || {}).label),
-      '색 채움    : ' + (CONFIG.epoxy.colors[sp.epoxy || ''] || {}).label,
+      '색 채움    : ' + (CONFIG.epoxy.colors[sp.epoxy || ''] || {}).label +
+        (sp.epoxy ? ' · ' + (CONFIG.epoxy.coverage[sp.epoxyCoverage || 'part'] || {}).label : ''),
+      '앞뒤 두께  : ' + sp.thickness.toFixed(1) + ' / ' +
+        (sp.backThickness || sp.thickness).toFixed(1) + ' mm',
+      '굴곡       : ' + organicWord(sp.organic),
       '각인       : ' + (sp.engraving || '없음'),
       '호수       : ' + size + '호'
     );
@@ -193,7 +202,11 @@
       '겉면 마감  : ' + (spec.oxidize
         ? CONFIG.oxidize.label
         : (CONFIG.plating[spec.plating || 'none'] || {}).label),
-      '색 채움    : ' + (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label,
+      '색 채움    : ' + (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label +
+        (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : ''),
+      '앞뒤 두께  : ' + spec.thickness.toFixed(1) + ' / ' +
+        (spec.backThickness || spec.thickness).toFixed(1) + ' mm',
+      '굴곡       : ' + organicWord(spec.organic),
       '각인       : ' + (spec.engraving || '없음'),
       '호수       : ' + spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : ''),
       '수량       : ' + qty + '개',

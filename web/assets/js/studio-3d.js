@@ -32,6 +32,8 @@ function outerAt(profile, v, t, w) {
     case 'step':   return t * (k < 0.5 ? 1 : k < 0.58 ? 1 - (k - 0.5) * 4.5 : 0.64);
     case 'wave':   return t * (0.7 + 0.3 * Math.cos(Math.PI * v / w));
     case 'facet':  return t * (1 - 0.3 * k * k);
+    // 인장(시그넷) — 윗면이 평평한 판. 가장자리만 살짝 떨어뜨려 각을 죽입니다.
+    case 'signet': return t * (k > 0.86 ? 1 - (k - 0.86) * 2.6 : 1);
     default:       return t;
   }
 }
@@ -85,6 +87,35 @@ function bumpFor(s) {
 }
 
 /* ─────────────────── 밴드 지오메트리 ─────────────────── */
+/* 반지를 한 바퀴 도는 동안 두께가 어떻게 달라지는가.
+ *   th = π/2 가 손등 쪽(앞), th = -π/2 가 손바닥 쪽(뒤)입니다.
+ *   앞뒤 두께를 다르게 주면 앞은 도톰하고 뒤는 얇은, 실제 수제 반지의 단차가 납니다.
+ *   organic 은 왁스를 손으로 깎았을 때 남는 불규칙한 굴곡입니다.
+ *   (한 바퀴 돌아와도 이어지도록 cos/sin 을 노이즈 입력으로 씁니다.) */
+function thicknessAt(s, th) {
+  const front = s.thickness;
+  const back = (s.backThickness != null && s.backThickness > 0) ? s.backThickness : front;
+  const mix = 0.5 + 0.5 * Math.sin(th);          // 뒤 0 → 앞 1
+  let t = back + (front - back) * mix;
+
+  const org = Number(s.organic) || 0;
+  if (org > 0) {
+    // 서로 다른 두 주기를 겹쳐 손으로 깎은 듯한 결을 만듭니다
+    const a = valueNoise(Math.cos(th) * 1.7 + 11, Math.sin(th) * 1.7 + 5);
+    const b = valueNoise(Math.cos(th) * 3.3 + 41, Math.sin(th) * 3.3 + 23);
+    t *= 1 + org * 0.42 * ((a - 0.5) * 1.3 + (b - 0.5) * 0.7);
+  }
+  return Math.max(0.6, t);
+}
+
+/* 폭도 함께 흔들려야 왁스카빙처럼 보입니다 (두께만 흔들면 튜브가 울퉁불퉁한 느낌) */
+function widthScaleAt(s, th) {
+  const org = Number(s.organic) || 0;
+  if (org <= 0) return 1;
+  const n = valueNoise(Math.cos(th) * 2.1 + 61, Math.sin(th) * 2.1 + 37);
+  return 1 + org * 0.26 * (n - 0.5) * 2;
+}
+
 function buildBand(s, model) {
   const innerR = R.sizeToInnerDiameter(s.size) / 2;
   const t = s.thickness;
@@ -116,9 +147,12 @@ function buildBand(s, model) {
 
   for (let i = 0; i <= SEG; i++) {
     const th = (i / SEG) * Math.PI * 2;
-    const wScale = 1 - taper * (0.5 - 0.5 * Math.sin(th));
+    // 앞뒤 두께 차이와 손으로 깎은 굴곡을 여기서 함께 반영합니다
+    const tAt = thicknessAt(s, th);
+    const tRatio = tAt / t;
+    const wScale = (1 - taper * (0.5 - 0.5 * Math.sin(th))) * widthScaleAt(s, th);
     // 웨이브는 안쪽으로만 들어가므로 최대 두께는 그대로 유지된다
-    const uScale = 1 - wave * 0.3 * (0.5 + 0.5 * Math.sin(3 * th));
+    const uScale = (1 - wave * 0.3 * (0.5 + 0.5 * Math.sin(3 * th))) * tRatio;
 
     for (let j = 0; j < P; j++) {
       const p = profile[j];
@@ -219,10 +253,24 @@ function buildEpoxyFill(bandGeo, spec) {
     fill[i * 3 + 2] = pos.getZ(i);
   }
 
+  /* 부분만 채우면 반지 한쪽 구간에만 색이 들어갑니다.
+   * 손등 쪽(위)을 가운데로 두고 그 둘레만 덮습니다. */
+  const cov = CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || { ratio: 1 };
+  const half = Math.PI * Math.min(1, cov.ratio);     // 위쪽 기준 좌우로 덮는 각도
+  function inArc(i) {
+    if (cov.ratio >= 1) return true;
+    const x = pos.getX(i), y = pos.getY(i);
+    const ang = Math.atan2(y, x);                    // 위쪽(+Y)이 π/2
+    let d = Math.abs(ang - Math.PI / 2);
+    if (d > Math.PI) d = Math.PI * 2 - d;
+    return d <= half;
+  }
+
   const keep = [];
   for (let f = 0; f < idx.count; f += 3) {
     const a = idx.getX(f), b = idx.getX(f + 1), c = idx.getX(f + 2);
-    if (depth[a] > thr && depth[b] > thr && depth[c] > thr) keep.push(a, b, c);
+    if (depth[a] > thr && depth[b] > thr && depth[c] > thr &&
+        inArc(a) && inArc(b) && inArc(c)) keep.push(a, b, c);
   }
   if (keep.length < 3) return null;
 
@@ -353,20 +401,38 @@ function buildStone(s, group) {
     gem.position.set(0, topR - wellDepth * 0.42, 0);
     group.add(gem);
 
-  } else { // bezel — 금속 테두리가 캐보션 원석을 감싼다
+  } else {
+    /* 캐보션을 올리는 방식 두 가지.
+     *   bezel  테두리 금속이 돌 허리를 한 바퀴 감싸 누릅니다.
+     *   seat   자리를 파고 돌을 심어 접착으로 고정합니다 — 테두리 없이 가장 낮게 앉습니다.
+     * 오벌은 6×8mm 한 규격이라 실제 비율(3:4)로 눌러 그립니다. */
     const oval = s.stoneShape === 'oval';
+    const ov = CONFIG.stones.natural.ovalMm;
+    const sx = oval ? (ov.w / 2) / size : 1;      // 폭 6mm
+    const sz = oval ? (ov.h / 2) / size : 1;      // 길이 8mm
+    const seat = s.setting === 'seat';
+
     const gem = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-    gem.scale.set(oval ? 0.72 : 1, 0.62, oval ? 1.28 : 1);
-    gem.position.set(0, topR - size * 0.08, 0);
+    gem.scale.set(sx, seat ? 0.5 : 0.62, sz);
+    gem.position.set(0, topR - size * (seat ? 0.2 : 0.08), 0);
     group.add(gem);
 
-    const rim = new THREE.Mesh(
-      new THREE.CylinderGeometry(size * 1.12, size * 1.12, size * 0.55, 40, 1, true), metalMat);
-    rim.scale.set(oval ? 0.72 : 1, 1, oval ? 1.28 : 1);
-    rim.position.set(0, topR - size * 0.12, 0);
-    rim.material = metalMat.clone();
-    rim.material.side = THREE.DoubleSide;
-    group.add(rim);
+    if (seat) {
+      // 돌이 앉을 자리 — 얕게 파낸 홈의 벽만 살짝 보입니다
+      const well = new THREE.Mesh(
+        new THREE.CylinderGeometry(size * 1.04, size * 0.94, size * 0.34, 40, 1, true), metalMat.clone());
+      well.material.side = THREE.DoubleSide;
+      well.scale.set(sx, 1, sz);
+      well.position.set(0, topR - size * 0.17, 0);
+      group.add(well);
+    } else {
+      const rim = new THREE.Mesh(
+        new THREE.CylinderGeometry(size * 1.12, size * 1.12, size * 0.55, 40, 1, true), metalMat.clone());
+      rim.material.side = THREE.DoubleSide;
+      rim.scale.set(sx, 1, sz);
+      rim.position.set(0, topR - size * 0.12, 0);
+      group.add(rim);
+    }
   }
 }
 
