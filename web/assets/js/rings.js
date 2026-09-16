@@ -152,7 +152,41 @@
       width: [3, 4.5, 8], thickness: [1.4, 2.0, 3.4], wave: 0.55, twist: 0.4, taper: 0.25, facets: 0,
       elements: ['목', '화'], moods: ['커플', '시그니처'], basePrice: 138000,
       tags: ['화합', '교류', '소통', '다재', '인연', '표현력'],
-      desc: '굵기가 다른 두 선이 엇갈리며 하나로 만나는 구조. 커플링으로 짝을 맞출 때 특히 잘 어울립니다.' }
+      desc: '굵기가 다른 두 선이 엇갈리며 하나로 만나는 구조. 커플링으로 짝을 맞출 때 특히 잘 어울립니다.' },
+
+    /* ── 온명이 실제로 만들어 온 디자인 ───────────────────────────
+     * 사장님이 보내주신 실물 사진을 보고 옮긴 것들입니다. */
+    { id: 'onm-pedestal', name: '대좌', family: 'signature', profile: 'step', texture: 'polish', setting: 'prong',
+      width: [4.5, 6.5, 9], thickness: [1.8, 2.5, 3.4], wave: 0, twist: 0, taper: 0.06, facets: 0,
+      elements: ['금', '토'], moods: ['시그니처', '선물'], basePrice: 152000,
+      tags: ['신념', '책임', '확고함', '품격', '중심', '안정'],
+      preset: { stoneSize: 6.0, stoneShape: 'round' },
+      desc: '넓은 판 가운데를 거울처럼 올리고 양 옆은 무광으로 눌러, 한 줄 광이 손등 위를 지나갑니다. ' +
+        '한쪽 어깨를 한 단 낮춰 그 자리에 원석을 발로 물어 올렸습니다.' },
+
+    { id: 'onm-ridge', name: '능선', family: 'rugged', profile: 'facet', texture: 'diamond', setting: 'none',
+      width: [3.5, 5.5, 9], thickness: [1.8, 2.6, 4.0], wave: 0.18, twist: 0, taper: 0, facets: 9,
+      elements: ['토', '금'], moods: ['커플', '시그니처'], basePrice: 136000,
+      tags: ['인내', '우직', '강인', '개척', '자연스러운 질감', '단단함'],
+      preset: { oxidize: true, organic: 0.45 },
+      desc: '겉면을 불규칙하게 깎아 낸 뒤 유화로 골을 까맣게 눌렀습니다. 솟은 자리만 빛을 받아 ' +
+        '산등성이처럼 능선이 드러납니다. 둘이 나란히 끼면 같은 산의 앞뒤가 됩니다.' },
+
+    { id: 'onm-comb', name: '빗살', family: 'minimal', profile: 'round', texture: 'sandbar', setting: 'flush',
+      width: [2, 3, 4.5], thickness: [1.2, 1.6, 2.4], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '수'], moods: ['데일리', '커플'], basePrice: 99000,
+      tags: ['정제', '정돈', '단정', '섬세', '차분', '꾸준함'],
+      preset: { grain: 'vertical', stoneSize: 1.5 },
+      desc: '가는 밴드에 세로결을 촘촘히 새겨 빗살무늬처럼 둘렀습니다. 한 자리에만 작은 알을 ' +
+        '표면과 같은 높이로 묻어, 매일 껴도 걸리는 데가 없습니다.' },
+
+    { id: 'onm-vine', name: '넝쿨', family: 'organic', profile: 'wave', texture: 'polish', setting: 'seat',
+      width: [3, 4.5, 7], thickness: [1.6, 2.2, 3.2], wave: 0.3, twist: 0, taper: 0.08, facets: 0,
+      elements: ['목', '수'], moods: ['데일리', '선물'], basePrice: 129000,
+      tags: ['유연', '조화', '자연에서 영감', '포용', '섬세', '감성'],
+      preset: { organic: 0.55, stoneShape: 'oval', stoneSize: 6.0 },
+      desc: '녹아 흐르다 굳은 듯한 밴드가 원석을 넝쿨처럼 감아 옵니다. 길쭉한 오벌 캐보션을 ' +
+        '자리를 파고 심어 넣어, 돌이 금속 안에 잠긴 것처럼 앉습니다.' }
   ];
 
   /* ────────────────────── 캔바 원문 → 스타일 해석 ────────────────────── */
@@ -335,18 +369,18 @@
      *   발로 물거나 묻는 자리 → 모이사나이트 2.0mm
      * 천연석 캐보션은 감싸는 방식으로만 물릴 수 있어서 이렇게 나눕니다. */
     var stoneType = 'none';
-    if (model.setting === 'bezel' && stone) stoneType = 'natural';
-    else if (model.setting === 'prong' || model.setting === 'flush') stoneType = 'moissanite';
+    if (model.setting === 'flush') stoneType = 'moissanite';
+    else if (model.setting && model.setting !== 'none' && stone) stoneType = 'natural';
 
-    return {
+    var base = {
       modelId: model.id,
       modelName: model.name,
       family: model.family,
       profile: model.profile,
       texture: model.texture,
-      // 원석마다 물릴 수 있는 방식이 정해져 있습니다
-      //   모이사나이트·큐빅 → 매립(우물) / 천연석 캐보션 → 테두리로 감싸기
-      setting: stoneType === 'none' ? 'none' : settingsFor(stoneType)[0],
+      // 디자인이 정해 둔 물림 방식을 먼저 쓰고, 그 원석에 안 되는 방식이면 가능한 것으로 바꿉니다
+      setting: stoneType === 'none' ? 'none'
+        : (settingsFor(stoneType).indexOf(model.setting) !== -1 ? model.setting : settingsFor(stoneType)[0]),
       width: round1(w),
       thickness: round1(t),
       size: 13,
@@ -367,6 +401,14 @@
       engraving: '',
       ilju: record ? record.id : null
     };
+
+    /* 디자인이 "이건 이렇게 만들어야 그 디자인"이라고 정해 둔 값들.
+     * (예: 능선은 유화를 해야 골이 살고, 넝쿨은 오벌 알이 기본입니다) */
+    if (model.preset) {
+      Object.keys(model.preset).forEach(function (k) { base[k] = model.preset[k]; });
+      if (base.backThickness && base.backThickness > base.thickness) base.backThickness = base.thickness;
+    }
+    return base;
   }
 
   function round1(v) { return Math.round(v * 10) / 10; }

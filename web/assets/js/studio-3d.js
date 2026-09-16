@@ -225,6 +225,34 @@ function buildBand(s, model) {
   return geo;
 }
 
+/* 유화 — 파인 곳만 어둡게.
+ * 정점마다 "얼마나 파였는지"를 이미 들고 있으므로, 그 값으로 정점 색을 눌러 줍니다.
+ * 높은 면은 1(그대로), 가장 깊은 골은 거의 검게. */
+function paintOxidize(geo, spec) {
+  if (!spec.oxidize) return false;
+  const maxCarve = geo.userData.maxCarve || 0;
+  const depth = geo.userData.depth;
+  if (!depth) return false;
+
+  const dark = new THREE.Color(CONFIG.oxidize.color).multiplyScalar(0.35);
+  const colors = new Float32Array(depth.length * 3);
+  const smooth = function (x) { return x * x * (3 - 2 * x); };
+
+  for (let i = 0; i < depth.length; i++) {
+    /* 솟은 면만 다시 갈아 내므로, 위쪽 3할 정도만 은색으로 남고
+     * 그 아래는 빠르게 검어집니다. 매끈한 디자인은 전체가 은은하게 가라앉습니다. */
+    const t = maxCarve > 0.01
+      ? Math.min(1, Math.max(0, depth[i] / maxCarve))
+      : 0.7;
+    const k = smooth(Math.min(1, Math.max(0, (t - 0.28) / 0.42))) * 0.95;
+    colors[i * 3]     = 1 - k + dark.r * k;
+    colors[i * 3 + 1] = 1 - k + dark.g * k;
+    colors[i * 3 + 2] = 1 - k + dark.b * k;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return true;
+}
+
 /* 홈에 색을 채우는 마감(에폭시).
  * 금속에 색이 스며드는 것이 아니라, 파인 홈 안에 수지가 고여 굳는 것입니다.
  * 그래서 색과 금속의 경계가 또렷하고, 표면과 같은 높이로 깎아 내므로 단차가 없습니다.
@@ -306,9 +334,10 @@ const FINISH = {
 
 function metalMaterial(s) {
   const f = FINISH[s.texture] || FINISH.polish;
-  // 도금을 골랐으면 그 색으로, 유화를 골랐으면 검게 태운 색으로 보여야 한다
-  let base = new THREE.Color(R.metalColor(s));
-  if (s.oxidize) base = base.lerp(new THREE.Color(CONFIG.oxidize.color), 0.62);
+  /* 유화는 반지 전체를 까맣게 만드는 것이 아닙니다.
+   * 전체를 태운 뒤 솟은 면만 다시 갈아 내므로, 골은 까맣게 남고 높은 면은 은색으로 돌아옵니다.
+   * 그래서 색은 그대로 두고, 아래 paintOxidize 가 파인 깊이만큼만 어둡게 칠합니다. */
+  const base = new THREE.Color(R.metalColor(s));
   const color = base.multiplyScalar(f.tone);
   return new THREE.MeshPhysicalMaterial({
     color,
@@ -355,19 +384,37 @@ function buildStone(s, group) {
 
   if (s.setting === 'prong') {
     /* 발에 물린 원석은 밴드 위로 솟으므로 베젤보다 한 치수 작게 잡는다.
-     * 아래는 뾰족한 파빌리온, 위는 평평한 크라운 — 실제 커팅 원석의 형태다. */
+     * 천연석은 각을 내지 않은 캐보션이라 둥근 돔으로,
+     * 모이사나이트·큐빅은 면을 낸 알이라 파빌리온+크라운으로 그린다. */
     const gemR = size * 0.76;
     const girdle = topR + gemR * 0.5;           // 원석의 가장 넓은 허리 높이
+    const cab = s.stoneType === 'natural';
 
-    const pavilion = new THREE.Mesh(new THREE.ConeGeometry(gemR, gemR * 1.2, 8), mat);
-    pavilion.position.set(0, girdle - gemR * 0.6, 0);
-    pavilion.rotation.x = Math.PI;               // 뾰족한 쪽이 아래로
-    group.add(pavilion);
+    if (cab) {
+      const oval0 = s.stoneShape === 'oval';
+      const ov0 = CONFIG.stones.natural.ovalMm;
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(gemR, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+      dome.scale.set(oval0 ? (ov0.w / 2) / gemR : 1, 0.72, oval0 ? (ov0.h / 2) / gemR : 1);
+      dome.position.set(0, girdle - gemR * 0.1, 0);
+      group.add(dome);
 
-    const crown = new THREE.Mesh(
-      new THREE.CylinderGeometry(gemR * 0.58, gemR, gemR * 0.44, 8), mat);
-    crown.position.set(0, girdle + gemR * 0.22, 0);
-    group.add(crown);
+      const seatDisc = new THREE.Mesh(
+        new THREE.CylinderGeometry(gemR * 0.96, gemR * 0.9, gemR * 0.5, 36), metalMat);
+      seatDisc.scale.set(oval0 ? (ov0.w / 2) / gemR : 1, 1, oval0 ? (ov0.h / 2) / gemR : 1);
+      seatDisc.position.set(0, girdle - gemR * 0.36, 0);
+      group.add(seatDisc);
+    } else {
+      const pavilion = new THREE.Mesh(new THREE.ConeGeometry(gemR, gemR * 1.2, 8), mat);
+      pavilion.position.set(0, girdle - gemR * 0.6, 0);
+      pavilion.rotation.x = Math.PI;               // 뾰족한 쪽이 아래로
+      group.add(pavilion);
+
+      const crown = new THREE.Mesh(
+        new THREE.CylinderGeometry(gemR * 0.58, gemR, gemR * 0.44, 8), mat);
+      crown.position.set(0, girdle + gemR * 0.22, 0);
+      group.add(crown);
+    }
 
     // 발(프롱)은 원석 허리를 아래에서 물어주는 높이까지만 올라온다
     for (let i = 0; i < 4; i++) {
@@ -559,6 +606,7 @@ function rebuild() {
   ringGroup = new THREE.Group();
   const bandGeo = buildBand(spec, model);
   const bandMat = metalMaterial(spec);
+  if (paintOxidize(bandGeo, spec)) bandMat.vertexColors = true;
   ringGroup.add(new THREE.Mesh(bandGeo, bandMat));
   // 홈에 고여 굳은 수지를 따로 덮는다 (금속에 스며드는 것이 아니다)
   const resin = buildEpoxyFill(bandGeo, spec);
