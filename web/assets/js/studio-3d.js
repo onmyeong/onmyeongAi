@@ -38,15 +38,17 @@ function outerAt(profile, v, t, w) {
   }
 }
 
-/** 단면을 닫힌 폴리곤으로: 안쪽 면 → 바깥 면 */
-function makeProfile(s) {
+/** 단면을 닫힌 폴리곤으로: 안쪽 면 → 바깥 면
+ * steps 를 올리면 면이 촘촘해집니다 — 가는 골을 새길 때만 씁니다. */
+function makeProfile(s, steps) {
+  const n = steps || PROFILE_STEPS;
   const t = s.thickness, w = s.width, hw = w / 2;
   const pts = [];
-  for (let i = 0; i <= PROFILE_STEPS; i++) {
-    pts.push({ u: 0, v: -hw + (w * i) / PROFILE_STEPS, outer: false });
+  for (let i = 0; i <= n; i++) {
+    pts.push({ u: 0, v: -hw + (w * i) / n, outer: false });
   }
-  for (let i = PROFILE_STEPS; i >= 0; i--) {
-    const v = -hw + (w * i) / PROFILE_STEPS;
+  for (let i = n; i >= 0; i--) {
+    const v = -hw + (w * i) / n;
     pts.push({ u: outerAt(s.profile, v, t, w), v, outer: true });
   }
   return pts;
@@ -128,9 +130,9 @@ function engraveOf(s) {
 const EX = R.ENGRAVE_X, EY = R.ENGRAVE_Y;
 const smooth = (x) => x * x * (3 - 2 * x);
 
-/** th = 둘레 각도, vN = 폭 방향 위치(-0.5 ~ 0.5). 돌아오는 값은 0~1 깊이 */
-function engraveAt(s, th, vN) {
-  const g = engraveOf(s);
+/** g = 격자(정점마다 다시 읽지 않도록 밖에서 한 번만 풀어서 넘깁니다),
+ * th = 둘레 각도, vN = 폭 방향 위치(-0.5 ~ 0.5). 돌아오는 값은 0~1 깊이 */
+function engraveAt(g, th, vN) {
   // 둘레는 한 바퀴 이어지고(감싸기), 폭은 양끝에서 멈춥니다
   const x = ((th - Math.PI / 2) / (Math.PI * 2) * EX % EX + EX) % EX;
   const y = Math.max(0, Math.min(EY - 1, (vN + 0.5) * (EY - 1)));
@@ -140,6 +142,52 @@ function engraveAt(s, th, vN) {
   const a = g[y0 * EX + i0], b = g[y0 * EX + i1];
   const c = g[(y0 + 1) * EX + i0], d = g[(y0 + 1) * EX + i1];
   return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy;
+}
+
+/* ── 별 조각 ──
+ * 조각칼로 별을 새기는 마감입니다. 가운데에서 여덟 갈래가 뻗어 나가고,
+ * 긴 네 갈래와 짧은 네 갈래가 번갈아 놓입니다.
+ * 골은 가운데가 가장 깊고 끝으로 갈수록 얕아지는 V자라, 빛을 받으면 반짝입니다.
+ *
+ * th = 둘레 각도, vN = 폭 방향 위치(-0.5~0.5), outerR = 그 자리의 바깥 반지름(mm).
+ * 각도를 호 길이(mm)로 바꿔서 재기 때문에, 호수가 커져도 별 크기는 그대로입니다. */
+function starCutAt(stars, s, th, vN, outerR) {
+  let best = 0;
+  for (let i = 0; i < stars.length; i++) {
+    const st = stars[i];
+    let d = th - st.rad;
+    if (d > Math.PI) d -= Math.PI * 2;
+    else if (d < -Math.PI) d += Math.PI * 2;
+    const dx = d * outerR;            // 둘레 방향 거리 (mm)
+    const dy = vN * s.width;          // 폭 방향 거리 (mm)
+    const reach = st.size * 0.55;
+    if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue;
+
+    const r = Math.hypot(dx, dy);
+    const phi = Math.atan2(dy, dx);
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4;
+      // 긴 갈래와 짧은 갈래가 번갈아 — 사진 속 별처럼 십자가 길게 섭니다
+      const L = (k % 2 === 0) ? st.size * 0.5 : st.size * 0.24;
+      const along = r * Math.cos(phi - a);
+      if (along < 0 || along > L) continue;
+      const perp = Math.abs(r * Math.sin(phi - a));
+      const t = along / L;
+      // 짧은 갈래는 밑동도 그만큼 가늘어야 별이 지저분해지지 않습니다
+      const halfW = st.size * 0.11 * (L / (st.size * 0.5)) * (1 - t * 0.92);
+      if (halfW < 0.004 || perp > halfW) continue;
+      const v = (1 - perp / halfW) * (1 - t * 0.6);
+      if (v > best) best = v;
+    }
+    // 가운데는 조각칼 끝을 세워 콕 찍은 점 — 여기서 빛이 가장 세게 튑니다
+    const eye = st.size * 0.07;
+    if (r < eye) {
+      const k = r / eye;
+      const v = 1 - k * k * 0.4;
+      if (v > best) best = v;
+    }
+  }
+  return best;
 }
 
 function sculptAt(s, th) { return readAt(sculptOf(s, 'sculpt'), th); }
@@ -198,6 +246,7 @@ function signetSwell(th, size) {
   return t * t * (3 - 2 * t);        // 어깨가 부드럽게 솟아오르도록
 }
 const ENGRAVE_DEPTH = 0.3;  // 도안을 가장 깊게 팠을 때의 깊이 (두께 대비)
+const STAR_DEPTH = 0.3;   // 별 조각 한가운데의 깊이 (두께 대비)
 const EPOXY_HALF = 0.075;  // 홈 하나의 폭(반지 폭 대비 절반값) — 실물처럼 가늘게
 const EPOXY_DEPTH = 0.2;   // 홈 깊이 (두께 대비)
 
@@ -214,12 +263,21 @@ function epoxyArc(s, th) {
 function buildBand(s, model) {
   const innerR = R.sizeToInnerDiameter(s.size) / 2;
   const t = s.thickness;
-  const SEG = 320;
-  const profile = makeProfile(s);
+  /* 도안이나 별 조각을 새기면 골이 아주 가늘어서, 면이 성기면 골이 계단처럼 보입니다.
+   * 그럴 때만 면을 촘촘하게 잡습니다 (평소에는 가볍게 돌아갑니다). */
+  const fine = !!s.engrave || !!s.stars;
+  const SEG = fine ? 560 : 320;
+  const profile = makeProfile(s, fine ? 46 : PROFILE_STEPS);
   const P = profile.length;
   const bump = bumpFor(s);
 
-  const hasEngrave = !!s.engrave;
+  // 도안 격자는 한 번만 풀어 둡니다 (정점마다 다시 풀면 눈에 띄게 느려집니다)
+  const engGrid = s.engrave ? engraveOf(s) : null;
+  // 별 조각은 각도를 라디안으로 미리 바꿔 둡니다 (0도 = 손등 쪽 한가운데)
+  const stars = R.starList(s).map((st) => ({
+    rad: Math.PI / 2 + (Number(st.angle) || 0) * Math.PI / 180,
+    size: st.size
+  }));
   const isSignet = s.profile === 'signet';
   const plateSize = Math.max(0.5, Math.min(1.5, Number(s.plateSize) || 1));
   // 판 바깥면이 놓일 높이 — 이 높이에 평평하게 맞춥니다
@@ -305,10 +363,20 @@ function buildBand(s, model) {
         /* 손으로 그린 도안 — 그 자리만 파고 들어갑니다.
          * 파인 깊이는 아래 유화·에폭시가 그대로 읽어 가므로,
          * 새긴 선에 색을 채우거나 까맣게 남길 수 있습니다. */
-        if (hasEngrave) {
-          const e = engraveAt(s, th, profile[j].v / Math.max(0.001, s.width));
+        if (engGrid) {
+          const e = engraveAt(engGrid, th, profile[j].v / Math.max(0.001, s.width));
           if (e > 0.002) {
             const cut = e * ENGRAVE_DEPTH * Math.max(t, 1.2);
+            u -= cut;
+            carved += cut;
+          }
+        }
+        /* 별 조각 — 새긴 골이 깊어 유화를 하면 까맣게 남고,
+         * 광을 내면 골의 면이 빛을 튕겨 반짝입니다. */
+        if (stars.length) {
+          const sv = starCutAt(stars, s, th, profile[j].v / Math.max(0.001, s.width), innerR + u);
+          if (sv > 0.002) {
+            const cut = sv * STAR_DEPTH * Math.max(t, 1.2);
             u -= cut;
             carved += cut;
           }
@@ -824,8 +892,9 @@ const TOOLS = {
   // 아래 둘은 격자 위에 그립니다 — 끄는 방향이 아니라 지나간 자리가 그대로 무늬가 됩니다
   engrave: { grid: true, brush: 1.3, label: '도안 새기기' },
   erase:   { grid: true, brush: 1.7,  label: '도안 지우기', wipe: true },
-  // 반지를 짚으면 그 자리에 알이 놓이고, 놓인 알을 다시 짚으면 빠집니다
-  stone:   { click: true, label: '알 놓기' }
+  // 아래 둘은 짚는 도구입니다 — 짚은 자리에 놓이고, 놓인 것을 다시 짚으면 빠집니다
+  stone:   { click: true, label: '알 놓기' },
+  star:    { click: true, label: '별 조각', star: true }
 };
 const sculptState = { tool: 'push', size: 1, mirror: false };
 
@@ -957,6 +1026,24 @@ function fold(deg) {
   return d > 180 ? d - 360 : d;
 }
 
+/** 짚은 자리에 별을 새기거나, 이미 새긴 별을 지웁니다 */
+function starToggle(angle) {
+  const deg = Math.round(fold((angle - Math.PI / 2) * 180 / Math.PI));
+  const list = R.starList(spec);
+  for (let i = 0; i < list.length; i++) {
+    // 이미 새긴 별을 짚으면 지웁니다 (별 크기만큼을 짚은 범위로 봅니다)
+    if (Math.abs(fold(list[i].angle - deg)) < Math.max(10, list[i].size * 4)) {
+      list.splice(i, 1);
+      spec.stars = R.starWrite(list);
+      return true;
+    }
+  }
+  if (list.length >= 8) return false;
+  list.push({ angle: deg, size: Number(spec.starSize) || 3 });
+  spec.stars = R.starWrite(list);
+  return true;
+}
+
 /** 짚은 자리에 알을 놓거나, 이미 놓인 알을 뺍니다 */
 function stoneToggle(angle) {
   const deg = Math.round(fold((angle - Math.PI / 2) * 180 / Math.PI));
@@ -987,9 +1074,10 @@ function bindSculpt() {
     const tool = TOOLS[sculptState.tool] || TOOLS.push;
     ev.preventDefault();
 
-    // 알 놓기는 끌지 않고 한 번 짚는 도구입니다
+    // 알 놓기와 별 조각은 끌지 않고 한 번 짚는 도구입니다
     if (tool.click) {
-      if (stoneToggle(pt.angle)) studio.changed();
+      const done = tool.star ? starToggle(pt.angle) : stoneToggle(pt.angle);
+      if (done) studio.changed();
       return;
     }
     el.setPointerCapture(ev.pointerId);
@@ -1118,6 +1206,7 @@ try {
     spec._sculpt = spec._sculptW = spec._matte = spec._engrave = null;
     spec.sculpt = spec.sculptW = spec.matte = spec.engrave = '';
     spec.stoneAt = '';
+    spec.stars = '';
     studio.changed();
   };
   studio.sculptState = sculptState;

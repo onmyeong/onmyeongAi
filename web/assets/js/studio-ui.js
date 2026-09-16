@@ -394,7 +394,8 @@
       matte:  '끄는 자리를 무광으로 칠합니다. 아래로 끌면 다시 광이 납니다.',
       engrave: '반지 위에 그대로 선을 그으면 그 자리가 파여 무늬가 됩니다. 유화나 에폭시를 고르면 새긴 선에 색이 들어갑니다.',
       erase:  '잘못 새긴 자리를 문질러 지웁니다.',
-      stone:  '반지를 짚으면 그 자리에 알이 놓이고, 놓인 알을 다시 짚으면 빠집니다.'
+      stone:  '반지를 짚으면 그 자리에 알이 놓이고, 놓인 알을 다시 짚으면 빠집니다.',
+      star:   '반지를 짚으면 그 자리에 별이 새겨집니다. 새긴 별을 다시 짚으면 지워집니다.'
     };
 
     function tool() {
@@ -426,7 +427,9 @@
       box.classList.toggle('is-hidden', !on);
       var t = tool();
       hint.textContent = (HINTS[t] || '') +
-        (t === 'stone' ? '' : ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.');
+        (t === 'stone' || t === 'star' ? '' : ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.');
+      // 별 크기 조절칸은 별 조각을 고른 동안에만 꺼냅니다
+      $('f-starsize').classList.toggle('is-hidden', t !== 'star');
       clear.classList.toggle('is-hidden', !R.hasSculpt(spec) && !on);
     }
 
@@ -464,6 +467,11 @@
 
       $('c-mirror').addEventListener('change', function () {
         studio.setSculptMirror(this.checked);
+      });
+
+      $('c-starsize').addEventListener('input', function () {
+        spec.starSize = parseFloat(this.value) || 3;
+        $('o-starsize').textContent = spec.starSize.toFixed(1) + ' mm';
       });
 
       studio.onChange(function () {
@@ -673,6 +681,8 @@
     if (spec.matte) bits.push('부분 무광');
     if (spec.engrave) bits.push('도안 새김');
     if (spec.stoneAt) bits.push('알 자리 지정');
+    var st = R.starList(spec);
+    if (st.length) bits.push('별 조각 ' + st.length + '개');
     return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
   }
 
