@@ -114,6 +114,14 @@
   });
 
   /* ───────────── 요약 · 사양서 ───────────── */
+  function handNote(sp) {
+    var bits = [];
+    if (sp.sculpt) bits.push('두께');
+    if (sp.sculptW) bits.push('폭');
+    if (sp.matte) bits.push('부분 무광');
+    return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
+  }
+
   function organicWord(v) {
     var n = Number(v) || 0;
     return n === 0 ? '반듯하게' : n < 0.35 ? '살짝' : n < 0.7 ? '뚜렷하게' : '많이';
@@ -143,7 +151,7 @@
         (sp.epoxy ? ' · ' + (CONFIG.epoxy.coverage[sp.epoxyCoverage || 'part'] || {}).label : ''),
       '앞뒤 두께  : ' + sp.thickness.toFixed(1) + ' / ' +
         (sp.backThickness || sp.thickness).toFixed(1) + ' mm',
-      '굴곡       : ' + organicWord(sp.organic) + (sp.sculpt ? ' · 손으로 다듬음' : ''),
+      '굴곡       : ' + organicWord(sp.organic) + handNote(sp),
       '돌 높이    : ' + ((sp.stoneType && sp.stoneType !== 'none')
         ? (Number(sp.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),
       '각인       : ' + (sp.engraving || '없음'),
@@ -208,7 +216,7 @@
         (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : ''),
       '앞뒤 두께  : ' + spec.thickness.toFixed(1) + ' / ' +
         (spec.backThickness || spec.thickness).toFixed(1) + ' mm',
-      '굴곡       : ' + organicWord(spec.organic) + (spec.sculpt ? ' · 손으로 다듬음' : ''),
+      '굴곡       : ' + organicWord(spec.organic) + handNote(spec),
       '돌 높이    : ' + ((spec.stoneType && spec.stoneType !== 'none')
         ? (Number(spec.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),
       '각인       : ' + (spec.engraving || '없음'),

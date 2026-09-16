@@ -176,6 +176,8 @@
     }
     $('epoxy-note').textContent = note;
     $('f-epoxycov').classList.toggle('is-hidden', !spec.epoxy);
+    $('f-epoxylines').classList.toggle('is-hidden', !spec.epoxy);
+    $('c-epoxylines').value = String(spec.epoxyLines || 1);
   }
 
   /* 고른 원석에 따라 필요한 칸만 남기고, 고를 수 있는 고정 방법도 추려 준다.
@@ -191,6 +193,9 @@
     $('f-cubic').classList.toggle('is-hidden', type !== 'cubic');
     $('f-stoneheight').classList.toggle('is-hidden', !has);
     $('c-stoneheight').value = spec.stoneHeight || 0;
+    $('f-stoneplace').classList.toggle('is-hidden', !has);
+    $('c-stonecount').value = String(spec.stoneCount || 1);
+    $('c-stoneangle').value = spec.stoneAngle || 0;
     /* 물림 방식 — 천연석만 세 가지 중에 고릅니다.
      * 모이사나이트와 컬러큐빅은 매립(우물) 한 가지뿐이라 고를 것이 없습니다. */
     var allowed = R.settingsFor(type);
@@ -284,6 +289,10 @@
     $('o-organic').textContent = org === 0 ? '반듯하게'
       : org < 0.35 ? '살짝' : org < 0.7 ? '뚜렷하게' : '많이';
 
+    var ang = Number(spec.stoneAngle) || 0;
+    $('o-stoneangle').textContent = ang === 0 ? '손등 쪽 가운데'
+      : (ang > 0 ? '오른쪽 ' : '왼쪽 ') + Math.abs(ang) + '°';
+
     var lift = Number(spec.stoneHeight) || 0;
     $('o-stoneheight').textContent = (lift > 0 ? '+' : '') + lift.toFixed(1) + 'mm' +
       (Math.abs(lift) < 0.05 ? ' (기본)' : lift < 0 ? ' (낮게)' : ' (높게)');
@@ -328,21 +337,51 @@
     studio.changed();
   });
 
+  $('c-stoneangle').addEventListener('input', function () {
+    spec.stoneAngle = parseFloat(this.value);
+    setOutputs();
+    studio.changed();
+  });
+
+  $('c-stonecount').addEventListener('change', function () {
+    spec.stoneCount = parseInt(this.value, 10) || 1;
+    studio.changed();
+  });
+
+  $('c-epoxylines').addEventListener('change', function () {
+    spec.epoxyLines = parseInt(this.value, 10) || 1;
+    studio.changed();
+  });
+
   /* ───────────── 손으로 다듬기 ─────────────
    * 3D가 떠 있을 때만 쓸 수 있습니다. 켜면 화면 돌리기가 잠깐 멈추고,
    * 반지 위에서 위아래로 끌면 그 자리가 두꺼워지거나 얇아집니다. */
+  /* ───────────── 손으로 다듬기 ─────────────
+   * 3D가 떠 있을 때만 쓸 수 있습니다. 켜면 화면 돌리기가 잠깐 멈추고,
+   * 고른 도구에 따라 반지 위에서 끌면 두께·폭·각·무광이 바뀝니다. */
   (function sculptButtons() {
-    var toggle = $('sculpt-toggle'), clear = $('sculpt-clear'), hint = $('sculpt-hint');
+    var toggle = $('sculpt-toggle'), clear = $('sculpt-clear');
+    var box = $('sculpt-box'), hint = $('sculpt-hint');
+
+    var HINTS = {
+      push:   '위로 끌면 그 자리가 도톰해지고, 아래로 끌면 얇아집니다.',
+      wide:   '위로 끌면 그 자리가 넓어지고, 아래로 끌면 좁아집니다.',
+      chisel: '좁은 붓으로 깊게 깎아 각을 세웁니다. 어느 쪽으로 끌든 파내기만 합니다.',
+      matte:  '끄는 자리를 무광으로 칠합니다. 아래로 끌면 다시 광이 납니다.'
+    };
+
+    function tool() {
+      var on = $('sculpt-tools').querySelector('[aria-pressed="true"]');
+      return on ? on.getAttribute('data-tool') : 'push';
+    }
 
     function refresh(on) {
       toggle.setAttribute('aria-pressed', String(on));
       toggle.textContent = on ? '다듬기 끝내기' : '손으로 다듬기';
       toggle.classList.toggle('btn-primary', on);
-      hint.textContent = on
-        ? '반지 위에서 위로 끌면 그 자리가 두꺼워지고, 아래로 끌면 얇아집니다. 끌면서 옆으로 움직이면 붓처럼 이어집니다. 끝내면 다시 화면을 돌릴 수 있습니다.'
-        : '';
-      hint.classList.toggle('is-hidden', !on);
-      clear.classList.toggle('is-hidden', !spec.sculpt && !on);
+      box.classList.toggle('is-hidden', !on);
+      hint.textContent = (HINTS[tool()] || '') + ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.';
+      clear.classList.toggle('is-hidden', !R.hasSculpt(spec) && !on);
     }
 
     // 3D가 준비되면 버튼을 꺼내 줍니다
@@ -355,12 +394,35 @@
       toggle.addEventListener('click', function () {
         refresh(studio.setSculptMode(toggle.getAttribute('aria-pressed') !== 'true'));
       });
+
       clear.addEventListener('click', function () {
         studio.clearSculpt();
         refresh(toggle.getAttribute('aria-pressed') === 'true');
       });
+
+      $('sculpt-tools').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-tool]');
+        if (!btn) return;
+        Array.prototype.forEach.call(this.querySelectorAll('[data-tool]'), function (x) {
+          x.setAttribute('aria-pressed', String(x === btn));
+        });
+        studio.setSculptTool(btn.getAttribute('data-tool'));
+        refresh(true);
+      });
+
+      $('c-brush').addEventListener('input', function () {
+        var v = parseFloat(this.value);
+        studio.setSculptSize(v);
+        $('o-brush').textContent = v < 0.8 ? '가늘게' : v > 1.5 ? '넓게' : '보통';
+      });
+
+      $('c-mirror').addEventListener('change', function () {
+        studio.setSculptMirror(this.checked);
+      });
+
       studio.onChange(function () {
-        clear.classList.toggle('is-hidden', !spec.sculpt && toggle.getAttribute('aria-pressed') !== 'true');
+        clear.classList.toggle('is-hidden',
+          !R.hasSculpt(spec) && toggle.getAttribute('aria-pressed') !== 'true');
       });
     }, 200);
     setTimeout(function () { clearInterval(wait); }, 12000);
@@ -556,6 +618,15 @@
     }
   }
 
+  /** 손으로 손댄 항목을 한 줄로 */
+  function sculptNote() {
+    var bits = [];
+    if (spec.sculpt) bits.push('두께');
+    if (spec.sculptW) bits.push('폭');
+    if (spec.matte) bits.push('부분 무광');
+    return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
+  }
+
   function syncPanel() {
     var model = R.getModel(spec.modelId);
     var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
@@ -577,7 +648,7 @@
         : (CONFIG.plating[spec.plating || 'none'] || {}).label],
       ['앞뒤 두께', spec.thickness.toFixed(1) + ' / ' +
         (spec.backThickness || spec.thickness).toFixed(1) + ' mm'],
-      ['굴곡', $('o-organic').textContent + (spec.sculpt ? ' · 손으로 다듬음' : '')],
+      ['굴곡', $('o-organic').textContent + sculptNote()],
       ['색 채움', (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label +
         (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : '')],
       ['각인', spec.engraving || '없음']
