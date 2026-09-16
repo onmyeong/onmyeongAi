@@ -218,6 +218,10 @@ fieldset { border: 0; padding: 0; margin: 0; }
 }
 .ilju-seal > .zodiac-img { width: 62%; height: 62%; }
 .seal-mini > .zodiac-img { width: 68%; height: 68%; }
+/* 색 동그라미 안에서는 아이콘이 언제나 흰색입니다.
+ * 바깥 글자색이 흘러 들어와 흐려지지 않도록 여기서 못을 박아 둡니다. */
+.ilju-seal > .zodiac-img, .ilju-seal > svg,
+.seal-mini > .zodiac-img, .seal-mini > svg { color: #fff; }
 
 /* ── 성향 / 원석 ─────────────────────────────────────── */
 .trait { border-left: 3px solid var(--accent); padding-left: 15px; }
@@ -365,8 +369,8 @@ input[type="range"]::-moz-range-thumb {
 .couple-hero { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; }
 .couple-side { text-align: center; }
 .couple-side .ilju-seal { margin-inline: auto; }
-.couple-side b { display: block; font-family: var(--serif); font-size: 1.1rem; color: var(--ink); margin-top: 12px; }
-.couple-side span { display: block; font-size: .82rem; color: var(--muted); }
+.couple-side > b { display: block; font-family: var(--serif); font-size: 1.1rem; color: var(--ink); margin-top: 12px; }
+.couple-side > span { display: block; font-size: .82rem; color: var(--muted); }
 
 .score-ring {
   --v: 0;
@@ -424,3 +428,38 @@ input[type="range"]::-moz-range-thumb {
 }
 .stone-peek { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .stone-peek:empty { display: none; }
+
+/* ── 궁합: 세 갈래 점수 막대 ────────────────────────── */
+.axis-list { display: grid; gap: 12px; max-width: 420px; margin: 20px auto 0; text-align: left; }
+.axis-row > b { display: block; font-size: .84rem; color: var(--ink); font-weight: 600; }
+.axis-row > span { display: block; font-size: .76rem; color: var(--muted); margin-bottom: 6px; }
+.axis-bar { height: 8px; border-radius: 99px; background: var(--line-soft); overflow: hidden; }
+.axis-bar > i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.axis-row .num { float: right; font-size: .8rem; color: var(--accent-ink); font-weight: 600; }
+
+/* ── 궁합: 케미 포인트 카드 ─────────────────────────── */
+.chem-card { border-top: 3px solid var(--accent); }
+.chem-card .eyebrow { margin-bottom: 4px; }
+.chem-card h3 { margin: 0 0 8px; color: var(--ink); }
+.chem-card p { margin: 0; font-size: .92rem; }
+
+/* ── 궁합: 십신 두 줄 ───────────────────────────────── */
+.sipsin-row + .sipsin-row { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.sipsin-row b { display: block; color: var(--accent-ink); font-size: .92rem; }
+.sipsin-row .who { font-size: .78rem; color: var(--muted); }
+.sipsin-row p { margin: 4px 0 0; font-size: .9rem; }
+
+/* ── 커플링 단계 안내 ───────────────────────────────── */
+.couple-step { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.couple-step b { color: var(--ink); font-size: 1rem; }
+.step-dots { display: flex; gap: 8px; flex: 0 0 auto; }
+.step-dots span {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font-size: .8rem; font-weight: 600;
+  background: var(--cream-2); color: var(--muted); border: 1.5px solid var(--line);
+}
+.step-dots span.on { background: var(--green); color: #fff; border-color: transparent; }
+.step-dots span.did { background: var(--green-tint); color: var(--green-deep); border-color: var(--green-soft); }
+.step-done { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.step-done .preview-box { width: 74px; height: 74px; padding: 6px; margin: 0; }
+.step-done .small { max-width: 16ch; }

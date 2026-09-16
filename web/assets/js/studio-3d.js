@@ -191,24 +191,58 @@ function buildBand(s, model) {
   return geo;
 }
 
-/** 홈에 색을 채우는 마감 — 파인 곳일수록 그 색이 짙게 남는다 */
-function paintEpoxy(geo, spec) {
+/* 홈에 색을 채우는 마감(에폭시).
+ * 금속에 색이 스며드는 것이 아니라, 파인 홈 안에 수지가 고여 굳는 것입니다.
+ * 그래서 색과 금속의 경계가 또렷하고, 표면과 같은 높이로 깎아 내므로 단차가 없습니다.
+ *
+ * 만드는 방법 — 홈이 일정 깊이 이상인 자리만 골라,
+ * 그 자리의 "파기 전 표면 높이"에 딱 맞춘 뚜껑을 따로 만들어 덮습니다.
+ * (파임은 반지 중심에서 바깥으로 곧게 들어가므로, 반지름만 되돌리면 정확히 원래 면입니다.)
+ */
+function buildEpoxyFill(bandGeo, spec) {
   const epoxy = spec.epoxy && CONFIG.epoxy.colors[spec.epoxy];
-  const maxCarve = geo.userData.maxCarve || 0;
-  if (!epoxy || !epoxy.color || maxCarve < 0.01) return false;
+  const maxCarve = bandGeo.userData.maxCarve || 0;
+  if (!epoxy || !epoxy.color || maxCarve < 0.02) return null;
 
-  const depth = geo.userData.depth;
-  const resin = new THREE.Color(epoxy.color);
-  const colors = new Float32Array(depth.length * 3);
-  for (let i = 0; i < depth.length; i++) {
-    // 절반 이상 파인 곳부터 색이 차오르게
-    const t = Math.min(1, Math.max(0, (depth[i] / maxCarve - 0.35) / 0.65));
-    colors[i * 3] = 1 - t + resin.r * t;
-    colors[i * 3 + 1] = 1 - t + resin.g * t;
-    colors[i * 3 + 2] = 1 - t + resin.b * t;
+  const depth = bandGeo.userData.depth;
+  const pos = bandGeo.attributes.position;
+  const idx = bandGeo.getIndex();
+  const thr = maxCarve * 0.42;          // 이보다 얕은 곳은 수지가 고이지 않습니다
+
+  const fill = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i);
+    const r = Math.hypot(x, y);
+    const k = r > 1e-6 ? (r + depth[i]) / r : 1;
+    fill[i * 3] = x * k;
+    fill[i * 3 + 1] = y * k;
+    fill[i * 3 + 2] = pos.getZ(i);
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  return true;
+
+  const keep = [];
+  for (let f = 0; f < idx.count; f += 3) {
+    const a = idx.getX(f), b = idx.getX(f + 1), c = idx.getX(f + 2);
+    if (depth[a] > thr && depth[b] > thr && depth[c] > thr) keep.push(a, b, c);
+  }
+  if (keep.length < 3) return null;
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(fill, 3));
+  geo.setIndex(keep);
+  geo.computeVertexNormals();
+
+  // 수지는 금속이 아니라 유리질에 가깝습니다 — 반사는 겉면에서만 납니다
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(epoxy.color),
+    metalness: 0,
+    roughness: 0.14,
+    clearcoat: 1,
+    clearcoatRoughness: 0.05,
+    envMapIntensity: 0.7
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
 }
 
 /* ─────────────────── 재질 ─────────────────── */
@@ -296,55 +330,95 @@ function buildStone(s, group) {
       group.add(prong);
     }
   } else if (s.setting === 'flush') {
-    // 표면과 거의 같은 높이로 묻는 세팅 — 낮고 완만한 돔
-    const gem = new THREE.Mesh(new THREE.SphereGeometry(size * 0.8, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-    gem.scale.y = 0.34;
-    gem.position.set(0, topR - size * 0.04, 0);
+    /* 매립(우물) 세팅 — 표면에 우물을 파고 알을 그 안에 앉힌 뒤
+     * 둘레 금속을 알 쪽으로 밀어 덮습니다. 알 윗면이 반지 표면과 거의 같은 높이라
+     * 손에 걸리지 않습니다. 그래서 여기서는
+     *   (1) 살짝 꺼진 우물 벽  (2) 그 안에 앉은 낮은 알  두 가지를 그립니다. */
+    const gemR = size / 2 > 0 ? size : 0.5;
+    const wellR = gemR * 1.34;
+    const wellDepth = gemR * 0.7;
+
+    // 우물 벽 — 위가 넓고 아래가 좁은 깔때기
+    const well = new THREE.Mesh(
+      new THREE.CylinderGeometry(wellR, gemR * 0.92, wellDepth, 40, 1, true), metalMat);
+    well.position.set(0, topR - wellDepth / 2, 0);
+    well.material = metalMat.clone();
+    well.material.side = THREE.DoubleSide;
+    group.add(well);
+
+    // 알 — 우물 안에 앉아 윗면만 살짝 보입니다
+    const gem = new THREE.Mesh(
+      new THREE.SphereGeometry(gemR, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+    gem.scale.y = 0.42;
+    gem.position.set(0, topR - wellDepth * 0.42, 0);
     group.add(gem);
-  } else { // bezel — 금속 테두리가 카보숑 원석을 감싼다
+
+  } else { // bezel — 금속 테두리가 캐보션 원석을 감싼다
+    const oval = s.stoneShape === 'oval';
     const gem = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-    gem.scale.y = 0.62;
+    gem.scale.set(oval ? 0.72 : 1, 0.62, oval ? 1.28 : 1);
     gem.position.set(0, topR - size * 0.08, 0);
     group.add(gem);
+
     const rim = new THREE.Mesh(
       new THREE.CylinderGeometry(size * 1.12, size * 1.12, size * 0.55, 40, 1, true), metalMat);
+    rim.scale.set(oval ? 0.72 : 1, 1, oval ? 1.28 : 1);
     rim.position.set(0, topR - size * 0.12, 0);
+    rim.material = metalMat.clone();
+    rim.material.side = THREE.DoubleSide;
     group.add(rim);
   }
 }
 
 /* ─────────────────── 촬영용 환경 ───────────────────
- * 금속은 결국 "주변에 무엇이 비치는가"로 보입니다.
- * 밝은 흰 방을 비추면 은반지가 하얗게 날아가 버리므로,
- * 실제 주얼리 촬영처럼 어두운 박스 안에 조명판 몇 개를 세워 둡니다. */
-function studioEnvironment() {
-  const env = new THREE.Scene();
+ * 금속은 주변을 그대로 비춥니다.
+ * 조명판을 네모로 띄워 두면 그 모서리가 반지 표면에 검고 흰 띠로 그대로 찍힙니다.
+ * (실제 촬영장에서 소프트박스에 천을 씌우는 이유와 같습니다.)
+ * 그래서 사방을 하나의 부드러운 그라데이션으로 만들고, 빛도 가장자리가
+ * 흐릿한 덩어리로만 얹습니다. 이렇게 하면 반사가 띠 없이 매끄럽게 흐릅니다. */
+function softBlob(x, cx, cy, rx, ry, color, alpha) {
+  const r = Math.max(rx, ry);
+  const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, color);
+  g.addColorStop(0.55, color);
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.save();
+  x.globalAlpha = alpha;
+  x.globalCompositeOperation = 'lighter';
+  x.translate(cx, cy); x.scale(1, ry / rx); x.translate(-cx, -cy);
+  x.fillStyle = g;
+  x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  x.restore();
+}
 
-  // 은은 주변을 그대로 비추므로, 사방을 중간 톤으로 두어야
-  // 밝은 크림 배경 위에서도 반지 몸통이 또렷하게 보인다.
-  const box = new THREE.Mesh(
-    new THREE.BoxGeometry(80, 80, 80),
-    new THREE.MeshBasicMaterial({ color: 0x6d675d, side: THREE.BackSide })
-  );
-  env.add(box);
+function studioEnvTexture() {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 512;
+  const x = c.getContext('2d');
 
-  const panel = (w, h, color, gain, pos, rot) => {
-    const m = new THREE.Mesh(
-      new THREE.PlaneGeometry(w, h),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(gain) })
-    );
-    m.position.set(pos[0], pos[1], pos[2]);
-    if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
-    env.add(m);
-  };
+  // 위는 환하고 아래로 갈수록 차분해지는 하늘 — 반지 위아래 명암을 만들어 줍니다
+  /* 위는 환하고 아래로 갈수록 어두워지는 하늘.
+   * 은이 은처럼 보이려면 이 명암 차이가 충분히 커야 합니다.
+   * 차이가 작으면 흰 플라스틱처럼 납작해 보입니다. */
+  const g = x.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0.00, '#ffffff');
+  g.addColorStop(0.24, '#f2ece1');
+  g.addColorStop(0.46, '#a9a297');
+  g.addColorStop(0.62, '#5d5852');
+  g.addColorStop(0.82, '#35322e');
+  g.addColorStop(1.00, '#26241f');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 1024, 512);
 
-  panel(40, 18, 0xffffff, 6.5, [0, 32, 6], [Math.PI / 2, 0, 0]);        // 위쪽 메인 조명
-  panel(22, 34, 0xfff3e2, 3.2, [-34, 4, 6], [0, Math.PI / 2, 0]);       // 왼쪽 따뜻한 보조광
-  panel(16, 30, 0xe4edf6, 2.0, [34, -2, -6], [0, -Math.PI / 2, 0]);     // 오른쪽 차가운 보조광
-  panel(30, 14, 0xfff8ec, 1.8, [0, -30, 2], [-Math.PI / 2, 0, 0]);      // 바닥 반사판 (따뜻한 바운스)
-  panel(26, 20, 0xffffff, 1.1, [0, 2, -34], [0, 0, 0]);                 // 뒤쪽 분리광
+  // 가장자리가 흐릿한 빛덩어리 — 모서리가 없으니 띠도 생기지 않습니다
+  softBlob(x, 300, 100, 340, 160, '#ffffff', 0.9);
+  softBlob(x, 790, 170, 250, 130, '#fff3e2', 0.5);
+  softBlob(x, 540, 470, 420, 90, '#fff8ec', 0.3);
 
-  return env;
+  const tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 /* ─────────────────── 씬 ─────────────────── */
@@ -364,7 +438,9 @@ function initScene() {
 
   scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(studioEnvironment(), 0.03).texture;
+  const envTex = studioEnvTexture();
+  scene.environment = pmrem.fromEquirectangular(envTex).texture;
+  envTex.dispose();
 
   camera = new THREE.PerspectiveCamera(34, stage.clientWidth / stage.clientHeight, 1, 500);
   camera.position.copy(DEFAULT_CAM);
@@ -417,9 +493,10 @@ function rebuild() {
   ringGroup = new THREE.Group();
   const bandGeo = buildBand(spec, model);
   const bandMat = metalMaterial(spec);
-  // 홈에 색을 채우는 마감은 파인 자리에만 색이 남는다 (띠를 두르는 것이 아니다)
-  if (paintEpoxy(bandGeo, spec)) bandMat.vertexColors = true;
   ringGroup.add(new THREE.Mesh(bandGeo, bandMat));
+  // 홈에 고여 굳은 수지를 따로 덮는다 (금속에 스며드는 것이 아니다)
+  const resin = buildEpoxyFill(bandGeo, spec);
+  if (resin) ringGroup.add(resin);
 
   buildStone(spec, ringGroup);
   ringGroup.rotation.x = -0.12;

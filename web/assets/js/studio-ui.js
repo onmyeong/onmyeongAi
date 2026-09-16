@@ -16,6 +16,34 @@
   var spec = R.specFromQuery();
   spec.quantity = spec.quantity || 1;
 
+  /* ───────────── 커플링: 한 사람씩 차례로 ─────────────
+   * 두 사람 반지를 한 화면에 욱여넣으면 뭘 만지는지 헷갈립니다.
+   * 그래서 첫 번째 분 반지를 먼저 맞추고, 그 다음 화면에서 두 번째 분 반지를 맞춘 뒤
+   * 마지막에 둘을 함께 주문서로 넘깁니다.
+   * 앞 단계에서 정한 사양은 주소(a=…)에 실어 그대로 들고 다닙니다. */
+  var Q = new URLSearchParams(location.search);
+  var couple = {
+    on: Q.get('couple') === '1',
+    step: Q.get('step') === 'b' ? 'b' : 'a',
+    // URLSearchParams 가 이미 한 겹 풀어 주므로 여기 담긴 값은 "생" 질의문자열입니다.
+    // 다시 주소에 실을 때는 반드시 한 겹 싸야 안쪽 & 가 바깥으로 새지 않습니다.
+    rawA: Q.get('a') || '',                     // 첫 번째 분이 이미 정한 사양
+    iljuB: Q.get('iljuB') || ''                 // 두 번째 분의 일주
+  };
+  function pack(sp) { return encodeURIComponent(R.specToQuery(sp)); }
+  function packRaw(raw) { return encodeURIComponent(raw); }
+  var specA = couple.on && couple.step === 'b' && couple.rawA
+    ? R.specFromQuery(couple.rawA) : null;
+
+  /** 이 단계가 누구의 반지인지 */
+  function personOf(which) {
+    var id = which === 'a'
+      ? (specA ? specA.ilju : spec.ilju)
+      : (couple.step === 'b' ? spec.ilju : couple.iljuB);
+    var rec = id && ONM.ILJU ? ONM.ILJU[id] : null;
+    return rec ? rec.id + ' (' + rec.hanja + ')' : (which === 'a' ? '첫 번째 분' : '두 번째 분');
+  }
+
   var listeners = [];
   var studio = ONM.studio = {
     spec: spec,
@@ -61,10 +89,7 @@
       ['cubic', '컬러큐빅 — 색이 있는 알']
     ], spec.stoneType || 'none');
 
-    // 모이사나이트 알 크기
-    fillSelect($('c-stonesize'), CONFIG.stones.moissanite.sizes.map(function (z) {
-      return [String(z.mm), z.label + ' — ' + z.hint + ' (+' + z.price.toLocaleString('ko-KR') + '원)'];
-    }), String(Number(spec.stoneSize) || 2));
+    fillSelect($('c-stoneshape'), pairs(CONFIG.stones.natural.shapes), spec.stoneShape || 'round');
 
     // 천연석 — 내 일주 추천을 위로
     var rec = spec.ilju && ONM.ILJU[spec.ilju];
@@ -140,9 +165,10 @@
     var note = '';
     if (spec.epoxy && !hasGroove) {
       note = '이 디자인은 표면이 매끈해서 채울 홈이 거의 없습니다. ' +
-        '결이 있는 마감(망치 자국 · 모래 · 바위)이나 비틀린 디자인에서 색이 또렷하게 남습니다.';
+        '다이아 텍스쳐나 사포바처럼 결이 깊은 마감, 또는 비틀린 디자인이라야 색이 고입니다.';
     } else if (spec.epoxy) {
-      note = '파인 결을 따라 색이 남습니다.';
+      note = '파인 홈 안에 수지를 부어 굳힌 뒤 표면과 같은 높이로 깎아 냅니다. ' +
+        '금속에 스며드는 것이 아니라 홈에 잠기는 것이라 경계가 또렷하고, 만졌을 때 단차가 없습니다.';
     }
     $('epoxy-note').textContent = note;
   }
@@ -153,18 +179,24 @@
     var type = spec.stoneType || 'none';
     var has = type !== 'none';
 
-    // 알 크기는 모이사나이트와 컬러큐빅이 고를 수 있습니다
-    $('f-stonesize').classList.toggle('is-hidden', type !== 'moissanite' && type !== 'cubic');
+    // 세 종류 모두 크기를 고릅니다. 값은 크기로 정해집니다.
+    $('f-stonesize').classList.toggle('is-hidden', !has);
     $('f-stone').classList.toggle('is-hidden', type !== 'natural');
+    $('f-stoneshape').classList.toggle('is-hidden', type !== 'natural');
     $('f-cubic').classList.toggle('is-hidden', type !== 'cubic');
-    $('f-setting').classList.toggle('is-hidden', !has);
+    // 고정 방법은 원석마다 하나로 정해져 있어 고를 것이 없습니다 — 사양표에만 남깁니다
+    $('f-setting').classList.add('is-hidden');
 
-    if (type === 'moissanite' || type === 'cubic') {
+    if (has) {
       var kind = CONFIG.stones[type];
+      var sizes = kind.sizes.map(function (z) { return z.mm; });
+      if (sizes.indexOf(Number(spec.stoneSize)) === -1) {
+        spec.stoneSize = sizes[Math.min(1, sizes.length - 1)];
+      }
       fillSelect($('c-stonesize'), kind.sizes.map(function (z) {
         return [String(z.mm), z.label + ' — ' + z.hint +
           (z.price ? ' (+' + z.price.toLocaleString('ko-KR') + '원)' : '')];
-      }), String(Number(spec.stoneSize) || 2));
+      }), String(spec.stoneSize));
     }
 
     var note = (CONFIG.stones[type] || {}).note || '';
@@ -175,10 +207,7 @@
     refreshCubicPeek();
 
     if (!has) { spec.setting = 'none'; return; }
-
-    var allowed = R.settingsFor(type);
-    if (allowed.indexOf(spec.setting) === -1) spec.setting = allowed[0];
-    fillSelect($('c-setting'), allowed.map(function (k) { return [k, R.SETTING_LABEL[k]]; }), spec.setting);
+    spec.setting = R.settingsFor(type)[0];
   }
 
   /* 고른 천연석이 실제로 어떤 알인지 옆에 바로 보여 준다 */
@@ -187,8 +216,7 @@
     if (!box) return;
     if (spec.stoneType !== 'natural' || !spec.stone) { box.innerHTML = ''; return; }
     box.innerHTML = ONM.stoneIcon(spec.stone, { size: 40, cut: 'cabochon', label: spec.stone }) +
-      '<span class="small">' + R.esc(spec.stone) + ' · 캐보션 ' +
-      CONFIG.stones.natural.mm.toFixed(1) + 'mm</span>';
+      '<span class="small">' + R.esc(R.stoneLabel(spec)) + '</span>';
   }
 
   /* 고른 큐빅 색이 어떤 색인지 옆에 바로 보여 준다 */
@@ -241,7 +269,7 @@
     });
   });
 
-  ['texture', 'profile', 'setting', 'plating'].forEach(function (key) {
+  ['texture', 'profile', 'plating'].forEach(function (key) {
     $('c-' + key).addEventListener('change', function () {
       spec[key] = this.value;
       if (key === 'texture') refreshTextureFields();
@@ -271,6 +299,13 @@
   $('c-stonesize').addEventListener('change', function () {
     spec.stoneSize = parseFloat(this.value) || 2;
     refreshCubicPeek();
+    refreshStonePeek();
+    studio.changed();
+  });
+
+  $('c-stoneshape').addEventListener('change', function () {
+    spec.stoneShape = this.value;
+    refreshStonePeek();
     studio.changed();
   });
 
@@ -347,6 +382,47 @@
     box.classList.remove('is-hidden');
   }
 
+  /* 커플링 단계 안내 — 지금 누구 반지를 만지고 있는지, 다음에 뭘 하는지 */
+  function paintCoupleStep() {
+    if (!couple.on) return;
+    var box = $('couple-step');
+    box.classList.remove('is-hidden');
+
+    var onB = couple.step === 'b';
+    $('step-dots').innerHTML =
+      '<span class="' + (onB ? 'did' : 'on') + '">1</span>' +
+      '<span class="' + (onB ? 'on' : '') + '">2</span>';
+
+    $('step-title').textContent = onB
+      ? '2단계 — 두 번째 분 반지 (' + personOf('b') + ')'
+      : '1단계 — 첫 번째 분 반지 (' + personOf('a') + ')';
+    $('step-desc').textContent = onB
+      ? '두 분 반지를 각각 다르게 맞출 수 있습니다. 이 반지까지 정하면 주문서에서 한 쌍으로 묶입니다.'
+      : '먼저 첫 번째 분 반지를 맞춥니다. 다 정하고 나면 두 번째 분 반지로 넘어갑니다.';
+
+    // 앞 단계에서 정해 둔 반지를 옆에 띄워 두면 짝을 맞추기 쉽습니다
+    var done = $('step-done');
+    if (onB && specA) {
+      done.classList.remove('is-hidden');
+      done.innerHTML = '<div class="preview-box stage-bg">' + R.ringSvg(specA, { size: 74 }) + '</div>' +
+        '<span class="small">첫 번째 분<br>' + R.esc(specA.modelName) + ' · ' +
+        specA.width + '×' + specA.thickness + 'mm</span>';
+    } else {
+      done.classList.add('is-hidden');
+      done.innerHTML = '';
+    }
+
+    var back = $('back-step');
+    if (onB) {
+      back.classList.remove('is-hidden');
+      back.textContent = '첫 번째 분 반지 다시 고치기';
+      back.href = 'studio.html?couple=1&step=a&iljuB=' + encodeURIComponent(spec.ilju || '') +
+        '&' + R.specToQuery(specA || spec);
+    } else {
+      back.classList.add('is-hidden');
+    }
+  }
+
   function syncPanel() {
     var model = R.getModel(spec.modelId);
     var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
@@ -373,7 +449,7 @@
       return '<tr><th>' + R.esc(r[0]) + '</th><td>' + R.esc(r[1]) + '</td></tr>';
     }).join('');
 
-    var price = R.estimatePrice(spec, 1);
+    var price = R.estimatePrice(spec, couple.on ? 1 : (spec.quantity || 1));
     $('price-out').textContent = R.priceText(price, 'unit');
     // 값이 안 나오는 치수면 왜 그런지 바로 알려 준다
     var consultBox = $('price-consult');
@@ -383,10 +459,32 @@
         : '';
       consultBox.classList.toggle('is-hidden', !(price && price.consult));
     }
-    // 수량(커플링이면 2개)은 스튜디오를 거쳐도 주문서까지 그대로 따라갑니다
-    var extra = spec.quantity > 1 ? { qty: spec.quantity } : null;
-    $('to-order').href = 'order.html?' + R.specToQuery(spec, extra);
-    history.replaceState(null, '', location.pathname + '?' + R.specToQuery(spec, extra));
+    var btn = $('to-order');
+    if (couple.on && couple.step === 'a') {
+      // 다음은 두 번째 분 반지 — 지금 사양을 a= 에 싣고 넘어갑니다
+      var seedB = R.defaultSpec(R.getModel(spec.modelId),
+        couple.iljuB && ONM.ILJU ? ONM.ILJU[couple.iljuB] : null, { metal: spec.metal });
+      seedB.size = spec.size;
+      btn.textContent = '두 번째 분 반지 정하기 →';
+      btn.href = 'studio.html?couple=1&step=b&a=' + pack(spec) + '&' + R.specToQuery(seedB);
+      history.replaceState(null, '', location.pathname + '?couple=1&step=a&iljuB=' +
+        encodeURIComponent(couple.iljuB) + '&' + R.specToQuery(spec));
+
+    } else if (couple.on) {
+      // 두 반지가 모두 정해졌으니 한 쌍으로 주문서에 넘깁니다
+      btn.textContent = '두 반지 주문서로 넘어가기 →';
+      btn.href = 'order.html?couple=1&a=' + packRaw(couple.rawA) + '&b=' + pack(spec) + '&qty=2';
+      history.replaceState(null, '', location.pathname + '?couple=1&step=b&a=' +
+        packRaw(couple.rawA) + '&' + R.specToQuery(spec));
+
+    } else {
+      // 수량(커플링이면 2개)은 스튜디오를 거쳐도 주문서까지 그대로 따라갑니다
+      var extra = spec.quantity > 1 ? { qty: spec.quantity } : null;
+      btn.textContent = '이 사양으로 주문 상담';
+      btn.href = 'order.html?' + R.specToQuery(spec, extra);
+      history.replaceState(null, '', location.pathname + '?' + R.specToQuery(spec, extra));
+    }
+    paintCoupleStep();
   }
 
   /* ───────────── 버튼 ───────────── */

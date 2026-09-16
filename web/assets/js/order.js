@@ -12,9 +12,21 @@
   var esc = R.esc;
   var $ = function (id) { return document.getElementById(id); };
 
-  var spec = R.specFromQuery();
-  var qty = spec.quantity || 1;
-  var size2 = spec.size;
+  /* 커플링은 두 반지를 각각 다르게 맞출 수 있습니다.
+   * 스튜디오에서 한 사람씩 정하고 나면 두 사양이 주소에 a= / b= 로 실려 옵니다.
+   * 한 사람 주문이면 예전처럼 사양 하나만 들어옵니다. */
+  var Q = new URLSearchParams(location.search);
+  var isCouple = Q.get('couple') === '1' && Q.get('a') && Q.get('b');
+  // URLSearchParams 가 이미 한 겹 풀어 주므로 그대로 넘기면 됩니다
+  function unpack(v) { return R.specFromQuery(v); }
+
+  var spec = isCouple ? unpack(Q.get('a')) : R.specFromQuery();
+  var specB = isCouple ? unpack(Q.get('b')) : null;
+  var qty = isCouple ? 2 : (spec.quantity || 1);
+  var size2 = specB ? specB.size : spec.size;
+
+  /** 두 번째 반지가 따로 있으면 그 사양, 아니면 첫 번째와 같은 사양 */
+  function second() { return specB || spec; }
 
   /* ───────────── 셀렉트 채우기 ───────────── */
   (function fillSizes() {
@@ -27,12 +39,27 @@
     $('o-size').innerHTML = html;
     $('o-size2').innerHTML = html;
     $('o-size').value = spec.size;
-    $('o-size2').value = spec.size;
+    $('o-size2').value = size2;
   })();
 
-  // 커플링 링크(qty=2)로 들어오면 수량칸과 두 번째 호수칸을 미리 맞춰 둔다
+  // 커플링 링크로 들어오면 수량칸과 두 번째 호수칸을 미리 맞춰 둔다
   $('o-qty').value = String(qty);
   $('o-size2').disabled = qty < 2;
+
+  if (isCouple) {
+    // 두 반지가 이미 정해져 왔으므로 수량은 두 개로 고정합니다
+    $('o-qty').disabled = true;
+    $('o-qty').closest('.field').querySelector('label').textContent = '수량 (커플 한 쌍)';
+    $('o-size').closest('.field').querySelector('label').textContent =
+      '첫 번째 분 호수 — ' + labelOf(spec);
+    $('o-size2').closest('.field').querySelector('label').textContent =
+      '두 번째 분 호수 — ' + labelOf(specB);
+  }
+
+  function labelOf(sp) {
+    var rec = sp.ilju && ONM.ILJU ? ONM.ILJU[sp.ilju] : null;
+    return (rec ? rec.id + ' · ' : '') + sp.modelName;
+  }
 
   $('o-engraving').value = spec.engraving || '';
   $('privacy-text').textContent = CONFIG.privacy;
@@ -70,7 +97,11 @@
 
   /* ───────────── 입력 반영 ───────────── */
   $('o-size').addEventListener('change', function () { spec.size = parseInt(this.value, 10); sync(); });
-  $('o-size2').addEventListener('change', function () { size2 = parseInt(this.value, 10); sync(); });
+  $('o-size2').addEventListener('change', function () {
+    size2 = parseInt(this.value, 10);
+    if (specB) specB.size = size2;
+    sync();
+  });
   $('o-engraving').addEventListener('input', function () { spec.engraving = this.value.trim(); sync(); });
   $('o-qty').addEventListener('change', function () {
     qty = parseInt(this.value, 10);
@@ -83,10 +114,66 @@
   });
 
   /* ───────────── 요약 · 사양서 ───────────── */
+  /** 반지 한 개 사양을 사양서 줄로 */
+  function sheetBlock(sp, size, title) {
+    var model = R.getModel(sp.modelId);
+    var rec = sp.ilju ? ONM.ILJU[sp.ilju] : null;
+    var out = [];
+    if (title) out.push('[' + title + ']');
+    if (rec) out.push('일주       : ' + rec.id + ' (' + rec.hanja + ') · ' + ONM.iljuPhrase(rec));
+    out.push(
+      '디자인     : ' + model.name + ' (' + R.FAMILIES[model.family].label + ')',
+      '소재       : ' + (CONFIG.price.metals[sp.metal] || {}).label,
+      '두께       : ' + sp.thickness.toFixed(1) + ' mm',
+      '폭         : ' + sp.width.toFixed(1) + ' mm',
+      '옆모양     : ' + R.PROFILE_LABEL[sp.profile],
+      '표면 느낌  : ' + R.textureLabel(sp),
+      '원석       : ' + R.stoneLabel(sp),
+      '고정 방법  : ' + ((sp.stoneType && sp.stoneType !== 'none')
+        ? R.SETTING_LABEL[sp.setting] + ' (공임 포함)' : '—'),
+      '겉면 마감  : ' + (sp.oxidize
+        ? CONFIG.oxidize.label
+        : (CONFIG.plating[sp.plating || 'none'] || {}).label),
+      '색 채움    : ' + (CONFIG.epoxy.colors[sp.epoxy || ''] || {}).label,
+      '각인       : ' + (sp.engraving || '없음'),
+      '호수       : ' + size + '호'
+    );
+    return out;
+  }
+
   function currentSheet() {
     var model = R.getModel(spec.modelId);
     var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
-    var price = R.estimatePrice(spec, qty);
+    var price = currentPrice();
+
+    if (isCouple) {
+      var out = [
+        '[온명 커스텀 반지 제작 사양서 — 커플 한 쌍]',
+        '작성일 : ' + new Date().toLocaleDateString('ko-KR'),
+        ''
+      ];
+      out = out.concat(sheetBlock(spec, spec.size, '첫 번째 분 반지'), ['']);
+      out = out.concat(sheetBlock(specB, size2, '두 번째 분 반지'), ['']);
+      out.push(
+        '수량       : 2개 (한 쌍)',
+        '예상 금액  : ' + R.priceText(price, 'total') +
+          (price && !price.consult ? ' (한 쌍 할인 적용)' : ''),
+        '제작 기간  : ' + CONFIG.order.leadTime
+      );
+      if (price && price.consult) out.push('', '※ ' + price.consult);
+      if (spec.stoneType === 'cubic' || specB.stoneType === 'cubic') {
+        out.push('', '※ 컬러큐빅은 색을 상담에서 함께 정합니다. 위 색상은 희망 색상입니다.');
+      }
+      if (spec.oxidize || specB.oxidize) out.push('', '※ ' + CONFIG.oxidize.note);
+      var memoC = $('o-memo').value.trim();
+      if (memoC) out.push('', '요청사항  : ' + memoC);
+      var whenC = $('o-when').value;
+      if (whenC) out.push('희망 수령 : ' + whenC);
+      out.push('', '사양 링크 : ' + studioLink());
+      out.push('', '※ 예상 금액은 참고용이며 최종 금액은 상담에서 확정됩니다.');
+      return out.join('\n');
+    }
+
     var lines = [
       '[온명 커스텀 반지 제작 사양서]',
       '작성일 : ' + new Date().toLocaleDateString('ko-KR'),
@@ -131,6 +218,10 @@
 
   function studioLink() {
     var base = location.origin + location.pathname.replace(/order\.html$/, 'studio.html');
+    if (isCouple) {
+      return base + '?couple=1&step=b&a=' + encodeURIComponent(R.specToQuery(spec)) +
+        '&' + R.specToQuery(specB);
+    }
     return base + '?' + R.specToQuery(spec, { qty: qty });
   }
 
@@ -149,37 +240,95 @@
     box.classList.remove('is-hidden');
   }
 
+  /** 한 쌍 값 — 두 반지가 서로 다를 수 있으므로 각각 내서 더하고 할인을 먹입니다 */
+  function pairPrice() {
+    var pa = R.estimatePrice(spec, 1);
+    var pb = R.estimatePrice(second(), 1);
+    if (!pa || !pb) return null;
+    if (pa.consult || pb.consult) {
+      return { unit: null, total: null, quantity: 2, pending: [],
+        consult: pa.consult || pb.consult, a: pa, b: pb };
+    }
+    var sum = (pa.unit + pb.unit) * (1 - CONFIG.price.couplePairDiscount);
+    return {
+      unit: null, total: Math.round(sum / 1000) * 1000, quantity: 2,
+      consult: null,
+      pending: (pa.pending || []).concat(pb.pending || []),
+      a: pa, b: pb
+    };
+  }
+
+  function currentPrice() {
+    return isCouple ? pairPrice() : R.estimatePrice(spec, qty);
+  }
+
+  function specRows(sp, label) {
+    var model = R.getModel(sp.modelId);
+    var rec = sp.ilju ? ONM.ILJU[sp.ilju] : null;
+    var rows = [];
+    if (label) rows.push([label, rec ? rec.id + ' (' + rec.hanja + ')' : '—']);
+    rows.push(
+      ['디자인', model.name],
+      ['두께 · 폭', sp.thickness.toFixed(1) + ' × ' + sp.width.toFixed(1) + ' mm'],
+      ['표면 느낌', R.textureLabel(sp)],
+      ['원석', R.stoneLabel(sp)],
+      ['겉면 마감', sp.oxidize
+        ? CONFIG.oxidize.label
+        : (CONFIG.plating[sp.plating || 'none'] || {}).label]
+    );
+    return rows;
+  }
+
   function sync() {
     var model = R.getModel(spec.modelId);
     var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
 
     paintIlju(rec);
-    $('sum-preview').innerHTML = R.ringSvg(spec, { size: 240 });
 
-    var rows = [];
-    if (rec) rows.push(['일주', rec.id + ' (' + rec.hanja + ')']);
-    rows.push(
-      ['디자인', model.name],
-      ['소재', (CONFIG.price.metals[spec.metal] || {}).label],
-      ['두께', spec.thickness.toFixed(1) + ' mm'],
-      ['폭', spec.width.toFixed(1) + ' mm'],
-      ['호수', spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : '')],
-      ['원석', R.stoneLabel(spec)],
-      ['겉면 마감', spec.oxidize
-        ? CONFIG.oxidize.label
-        : (CONFIG.plating[spec.plating || 'none'] || {}).label],
-      ['수량', qty + '개']
-    );
+    var rows;
+    if (isCouple) {
+      // 두 반지를 나란히 보여 줍니다
+      $('sum-preview').innerHTML =
+        '<div class="pair-previews">' +
+          '<figure><div class="preview-box stage-bg">' + R.ringSvg(spec, { size: 150 }) + '</div>' +
+            '<figcaption>첫 번째 분 · ' + esc(String(spec.size)) + '호</figcaption></figure>' +
+          '<figure><div class="preview-box stage-bg">' + R.ringSvg(specB, { size: 150 }) + '</div>' +
+            '<figcaption>두 번째 분 · ' + esc(String(size2)) + '호</figcaption></figure>' +
+        '</div>';
+      rows = [['수량', '한 쌍 (2개)']]
+        .concat(specRows(spec, '첫 번째 분'))
+        .concat([['—', '—']])
+        .concat(specRows(specB, '두 번째 분'));
+    } else {
+      $('sum-preview').innerHTML = R.ringSvg(spec, { size: 240 });
+      rows = [];
+      if (rec) rows.push(['일주', rec.id + ' (' + rec.hanja + ')']);
+      rows.push(
+        ['디자인', model.name],
+        ['소재', (CONFIG.price.metals[spec.metal] || {}).label],
+        ['두께', spec.thickness.toFixed(1) + ' mm'],
+        ['폭', spec.width.toFixed(1) + ' mm'],
+        ['호수', spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : '')],
+        ['원석', R.stoneLabel(spec)],
+        ['겉면 마감', spec.oxidize
+          ? CONFIG.oxidize.label
+          : (CONFIG.plating[spec.plating || 'none'] || {}).label],
+        ['수량', qty + '개']
+      );
+    }
     $('sum-body').innerHTML = rows.map(function (r) {
       return '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>';
     }).join('');
 
-    var price = R.estimatePrice(spec, qty);
+    var price = currentPrice();
     $('sum-price').textContent = R.priceText(price, 'total');
     $('sum-lead').textContent = '제작 기간 · ' + CONFIG.order.leadTime;
 
     $('sheet').textContent = currentSheet();
-    $('edit-link').href = 'studio.html?' + R.specToQuery(spec, { qty: qty });
+    $('edit-link').href = isCouple
+      ? 'studio.html?couple=1&step=b&a=' + encodeURIComponent(R.specToQuery(spec)) +
+        '&' + R.specToQuery(specB)
+      : 'studio.html?' + R.specToQuery(spec, { qty: qty });
 
     var mail = $('mail-link');
     if (mail) {
@@ -257,9 +406,11 @@
       btn.disabled = true;
       btn.textContent = '보내는 중…';
 
-      var price = R.estimatePrice(spec, qty);
+      var price = currentPrice();
       var payload = {
         spec: spec,
+        specB: isCouple ? specB : null,
+        couple: isCouple,
         quantity: qty,
         secondSize: qty >= 2 ? size2 : null,
         estimate: price && !price.consult ? price.total : null,
