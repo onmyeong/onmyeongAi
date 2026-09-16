@@ -143,7 +143,9 @@
         (sp.epoxy ? ' · ' + (CONFIG.epoxy.coverage[sp.epoxyCoverage || 'part'] || {}).label : ''),
       '앞뒤 두께  : ' + sp.thickness.toFixed(1) + ' / ' +
         (sp.backThickness || sp.thickness).toFixed(1) + ' mm',
-      '굴곡       : ' + organicWord(sp.organic),
+      '굴곡       : ' + organicWord(sp.organic) + (sp.sculpt ? ' · 손으로 다듬음' : ''),
+      '돌 높이    : ' + ((sp.stoneType && sp.stoneType !== 'none')
+        ? (Number(sp.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),
       '각인       : ' + (sp.engraving || '없음'),
       '호수       : ' + size + '호'
     );
@@ -206,7 +208,9 @@
         (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : ''),
       '앞뒤 두께  : ' + spec.thickness.toFixed(1) + ' / ' +
         (spec.backThickness || spec.thickness).toFixed(1) + ' mm',
-      '굴곡       : ' + organicWord(spec.organic),
+      '굴곡       : ' + organicWord(spec.organic) + (spec.sculpt ? ' · 손으로 다듬음' : ''),
+      '돌 높이    : ' + ((spec.stoneType && spec.stoneType !== 'none')
+        ? (Number(spec.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),
       '각인       : ' + (spec.engraving || '없음'),
       '호수       : ' + spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : ''),
       '수량       : ' + qty + '개',

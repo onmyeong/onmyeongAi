@@ -92,11 +92,28 @@ function bumpFor(s) {
  *   앞뒤 두께를 다르게 주면 앞은 도톰하고 뒤는 얇은, 실제 수제 반지의 단차가 납니다.
  *   organic 은 왁스를 손으로 깎았을 때 남는 불규칙한 굴곡입니다.
  *   (한 바퀴 돌아와도 이어지도록 cos/sin 을 노이즈 입력으로 씁니다.) */
+/* 손으로 다듬은 자국을 각도에 맞춰 부드럽게 읽어 온다.
+ * 24 지점 사이를 부드러운 곡선으로 이어, 민 자리와 안 민 자리가 툭 끊기지 않게 한다. */
+function sculptAt(s, th) {
+  const arr = s._sculpt;
+  if (!arr) return 0;
+  const n = arr.length;
+  // th = π/2 가 손등 쪽(위). 그 자리를 0번 지점으로 둔다.
+  const u = ((th - Math.PI / 2) / (Math.PI * 2) * n % n + n) % n;
+  const i = Math.floor(u), f = u - i;
+  const a = arr[i % n], b = arr[(i + 1) % n];
+  const w = f * f * (3 - 2 * f);
+  return a + (b - a) * w;
+}
+
 function thicknessAt(s, th) {
   const front = s.thickness;
   const back = (s.backThickness != null && s.backThickness > 0) ? s.backThickness : front;
   const mix = 0.5 + 0.5 * Math.sin(th);          // 뒤 0 → 앞 1
   let t = back + (front - back) * mix;
+
+  // 손으로 민 만큼 그 자리만 두꺼워지거나 얇아집니다 (최대 ±55%)
+  t *= 1 + 0.55 * sculptAt(s, th);
 
   const org = Number(s.organic) || 0;
   if (org > 0) {
@@ -183,8 +200,20 @@ function buildBand(s, model) {
         if (u < 0) u = 0;
         radius += u;
         if (bump.amp > 0) {
-          // 둘레 방향으로 주기적인 노이즈 — 한 바퀴 돌아와도 결이 어긋나지 않는다
-          const nz = valueNoise(Math.cos(th) * bump.ring + 31, Math.sin(th) * bump.ring + p.v * bump.axial);
+          let nz;
+          if (s.texture === 'diamond') {
+            /* 다이아 텍스쳐는 날을 비스듬히 대고 깎아 내므로 골이 대각선으로 흐릅니다.
+             * 한 바퀴에 정수 개가 들어가도록 두어 돌아와도 무늬가 어긋나지 않습니다. */
+            const RIDGES = 11;          // 한 바퀴에 들어가는 골의 수
+            const SLANT = 2.6;          // 클수록 더 비스듬하게 눕습니다
+            const phase = RIDGES * th + SLANT * p.v;
+            const saw = Math.abs(((phase / Math.PI) % 2) - 1);   // 0~1 삼각파 = 날카로운 골
+            const jitter = valueNoise(Math.cos(th) * 3 + 31, Math.sin(th) * 3 + p.v * 1.4);
+            nz = saw * 0.74 + jitter * 0.26;                     // 손으로 깎은 만큼 흔들림도 섞는다
+          } else {
+            // 둘레 방향으로 주기적인 노이즈 — 한 바퀴 돌아와도 결이 어긋나지 않는다
+            nz = valueNoise(Math.cos(th) * bump.ring + 31, Math.sin(th) * bump.ring + p.v * bump.axial);
+          }
           const cut = nz * bump.amp * Math.max(t, 1.2);
           radius -= cut;
           carved += cut;
@@ -381,13 +410,17 @@ function buildStone(s, group) {
   const size = R.stoneMm(s) / 2;
   const mat = stoneMaterial(s);
   const metalMat = metalMaterial(s);
+  // 손님이 직접 올리고 내리는 값(mm). 0 이면 그 물림 방식의 기본 높이입니다.
+  const lift = Number(s.stoneHeight) || 0;
+  const up = Math.max(0, lift);        // 올린 만큼 받침을 길게 늘여 밴드에 붙여 둔다
 
   if (s.setting === 'prong') {
     /* 발에 물린 원석은 밴드 위로 솟으므로 베젤보다 한 치수 작게 잡는다.
      * 천연석은 각을 내지 않은 캐보션이라 둥근 돔으로,
      * 모이사나이트·큐빅은 면을 낸 알이라 파빌리온+크라운으로 그린다. */
     const gemR = size * 0.76;
-    const girdle = topR + gemR * 0.5;           // 원석의 가장 넓은 허리 높이
+    // 발로 물어도 너무 솟지 않게 낮게 앉힙니다
+    const girdle = topR + gemR * 0.12 + lift;   // 원석의 가장 넓은 허리 높이
     const cab = s.stoneType === 'natural';
 
     if (cab) {
@@ -400,9 +433,9 @@ function buildStone(s, group) {
       group.add(dome);
 
       const seatDisc = new THREE.Mesh(
-        new THREE.CylinderGeometry(gemR * 0.96, gemR * 0.9, gemR * 0.5, 36), metalMat);
+        new THREE.CylinderGeometry(gemR * 0.96, gemR * 0.9, gemR * 0.5 + up * 2, 36), metalMat);
       seatDisc.scale.set(oval0 ? (ov0.w / 2) / gemR : 1, 1, oval0 ? (ov0.h / 2) / gemR : 1);
-      seatDisc.position.set(0, girdle - gemR * 0.36, 0);
+      seatDisc.position.set(0, girdle - gemR * 0.36 - up, 0);
       group.add(seatDisc);
     } else {
       const pavilion = new THREE.Mesh(new THREE.ConeGeometry(gemR, gemR * 1.2, 8), mat);
@@ -420,8 +453,8 @@ function buildStone(s, group) {
     for (let i = 0; i < 4; i++) {
       const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
       const prong = new THREE.Mesh(
-        new THREE.CylinderGeometry(gemR * 0.17, gemR * 0.21, gemR * 1.15, 12), metalMat);
-      prong.position.set(Math.cos(a) * gemR * 0.9, girdle - gemR * 0.2, Math.sin(a) * gemR * 0.9);
+        new THREE.CylinderGeometry(gemR * 0.17, gemR * 0.21, gemR * 1.15 + up * 2, 12), metalMat);
+      prong.position.set(Math.cos(a) * gemR * 0.9, girdle - gemR * 0.2 - up, Math.sin(a) * gemR * 0.9);
       group.add(prong);
     }
   } else if (s.setting === 'flush') {
@@ -435,8 +468,8 @@ function buildStone(s, group) {
 
     // 우물 벽 — 위가 넓고 아래가 좁은 깔때기
     const well = new THREE.Mesh(
-      new THREE.CylinderGeometry(wellR, gemR * 0.92, wellDepth, 40, 1, true), metalMat);
-    well.position.set(0, topR - wellDepth / 2, 0);
+      new THREE.CylinderGeometry(wellR, gemR * 0.92, wellDepth + up * 2, 40, 1, true), metalMat);
+    well.position.set(0, topR - wellDepth / 2 + lift - up, 0);
     well.material = metalMat.clone();
     well.material.side = THREE.DoubleSide;
     group.add(well);
@@ -445,7 +478,7 @@ function buildStone(s, group) {
     const gem = new THREE.Mesh(
       new THREE.SphereGeometry(gemR, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat);
     gem.scale.y = 0.42;
-    gem.position.set(0, topR - wellDepth * 0.42, 0);
+    gem.position.set(0, topR - wellDepth * 0.42 + lift, 0);
     group.add(gem);
 
   } else {
@@ -461,23 +494,24 @@ function buildStone(s, group) {
 
     const gem = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
     gem.scale.set(sx, seat ? 0.5 : 0.62, sz);
-    gem.position.set(0, topR - size * (seat ? 0.2 : 0.08), 0);
+    // 심기는 자리를 파고 앉히므로 베젤보다 확실히 낮습니다
+    gem.position.set(0, topR - size * (seat ? 0.42 : 0.16) + lift, 0);
     group.add(gem);
 
     if (seat) {
       // 돌이 앉을 자리 — 얕게 파낸 홈의 벽만 살짝 보입니다
       const well = new THREE.Mesh(
-        new THREE.CylinderGeometry(size * 1.04, size * 0.94, size * 0.34, 40, 1, true), metalMat.clone());
+        new THREE.CylinderGeometry(size * 1.04, size * 0.94, size * 0.34 + up * 2, 40, 1, true), metalMat.clone());
       well.material.side = THREE.DoubleSide;
       well.scale.set(sx, 1, sz);
-      well.position.set(0, topR - size * 0.17, 0);
+      well.position.set(0, topR - size * 0.34 + lift - up, 0);
       group.add(well);
     } else {
       const rim = new THREE.Mesh(
-        new THREE.CylinderGeometry(size * 1.12, size * 1.12, size * 0.55, 40, 1, true), metalMat.clone());
+        new THREE.CylinderGeometry(size * 1.12, size * 1.12, size * 0.55 + up * 2, 40, 1, true), metalMat.clone());
       rim.material.side = THREE.DoubleSide;
       rim.scale.set(sx, 1, sz);
-      rim.position.set(0, topR - size * 0.12, 0);
+      rim.position.set(0, topR - size * 0.2 + lift - up, 0);
       group.add(rim);
     }
   }
@@ -594,6 +628,113 @@ function initScene() {
   })();
 }
 
+/* ─────────────────── 손으로 다듬기 ───────────────────
+ * 반지 위에서 마우스를 끌면 그 자리가 두꺼워지고, 반대로 끌면 얇아집니다.
+ * 24 지점을 손으로 미는 셈이고, 붓처럼 옆까지 조금씩 번지게 해서
+ * 실제로 왁스를 손가락으로 밀어낸 것처럼 이어집니다.
+ */
+const SCULPT_BRUSH = 2.6;      // 몇 지점까지 번지는가
+const SCULPT_GAIN = 0.010;     // 1px 끌 때 얼마나 밀리는가
+
+let sculptOn = false;
+let sculpting = null;
+
+function ensureSculpt() {
+  if (!spec._sculpt) spec._sculpt = R.sculptRead(spec.sculpt || '');
+  return spec._sculpt;
+}
+
+/** 화면 좌표 → 반지 위 각도. 반지 평면(회전 적용)과 광선을 만나게 해서 구한다. */
+const _ray = new THREE.Raycaster();
+const _plane = new THREE.Plane();
+const _hit = new THREE.Vector3();
+const _normal = new THREE.Vector3();
+
+function angleAtPointer(ev) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  const ndc = new THREE.Vector2(
+    ((ev.clientX - rect.left) / rect.width) * 2 - 1,
+    -((ev.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  _ray.setFromCamera(ndc, camera);
+
+  // 반지를 정확히 짚었으면 그 점을 쓴다
+  const hits = _ray.intersectObjects(ringGroup.children, true);
+  if (hits.length) {
+    const local = ringGroup.worldToLocal(hits[0].point.clone());
+    return Math.atan2(local.y, local.x);      // 위쪽(+Y)이 π/2
+  }
+
+  /* 조금 빗나가게 짚었어도 다듬을 수 있어야 합니다.
+   * 반지가 놓인 평면까지 광선을 늘려 그 자리의 각도를 씁니다. */
+  ringGroup.updateMatrixWorld();
+  _normal.set(0, 0, 1).applyQuaternion(ringGroup.quaternion).normalize();
+  _plane.setFromNormalAndCoplanarPoint(_normal, ringGroup.position);
+  if (!_ray.ray.intersectPlane(_plane, _hit)) return null;
+  const local2 = ringGroup.worldToLocal(_hit.clone());
+  if (!isFinite(local2.x) || !isFinite(local2.y)) return null;
+  if (local2.x === 0 && local2.y === 0) return null;
+  return Math.atan2(local2.y, local2.x);
+}
+
+function sculptPush(angle, amount) {
+  const arr = ensureSculpt();
+  const n = arr.length;
+  // 위쪽(π/2)을 0번으로 맞춘다 — sculptAt 과 같은 규칙
+  const center = ((angle - Math.PI / 2) / (Math.PI * 2) * n % n + n) % n;
+  for (let i = 0; i < n; i++) {
+    let d = Math.abs(i - center);
+    if (d > n / 2) d = n - d;                // 한 바퀴이므로 가까운 쪽으로
+    if (d > SCULPT_BRUSH) continue;
+    const w = Math.cos((d / SCULPT_BRUSH) * Math.PI / 2);   // 가운데가 가장 세게
+    arr[i] = Math.max(-1, Math.min(1, arr[i] + amount * w * w));
+  }
+  spec.sculpt = R.sculptWrite(arr);
+}
+
+function bindSculpt() {
+  const el = renderer.domElement;
+
+  el.addEventListener('pointerdown', (ev) => {
+    if (!sculptOn || ev.button !== 0) return;
+    const a = angleAtPointer(ev);
+    if (a === null) return;
+    ev.preventDefault();
+    el.setPointerCapture(ev.pointerId);
+    sculpting = { angle: a, y: ev.clientY, moved: false };
+  });
+
+  el.addEventListener('pointermove', (ev) => {
+    if (!sculpting) return;
+    const dy = sculpting.y - ev.clientY;       // 위로 끌면 두껍게
+    if (Math.abs(dy) < 1) return;
+    sculpting.y = ev.clientY;
+    sculpting.moved = true;
+    // 끄는 동안 현재 가리키는 자리를 따라가면 붓처럼 칠할 수 있다
+    const a = angleAtPointer(ev);
+    sculptPush(a === null ? sculpting.angle : a, dy * SCULPT_GAIN);
+    studio.changed();
+  });
+
+  const finish = (ev) => {
+    if (!sculpting) return;
+    try { el.releasePointerCapture(ev.pointerId); } catch (e) {}
+    sculpting = null;
+  };
+  el.addEventListener('pointerup', finish);
+  el.addEventListener('pointercancel', finish);
+}
+
+/** 다듬기 모드를 켜고 끈다. 켜면 화면 돌리기는 잠깐 멈춘다. */
+function setSculptMode(on) {
+  sculptOn = !!on;
+  controls.enableRotate = !sculptOn;
+  controls.autoRotate = sculptOn ? false : controls.autoRotate;
+  renderer.domElement.style.cursor = sculptOn ? 'ns-resize' : '';
+  return sculptOn;
+}
+
 function rebuild() {
   if (ringGroup) {
     scene.remove(ringGroup);
@@ -603,6 +744,10 @@ function rebuild() {
     });
   }
   const model = R.getModel(spec.modelId);
+  // 주소에서 들어온 자국은 처음 한 번 숫자로 풀어 둡니다
+  if (!spec._sculpt || R.sculptWrite(spec._sculpt) !== (spec.sculpt || '')) {
+    spec._sculpt = R.sculptRead(spec.sculpt || '');
+  }
   ringGroup = new THREE.Group();
   const bandGeo = buildBand(spec, model);
   const bandMat = metalMaterial(spec);
@@ -636,6 +781,14 @@ try {
   studio.toggleSpin = () => {
     controls.autoRotate = !controls.autoRotate;
     return controls.autoRotate;
+  };
+  bindSculpt();
+  studio.setSculptMode = setSculptMode;
+  studio.angleAtPointer = angleAtPointer;
+  studio.clearSculpt = () => {
+    spec._sculpt = null;
+    spec.sculpt = '';
+    studio.changed();
   };
   studio.onChange(rebuild);
   $('preview-2d').classList.add('is-hidden');
