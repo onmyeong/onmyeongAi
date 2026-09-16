@@ -67,13 +67,22 @@ function valueNoise(x, y) {
  * 표면 가공은 금속을 깎아내는 쪽이므로 항상 안쪽으로만 파고들어,
  * 슬라이더에 적은 두께가 곧 반지의 최대 두께가 됩니다. */
 const BUMP = {
-  polish:   { amp: 0,     ring: 0,   axial: 0 },
-  matte:    { amp: 0.008, ring: 10,  axial: 8 },
-  brushed:  { amp: 0.012, ring: 1.2, axial: 26 },
-  hammered: { amp: 0.10,  ring: 4,   axial: 2.2 },
-  sand:     { amp: 0.028, ring: 14,  axial: 12 },
-  stone:    { amp: 0.16,  ring: 2.5, axial: 1.8 }
+  polish:  { amp: 0,     ring: 0,   axial: 0 },
+  soft:    { amp: 0.008, ring: 10,  axial: 8 },   // 은은한 무광 — 아주 얕게
+  fine:    { amp: 0.014, ring: 16,  axial: 14 },  // 고운 무광 — 촘촘하고 얕게
+  diamond: { amp: 0.12,  ring: 3.5, axial: 2.0 }, // 다이아 텍스쳐 — 깊게 깎아 면을 만든다
+  // 사포바는 줄 방향에 따라 결이 달라지므로 아래에서 따로 잡습니다
+  sandbar: { amp: 0.016, ring: 1.2, axial: 30 }
 };
+
+/* 사포바 — 세로줄이면 폭 방향으로, 가로줄이면 둘레 방향으로 결이 갑니다 */
+function bumpFor(s) {
+  const b = BUMP[s.texture] || BUMP.polish;
+  if (s.texture !== 'sandbar') return b;
+  return s.grain === 'horizontal'
+    ? { amp: b.amp, ring: 30, axial: 1.2 }
+    : { amp: b.amp, ring: 1.2, axial: 30 };
+}
 
 /* ─────────────────── 밴드 지오메트리 ─────────────────── */
 function buildBand(s, model) {
@@ -82,7 +91,7 @@ function buildBand(s, model) {
   const SEG = 320;
   const profile = makeProfile(s);
   const P = profile.length;
-  const bump = BUMP[s.texture] || BUMP.polish;
+  const bump = bumpFor(s);
 
   const taper = model ? model.taper : 0;
   const wave = model ? model.wave : 0;
@@ -206,18 +215,19 @@ function paintEpoxy(geo, spec) {
 /* 거친 마감일수록 반사를 줄여야 질감이 보입니다.
  * 반사를 그대로 두면 표면이 하얗게 날아가 결이 사라집니다. */
 const FINISH = {
-  polish:   { roughness: 0.07, env: 1.30, tone: 1.00 },
-  brushed:  { roughness: 0.26, env: 1.00, tone: 0.94 },
-  matte:    { roughness: 0.42, env: 0.74, tone: 0.84 },
-  hammered: { roughness: 0.15, env: 1.20, tone: 0.98 },
-  sand:     { roughness: 0.50, env: 0.66, tone: 0.78 },
-  stone:    { roughness: 0.60, env: 0.56, tone: 0.70 }
+  polish:  { roughness: 0.07, env: 1.30, tone: 1.00 },
+  diamond: { roughness: 0.14, env: 1.24, tone: 0.98 },
+  sandbar: { roughness: 0.30, env: 0.96, tone: 0.92 },
+  fine:    { roughness: 0.46, env: 0.70, tone: 0.86 },
+  soft:    { roughness: 0.36, env: 0.82, tone: 0.90 }
 };
 
 function metalMaterial(s) {
   const f = FINISH[s.texture] || FINISH.polish;
-  // 도금을 골랐으면 그 색으로 보여야 한다
-  const color = new THREE.Color(R.metalColor(s)).multiplyScalar(f.tone);
+  // 도금을 골랐으면 그 색으로, 유화를 골랐으면 검게 태운 색으로 보여야 한다
+  let base = new THREE.Color(R.metalColor(s));
+  if (s.oxidize) base = base.lerp(new THREE.Color(CONFIG.oxidize.color), 0.62);
+  const color = base.multiplyScalar(f.tone);
   return new THREE.MeshPhysicalMaterial({
     color,
     metalness: 1,

@@ -47,13 +47,18 @@
       return [m.id, m.name + ' — ' + R.FAMILIES[m.family].label];
     }), spec.modelId);
     fillSelect($('c-texture'), pairs(R.TEXTURE_LABEL), spec.texture);
+    fillSelect($('c-grain'), pairs(R.GRAIN_LABEL), spec.grain || 'vertical');
+    fillSelect($('c-cubic'), Object.keys(CONFIG.stones.cubic.colors).map(function (k) {
+      return [k, k];
+    }), spec.cubicColor || Object.keys(CONFIG.stones.cubic.colors)[0]);
     fillSelect($('c-profile'), pairs(R.PROFILE_LABEL), spec.profile);
 
     // 원석 종류
     fillSelect($('c-stonetype'), [
       ['none', '원석 없이 — 금속만'],
       ['moissanite', '모이사나이트 — 무색 투명, 가장 반짝임'],
-      ['natural', '천연석 — 내 일주에 맞춘 돌']
+      ['natural', '천연석 — 내 일주에 맞춘 돌'],
+      ['cubic', '컬러큐빅 — 색이 있는 알']
     ], spec.stoneType || 'none');
 
     // 모이사나이트 알 크기
@@ -75,12 +80,19 @@
       return [k, v.label + (v.price ? ' (+' + v.price.toLocaleString('ko-KR') + '원)' : '')];
     }), spec.plating || 'none');
 
+    $('c-oxidize').checked = !!spec.oxidize;
+    $('oxidize-label').textContent = CONFIG.oxidize.label +
+      ' (+' + CONFIG.oxidize.price.toLocaleString('ko-KR') + '원)';
+    $('oxidize-note').textContent = CONFIG.oxidize.note;
+
     fillSelect($('c-epoxy'), Object.keys(CONFIG.epoxy.colors).map(function (k) {
       var v = CONFIG.epoxy.colors[k];
       return [k, v.label + (k ? ' (+' + CONFIG.epoxy.price.toLocaleString('ko-KR') + '원)' : '')];
     }), spec.epoxy || '');
 
     refreshStoneFields();
+    refreshTextureFields();
+    refreshFinishFields();
 
     var metalKeys = Object.keys(CONFIG.price.metals);
     // 제작 소재가 하나뿐이면 고를 것이 없으므로 선택 영역을 숨긴다
@@ -101,11 +113,29 @@
     return Object.keys(obj).map(function (k) { return [k, obj[k]]; });
   }
 
+  /* 사포바를 골랐을 때만 줄 방향 칸을 연다 */
+  function refreshTextureFields() {
+    $('f-grain').classList.toggle('is-hidden', spec.texture !== 'sandbar');
+    $('texture-note').textContent = R.TEXTURE_DESC[spec.texture] || '';
+  }
+
+  /* 도금과 유화는 같이 못 합니다. 하나를 고르면 다른 하나를 잠급니다. */
+  function refreshFinishFields() {
+    var plated = spec.plating && spec.plating !== 'none';
+    $('c-oxidize').disabled = plated;
+    $('c-plating').disabled = !!spec.oxidize;
+
+    var msg = '';
+    if (plated) msg = '도금과 유화는 같이 할 수 없습니다. 유화를 하시려면 도금을 "도금 없이"로 바꿔 주세요.';
+    else if (spec.oxidize) msg = '유화를 고르셔서 도금은 잠겼습니다. 도금을 하시려면 유화를 먼저 꺼 주세요.';
+    $('finish-conflict').textContent = msg;
+  }
+
   /* 색을 채우려면 채울 홈이 있어야 한다.
    * 매끈한 디자인에 색 채움을 고르면 값만 오르고 티가 안 나므로 미리 알려 준다. */
   function refreshEpoxyNote() {
     var model = R.getModel(spec.modelId) || {};
-    var deepTexture = ['hammered', 'sand', 'stone', 'matte'].indexOf(spec.texture) !== -1;
+    var deepTexture = ['diamond', 'sandbar'].indexOf(spec.texture) !== -1;
     var hasGroove = (model.twist || 0) > 0 || deepTexture || spec.profile === 'step';
     var note = '';
     if (spec.epoxy && !hasGroove) {
@@ -123,17 +153,26 @@
     var type = spec.stoneType || 'none';
     var has = type !== 'none';
 
-    $('f-stonesize').classList.toggle('is-hidden', type !== 'moissanite');
+    // 알 크기는 모이사나이트와 컬러큐빅이 고를 수 있습니다
+    $('f-stonesize').classList.toggle('is-hidden', type !== 'moissanite' && type !== 'cubic');
     $('f-stone').classList.toggle('is-hidden', type !== 'natural');
+    $('f-cubic').classList.toggle('is-hidden', type !== 'cubic');
     $('f-setting').classList.toggle('is-hidden', !has);
 
-    var note = '';
-    if (type === 'moissanite') note = CONFIG.stones.moissanite.note;
-    if (type === 'natural') note = CONFIG.stones.natural.note;
+    if (type === 'moissanite' || type === 'cubic') {
+      var kind = CONFIG.stones[type];
+      fillSelect($('c-stonesize'), kind.sizes.map(function (z) {
+        return [String(z.mm), z.label + ' — ' + z.hint +
+          (z.price ? ' (+' + z.price.toLocaleString('ko-KR') + '원)' : '')];
+      }), String(Number(spec.stoneSize) || 2));
+    }
+
+    var note = (CONFIG.stones[type] || {}).note || '';
     $('stone-note').textContent = note;
 
     refreshEpoxyNote();
     refreshStonePeek();
+    refreshCubicPeek();
 
     if (!has) { spec.setting = 'none'; return; }
 
@@ -150,6 +189,18 @@
     box.innerHTML = ONM.stoneIcon(spec.stone, { size: 40, cut: 'cabochon', label: spec.stone }) +
       '<span class="small">' + R.esc(spec.stone) + ' · 캐보션 ' +
       CONFIG.stones.natural.mm.toFixed(1) + 'mm</span>';
+  }
+
+  /* 고른 큐빅 색이 어떤 색인지 옆에 바로 보여 준다 */
+  function refreshCubicPeek() {
+    var box = $('cubic-peek');
+    if (!box) return;
+    if (spec.stoneType !== 'cubic') { box.innerHTML = ''; return; }
+    var name = spec.cubicColor || Object.keys(CONFIG.stones.cubic.colors)[0];
+    box.innerHTML = ONM.stoneIcon(null, {
+      size: 40, cut: 'round', color: CONFIG.stones.cubic.colors[name], label: name + ' 큐빅'
+    }) + '<span class="small">' + R.esc(name) + ' · ' +
+      (Number(spec.stoneSize) || 2).toFixed(1) + 'mm · 최종 색과 크기는 상담에서</span>';
   }
 
   function applyModelLimits() {
@@ -193,6 +244,12 @@
   ['texture', 'profile', 'setting', 'plating'].forEach(function (key) {
     $('c-' + key).addEventListener('change', function () {
       spec[key] = this.value;
+      if (key === 'texture') refreshTextureFields();
+      if (key === 'plating') {
+        // 도금을 고르면 유화는 꺼집니다
+        if (spec.plating !== 'none') { spec.oxidize = false; $('c-oxidize').checked = false; }
+        refreshFinishFields();
+      }
       refreshEpoxyNote();
       studio.changed();
     });
@@ -201,13 +258,38 @@
   $('c-stonetype').addEventListener('change', function () {
     spec.stoneType = this.value;
     if (spec.stoneType === 'natural' && !spec.stone) spec.stone = $('c-stone').value;
-    if (spec.stoneType === 'moissanite') spec.stoneSize = parseFloat($('c-stonesize').value) || 2;
+    if (spec.stoneType === 'cubic' && !spec.cubicColor) spec.cubicColor = $('c-cubic').value;
+    if (spec.stoneType === 'moissanite' || spec.stoneType === 'cubic') {
+      // 종류마다 고를 수 있는 크기가 달라서, 없는 크기면 가운데 값으로 되돌린다
+      var sizes = CONFIG.stones[spec.stoneType].sizes.map(function (z) { return z.mm; });
+      if (sizes.indexOf(Number(spec.stoneSize)) === -1) spec.stoneSize = sizes[Math.min(1, sizes.length - 1)];
+    }
     refreshStoneFields();
     studio.changed();
   });
 
   $('c-stonesize').addEventListener('change', function () {
     spec.stoneSize = parseFloat(this.value) || 2;
+    refreshCubicPeek();
+    studio.changed();
+  });
+
+  $('c-cubic').addEventListener('change', function () {
+    spec.cubicColor = this.value;
+    refreshCubicPeek();
+    studio.changed();
+  });
+
+  $('c-grain').addEventListener('change', function () {
+    spec.grain = this.value;
+    studio.changed();
+  });
+
+  $('c-oxidize').addEventListener('change', function () {
+    spec.oxidize = this.checked;
+    if (spec.oxidize) spec.plating = 'none';
+    $('c-plating').value = spec.plating;
+    refreshFinishFields();
     studio.changed();
   });
 
@@ -276,11 +358,14 @@
       ['폭', spec.width.toFixed(1) + ' mm'],
       ['호수', spec.size + '호 (안지름 ' + R.sizeToInnerDiameter(spec.size).toFixed(1) + 'mm)'],
       ['소재', (CONFIG.price.metals[spec.metal] || {}).label || spec.metal],
-      ['표면 느낌', R.TEXTURE_LABEL[spec.texture]],
+      ['표면 느낌', R.textureLabel(spec)],
       ['옆모양', R.PROFILE_LABEL[spec.profile]],
       ['원석', R.stoneLabel(spec)],
-      ['고정 방법', (spec.stoneType && spec.stoneType !== 'none') ? R.SETTING_LABEL[spec.setting] : '—'],
-      ['도금', (CONFIG.plating[spec.plating || 'none'] || {}).label],
+      ['고정 방법', (spec.stoneType && spec.stoneType !== 'none')
+        ? R.SETTING_LABEL[spec.setting] + ' (공임은 원석 값에 포함)' : '—'],
+      ['겉면 마감', spec.oxidize
+        ? CONFIG.oxidize.label
+        : (CONFIG.plating[spec.plating || 'none'] || {}).label],
       ['색 채움', (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label],
       ['각인', spec.engraving || '없음']
     );
@@ -289,7 +374,15 @@
     }).join('');
 
     var price = R.estimatePrice(spec, 1);
-    $('price-out').textContent = price ? R.formatKRW(price.unit) : '-';
+    $('price-out').textContent = R.priceText(price, 'unit');
+    // 값이 안 나오는 치수면 왜 그런지 바로 알려 준다
+    var consultBox = $('price-consult');
+    if (consultBox) {
+      consultBox.textContent = price && price.consult
+        ? price.consult + ' 아래 "커스텀 주문 상담"으로 넘어가시면 치수를 보고 값을 내 드립니다.'
+        : '';
+      consultBox.classList.toggle('is-hidden', !(price && price.consult));
+    }
     // 수량(커플링이면 2개)은 스튜디오를 거쳐도 주문서까지 그대로 따라갑니다
     var extra = spec.quantity > 1 ? { qty: spec.quantity } : null;
     $('to-order').href = 'order.html?' + R.specToQuery(spec, extra);

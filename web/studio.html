@@ -105,11 +105,17 @@
           <div class="field">
             <label for="c-texture">표면 느낌</label>
             <select id="c-texture"></select>
+            <p class="small" id="texture-note" style="margin:2px 0 0"></p>
           </div>
           <div class="field">
             <label for="c-profile">옆에서 본 모양</label>
             <select id="c-profile"></select>
           </div>
+        </div>
+
+        <div class="field is-hidden" id="f-grain">
+          <label for="c-grain">사포바 줄 방향</label>
+          <select id="c-grain"></select>
         </div>
 
         <fieldset style="display:grid;gap:12px">
@@ -128,23 +134,37 @@
             <select id="c-stone"></select>
             <div class="stone-peek" id="stone-peek"></div>
           </div>
+          <div class="field is-hidden" id="f-cubic">
+            <label for="c-cubic">큐빅 색 고르기</label>
+            <select id="c-cubic"></select>
+            <div class="stone-peek" id="cubic-peek"></div>
+          </div>
           <div class="field is-hidden" id="f-setting">
             <label for="c-setting">어떻게 고정할까요</label>
             <select id="c-setting"></select>
           </div>
         </fieldset>
 
-        <div class="grid grid-2" style="gap:12px">
-          <div class="field">
-            <label for="c-plating">겉면 색 (도금)</label>
-            <select id="c-plating"></select>
+        <fieldset style="display:grid;gap:12px">
+          <legend class="eyebrow" style="margin:0 0 4px">겉면 마감</legend>
+          <div class="grid grid-2" style="gap:12px">
+            <div class="field">
+              <label for="c-plating">겉면 색 (도금)</label>
+              <select id="c-plating"></select>
+            </div>
+            <div class="field">
+              <label for="c-epoxy">홈에 색 채우기</label>
+              <select id="c-epoxy"></select>
+              <p class="small" id="epoxy-note" style="margin:2px 0 0"></p>
+            </div>
           </div>
-          <div class="field">
-            <label for="c-epoxy">홈에 색 채우기</label>
-            <select id="c-epoxy"></select>
-            <p class="small" id="epoxy-note" style="margin:2px 0 0"></p>
-          </div>
-        </div>
+          <label class="checkline" for="c-oxidize">
+            <input type="checkbox" id="c-oxidize">
+            <span><b id="oxidize-label">유화 마감</b><br>
+              <span class="small" id="oxidize-note"></span></span>
+          </label>
+          <p class="small" id="finish-conflict" style="margin:0"></p>
+        </fieldset>
 
         <div class="field">
           <label for="c-engraving">각인 (반지 안쪽, 최대 20자)</label>
@@ -163,6 +183,7 @@
           <div class="small">예상 금액 (1개 기준)</div>
           <div class="price-total" id="price-out">-</div>
           <p class="small" style="margin:6px 0 0">최종 금액은 상담에서 확정됩니다.</p>
+          <p class="notice warn is-hidden" id="price-consult" style="margin-top:10px"></p>
         </div>
 
         <div class="btn-row">

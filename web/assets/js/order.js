@@ -99,18 +99,27 @@
       '두께       : ' + spec.thickness.toFixed(1) + ' mm',
       '폭         : ' + spec.width.toFixed(1) + ' mm',
       '옆모양     : ' + R.PROFILE_LABEL[spec.profile],
-      '표면 느낌  : ' + R.TEXTURE_LABEL[spec.texture],
+      '표면 느낌  : ' + R.textureLabel(spec),
       '원석       : ' + R.stoneLabel(spec),
-      '고정 방법  : ' + ((spec.stoneType && spec.stoneType !== 'none') ? R.SETTING_LABEL[spec.setting] : '—'),
-      '도금       : ' + (CONFIG.plating[spec.plating || 'none'] || {}).label,
+      '고정 방법  : ' + ((spec.stoneType && spec.stoneType !== 'none')
+        ? R.SETTING_LABEL[spec.setting] + ' (공임 포함)' : '—'),
+      '겉면 마감  : ' + (spec.oxidize
+        ? CONFIG.oxidize.label
+        : (CONFIG.plating[spec.plating || 'none'] || {}).label),
       '색 채움    : ' + (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label,
       '각인       : ' + (spec.engraving || '없음'),
       '호수       : ' + spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : ''),
       '수량       : ' + qty + '개',
       '',
-      '예상 금액  : ' + (price ? R.formatKRW(price.total) : '-') + (qty >= 2 ? ' (커플 할인 적용)' : ''),
+      '예상 금액  : ' + R.priceText(price, 'total') +
+        (price && !price.consult && qty >= 2 ? ' (커플 할인 적용)' : ''),
       '제작 기간  : ' + CONFIG.order.leadTime
     );
+    if (price && price.consult) lines.push('', '※ ' + price.consult);
+    if (spec.stoneType === 'cubic') {
+      lines.push('', '※ 컬러큐빅은 색과 크기를 상담에서 함께 정합니다. 위 색상은 희망 색상입니다.');
+    }
+    if (spec.oxidize) lines.push('', '※ ' + CONFIG.oxidize.note);
     var memo = $('o-memo').value.trim();
     if (memo) lines.push('', '요청사항  : ' + memo);
     var when = $('o-when').value;
@@ -156,7 +165,9 @@
       ['폭', spec.width.toFixed(1) + ' mm'],
       ['호수', spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : '')],
       ['원석', R.stoneLabel(spec)],
-      ['도금', (CONFIG.plating[spec.plating || 'none'] || {}).label],
+      ['겉면 마감', spec.oxidize
+        ? CONFIG.oxidize.label
+        : (CONFIG.plating[spec.plating || 'none'] || {}).label],
       ['수량', qty + '개']
     );
     $('sum-body').innerHTML = rows.map(function (r) {
@@ -164,7 +175,7 @@
     }).join('');
 
     var price = R.estimatePrice(spec, qty);
-    $('sum-price').textContent = price ? R.formatKRW(price.total) : '-';
+    $('sum-price').textContent = R.priceText(price, 'total');
     $('sum-lead').textContent = '제작 기간 · ' + CONFIG.order.leadTime;
 
     $('sheet').textContent = currentSheet();
@@ -251,7 +262,7 @@
         spec: spec,
         quantity: qty,
         secondSize: qty >= 2 ? size2 : null,
-        estimate: price ? price.total : null,
+        estimate: price && !price.consult ? price.total : null,
         sheet: currentSheet(),
         link: studioLink(),
         contact: {
