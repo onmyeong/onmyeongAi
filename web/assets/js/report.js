@@ -297,12 +297,12 @@
           '<span class="fit">' + item.fit + '%<small> 적합도</small></span>' +
           '<h3 style="margin:4px 0 2px">' + esc(spec.modelName) + '</h3>' +
           '<div class="meta">' + esc(item.family.label) + ' · ' +
-            esc(R.PROFILE_LABEL[spec.profile]) + ' · ' + esc(R.TEXTURE_LABEL[spec.texture]) +
+            esc(R.PROFILE_LABEL[spec.profile]) + ' · ' + esc(R.textureLabel(spec)) +
             (spec.stone ? ' · ' + esc(spec.stone) : '') + '</div>' +
         '</div>' +
         '<p class="reason">' + esc(item.reason) + '</p>' +
         '<p class="reason" style="color:var(--muted-2)">' + esc(item.model.desc) + '</p>' +
-        '<div class="price">' + R.formatKRW(price.unit) +
+        '<div class="price">' + R.priceText(price, 'unit') +
           ' <span class="meta">· 폭 ' + spec.width + 'mm / 두께 ' + spec.thickness + 'mm</span></div>' +
         '<div class="btn-row no-print">' +
           '<a class="btn btn-sm btn-primary" href="studio.html?' + q + '">3D로 조절하기</a>' +
@@ -399,7 +399,9 @@
     $('c-pairs').innerHTML = pairs.map(function (p) {
       var priceA = R.estimatePrice(p.specA, 1);
       var priceB = R.estimatePrice(p.specB, 1);
-      var pairTotal = Math.round((priceA.unit + priceB.unit) *
+      // 한쪽이라도 값이 안 나오는 치수면 한 쌍 값도 상담으로 넘깁니다
+      var pairConsult = priceA.consult || priceB.consult;
+      var pairTotal = pairConsult ? null : Math.round((priceA.unit + priceB.unit) *
         (1 - CONFIG.price.couplePairDiscount) / 1000) * 1000;
       var qa = R.specToQuery(p.specA, { qty: 2 });
       // 두 사양이 눈으로 같으면 미리보기를 하나만 보여 줍니다
@@ -422,15 +424,18 @@
           '<span class="fit">' + p.fit + '%<small> 어울림</small></span>' +
           '<h3 style="margin:4px 0 2px">' + esc(p.model.name) + '</h3>' +
           '<div class="meta">' + esc(p.family.label) + ' · ' +
-            esc(R.PROFILE_LABEL[p.specA.profile]) + ' · ' + esc(R.TEXTURE_LABEL[p.specA.texture]) + '</div>' +
+            esc(R.PROFILE_LABEL[p.specA.profile]) + ' · ' + esc(R.textureLabel(p.specA)) + '</div>' +
           '<p class="reason" style="margin-top:10px">' + esc(p.reason) + '</p>' +
           '<p class="reason" style="color:var(--muted)">' + esc(p.model.desc) + '</p>' +
-          '<div class="price" style="margin-top:8px">한 쌍 ' + R.formatKRW(pairTotal) +
-            ' <span class="meta">· 한 개 ' +
-            (priceA.unit === priceB.unit
-              ? R.formatKRW(priceA.unit)
-              : R.formatKRW(priceA.unit) + ' / ' + R.formatKRW(priceB.unit)) +
-            ' (한 쌍 할인 적용)</span></div>' +
+          '<div class="price" style="margin-top:8px">' +
+            (pairConsult
+              ? '상담 후 확정 <span class="meta">· ' + esc(pairConsult) + '</span>'
+              : '한 쌍 ' + R.formatKRW(pairTotal) + ' <span class="meta">· 한 개 ' +
+                (priceA.unit === priceB.unit
+                  ? R.formatKRW(priceA.unit)
+                  : R.formatKRW(priceA.unit) + ' / ' + R.formatKRW(priceB.unit)) +
+                ' (한 쌍 할인 적용)</span>') +
+          '</div>' +
           '<div class="btn-row no-print" style="margin-top:12px">' +
             '<a class="btn btn-sm btn-primary" href="studio.html?' + qa + '">3D로 조절하기</a>' +
             '<a class="btn btn-sm" href="order.html?' + qa + '">커플링 주문 상담</a>' +
