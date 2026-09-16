@@ -244,7 +244,10 @@ function buildBand(s, model) {
       const b = i * P + j2;
       const c = i2 * P + j;
       const d = i2 * P + j2;
-      idx.push(a, c, b, b, c, d);
+      /* 감는 방향이 뒤집혀 있으면 바깥 면의 법선이 안쪽을 향해
+       * 그 면이 통째로 잘려 나가고, 각도에 따라 반지가 뚫려 보입니다.
+       * 단면을 도는 방향(S)과 둘레를 도는 방향(T)의 외적이 바깥을 향하도록 감습니다. */
+      idx.push(a, b, c, b, d, c);
     }
   }
 
@@ -394,7 +397,10 @@ const CLEAR_STONES = ['아쿠아마린', '시트린', '가넷', '루비', '화�
 function stoneMaterial(spec) {
   const c = new THREE.Color(R.stoneColorOf(spec) || '#7a8b9c');
   // 모이사나이트는 무색 투명, 천연석은 대부분 불투명한 캐보션
-  const clear = spec.stoneType === 'moissanite' || CLEAR_STONES.indexOf(spec.stone) !== -1;
+  /* 작은 알을 투명하게 두면 뒤쪽 금속이 비쳐 새까맣게 죽습니다.
+   * 3mm 미만은 실제로도 거의 불투명하게 보이므로 투과를 끕니다. */
+  const mm = R.stoneMm(spec);
+  const clear = (spec.stoneType === 'moissanite' || CLEAR_STONES.indexOf(spec.stone) !== -1) && mm >= 3;
   return new THREE.MeshPhysicalMaterial({
     color: c,
     metalness: 0,
@@ -471,22 +477,23 @@ function buildStone(s, group) {
      * 손에 걸리지 않습니다. 그래서 여기서는
      *   (1) 살짝 꺼진 우물 벽  (2) 그 안에 앉은 낮은 알  두 가지를 그립니다. */
     const gemR = size / 2 > 0 ? size : 0.5;
-    const wellR = gemR * 1.34;
-    const wellDepth = gemR * 0.7;
+    const wellR = gemR * 1.3;
+    const wellDepth = gemR * 0.55;
 
-    // 우물 벽 — 위가 넓고 아래가 좁은 깔때기
+    /* 우물 벽 — 위가 넓고 아래가 좁은 깔때기.
+     * 바닥을 막아 두지 않으면 안이 그대로 비쳐 구멍을 뚫어 놓은 것처럼 보입니다. */
     const well = new THREE.Mesh(
-      new THREE.CylinderGeometry(wellR, gemR * 0.92, wellDepth + up * 2, 40, 1, true), metalMat);
+      new THREE.CylinderGeometry(wellR, gemR * 0.88, wellDepth + up * 2, 40, 1, false), metalMat);
     well.position.set(0, topR - wellDepth / 2 + lift - up, 0);
-    well.material = metalMat.clone();
-    well.material.side = THREE.DoubleSide;
     group.add(well);
 
-    // 알 — 우물 안에 앉아 윗면만 살짝 보입니다
+    /* 알 — 우물 안에 앉되 윗면이 반지 면과 거의 같은 높이에 오게.
+     * 너무 내리면 알은 안 보이고 우물만 남아 구멍처럼 읽힙니다. */
+    const gemH = gemR * 0.55;
     const gem = new THREE.Mesh(
       new THREE.SphereGeometry(gemR, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-    gem.scale.y = 0.42;
-    gem.position.set(0, topR - wellDepth * 0.42 + lift, 0);
+    gem.scale.y = gemH / gemR;
+    gem.position.set(0, topR + lift - gemH * 0.55, 0);
     group.add(gem);
 
   } else {
