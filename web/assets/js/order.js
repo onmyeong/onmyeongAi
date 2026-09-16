@@ -121,6 +121,11 @@
     if (sp.matte) bits.push('부분 무광');
     if (sp.engrave) bits.push('도안 새김');
     if (sp.stoneAt) bits.push('알 자리 지정');
+    var st = R.starList(sp);
+    if (st.length) {
+      bits.push('별 조각 ' + st.length + '개 ' +
+        st.map(function (x) { return x.size.toFixed(1); }).join('·') + 'mm');
+    }
     return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
   }
 

@@ -399,8 +399,10 @@
       organic: 0,             // 왁스를 손으로 깎았을 때의 불규칙한 굴곡 (0~1)
       sculpt: '',             // 손으로 민 두께 자국 (아래 SCULPT 참고)
       sculptW: '',            // 손으로 민 폭 자국
-      engrave: '',            // 도안 새기기 (둘레 32 × 폭 6 격자)
+      engrave: '',            // 도안 새기기 (둘레 48 × 폭 8 격자)
       stoneAt: '',            // 돌을 놓은 자리들 (도, 쉼표로 구분)
+      stars: '',              // 별 조각을 새긴 자리들 ('각도_크기', 쉼표로 구분)
+      starSize: 3,            // 새로 놓을 별 조각의 지름 (mm)
       matte: '',              // 부분 무광으로 칠한 자리
       stoneHeight: 0,         // 돌을 얼마나 올리고 내릴지 (mm)
       stoneAngle: 0,          // 돌을 반지 둘레 어디에 앉힐지 (도). 0 = 손등 쪽 한가운데
@@ -630,7 +632,8 @@
 
   /** 손으로 손댄 흔적이 하나라도 있는가 */
   function hasSculpt(spec) {
-    return !!(spec.sculpt || spec.sculptW || spec.matte || spec.engrave || spec.stoneAt);
+    return !!(spec.sculpt || spec.sculptW || spec.matte || spec.engrave ||
+      spec.stoneAt || spec.stars);
   }
 
   /** 색 채움 값 — 부분만 채우는지 한 바퀴 다 두르는지로 갈립니다 */
@@ -887,6 +890,32 @@
     return any ? out : '';
   }
 
+  /* ── 별 조각 ──
+   * 조각칼로 별을 새기는 마감입니다. 알을 놓는 것처럼 자리를 짚어 놓고,
+   * 별마다 크기(지름 mm)를 따로 가집니다.
+   * 주소에는 '각도_크기' 를 쉼표로 이어 담습니다. 예: 0_3,40_2.2
+   */
+  var STAR_MIN = 1.5, STAR_MAX = 6;
+
+  function starList(spec) {
+    if (!spec.stars) return [];
+    return String(spec.stars).split(',').map(function (piece) {
+      var bits = piece.split('_');
+      var a = parseFloat(bits[0]);
+      var mm = parseFloat(bits[1]);
+      if (isNaN(a)) return null;
+      if (isNaN(mm)) mm = 3;
+      return { angle: a, size: Math.max(STAR_MIN, Math.min(STAR_MAX, mm)) };
+    }).filter(Boolean).slice(0, 8);
+  }
+
+  function starWrite(list) {
+    if (!list || !list.length) return '';
+    return list.map(function (st) {
+      return Math.round(st.angle) + '_' + (Math.round(st.size * 10) / 10);
+    }).join(',');
+  }
+
   /** 돌을 놓은 자리들(도 단위). 비어 있으면 개수대로 고르게 나눠 앉힙니다 */
   function stoneAngles(spec) {
     if (spec.stoneAt) {
@@ -931,7 +960,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'plateSize', 'backThickness', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt',
+    'plateSize', 'backThickness', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt', 'stars',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'ilju', 'qty'];
 
@@ -979,6 +1008,7 @@
     if (p.get('matte')) spec.matte = p.get('matte').slice(0, SCULPT_N);
     if (p.get('engrave')) spec.engrave = p.get('engrave').slice(0, ENGRAVE_X * ENGRAVE_Y);
     if (p.has('stoneAt')) spec.stoneAt = p.get('stoneAt') || '';
+    if (p.has('stars')) spec.stars = starWrite(starList({ stars: p.get('stars') || '' }));
     if (p.get('stoneCount')) spec.stoneCount = Math.max(1, Math.min(8, parseInt(p.get('stoneCount'), 10) || 1));
     if (p.get('epoxyLines')) spec.epoxyLines = Math.max(1, Math.min(3, parseInt(p.get('epoxyLines'), 10) || 1));
     if (p.get('texture') && TEXTURE_LABEL[p.get('texture')]) spec.texture = p.get('texture');
@@ -1023,6 +1053,10 @@
     engraveRead: engraveRead,
     engraveWrite: engraveWrite,
     stoneAngles: stoneAngles,
+    starList: starList,
+    starWrite: starWrite,
+    STAR_MIN: STAR_MIN,
+    STAR_MAX: STAR_MAX,
     hasSculpt: hasSculpt,
     sizesFor: sizesFor,
     settingsFor: settingsFor,
