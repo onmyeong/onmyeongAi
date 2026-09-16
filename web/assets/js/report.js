@@ -354,6 +354,36 @@
     $('c-good').innerHTML = cp.good.map(li).join('');
     $('c-care').innerHTML = cp.care.map(li).join('');
 
+    $('c-nickname').textContent = cp.nickname;
+
+    // 세 갈래 점수 — 어디가 잘 맞고 어디가 덜한지 한눈에
+    $('c-axes').innerHTML = cp.axes.map(function (ax) {
+      return '<div class="axis-row">' +
+        '<span class="num">' + ax.score + '</span>' +
+        '<b>' + esc(ax.name) + '</b>' +
+        '<span>' + esc(ax.note) + '</span>' +
+        '<div class="axis-bar"><i style="width:' + ax.score + '%"></i></div>' +
+      '</div>';
+    }).join('');
+
+    // 케미 포인트
+    $('c-chem').innerHTML = cp.chemistry.map(function (c) {
+      return '<div class="card chem-card">' +
+        '<p class="eyebrow">' + esc(c.label) + '</p>' +
+        '<h3>' + esc(c.title) + '</h3>' +
+        '<p>' + esc(c.text) + '</p>' +
+      '</div>';
+    }).join('');
+
+    // 십신 — 서로가 서로를 어떤 자리로 보는가
+    var josa = ONM.compat.josa;
+    $('c-sipsin').innerHTML =
+      sipsinRow(a.id + '에게 ' + josa.eun(b.id), cp.sipsinA) +
+      sipsinRow(b.id + '에게 ' + josa.eun(a.id), cp.sipsinB);
+
+    $('c-yy-label').textContent = cp.yinYang.label;
+    $('c-yy-text').textContent = cp.yinYang.text;
+
     var notes = resA.notes.map(function (n) { return '첫 번째 분 — ' + n; })
       .concat(resB.notes.map(function (n) { return '두 번째 분 — ' + n; }));
     $('c-notes').innerHTML = notes.map(function (n) {
@@ -372,6 +402,13 @@
   }
 
   function li(text) { return '<li>' + esc(text) + '</li>'; }
+
+  function sipsinRow(who, sip) {
+    return '<div class="sipsin-row">' +
+      '<span class="who">' + esc(who) + '</span>' +
+      '<b>' + esc(sip.name) + ' — ' + esc(sip.title) + '</b>' +
+      '<p>' + esc(sip.text) + '</p></div>';
+  }
 
   function eachCard(rec, color, suffix) {
     var q = 'y=' + $('y' + suffix).value + '&m=' + $('m' + suffix).value + '&d=' + $('d' + suffix).value +
@@ -403,7 +440,9 @@
       var pairConsult = priceA.consult || priceB.consult;
       var pairTotal = pairConsult ? null : Math.round((priceA.unit + priceB.unit) *
         (1 - CONFIG.price.couplePairDiscount) / 1000) * 1000;
-      var qa = R.specToQuery(p.specA, { qty: 2 });
+      /* 커플링은 두 분 반지를 한 사람씩 차례로 맞춥니다.
+       * 첫 번째 분 반지부터 시작하고, 두 번째 분의 일주를 함께 실어 보냅니다. */
+      var qa = 'couple=1&step=a&iljuB=' + encodeURIComponent(b.id) + '&' + R.specToQuery(p.specA);
       // 두 사양이 눈으로 같으면 미리보기를 하나만 보여 줍니다
       var previews = p.sameLook
         ? '<div class="pair-previews is-single">' +
@@ -437,14 +476,19 @@
                 ' (한 쌍 할인 적용)</span>') +
           '</div>' +
           '<div class="btn-row no-print" style="margin-top:12px">' +
-            '<a class="btn btn-sm btn-primary" href="studio.html?' + qa + '">3D로 조절하기</a>' +
-            '<a class="btn btn-sm" href="order.html?' + qa + '">커플링 주문 상담</a>' +
+            '<a class="btn btn-sm btn-primary" href="studio.html?' + qa + '">두 반지 각각 맞추기</a>' +
+            '<a class="btn btn-sm" href="order.html?' + R.specToQuery(p.specA, { qty: 2 }) +
+              '">바로 주문 상담</a>' +
           '</div>' +
         '</div>' +
       '</article>';
     }).join('');
 
-    if (pairs[0]) $('c-go-order').href = 'order.html?' + R.specToQuery(pairs[0].specA, { qty: 2 });
+    if (pairs[0]) {
+      $('c-go-order').href = 'studio.html?couple=1&step=a&iljuB=' + encodeURIComponent(b.id) +
+        '&' + R.specToQuery(pairs[0].specA);
+      $('c-go-order').textContent = '두 반지 각각 맞추고 주문하기';
+    }
   }
 
   /* ───────────── 공유하기 ───────────── */

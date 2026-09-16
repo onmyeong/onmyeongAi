@@ -344,7 +344,9 @@
       family: model.family,
       profile: model.profile,
       texture: model.texture,
-      setting: stoneType === 'none' ? 'none' : model.setting,
+      // 원석마다 물릴 수 있는 방식이 정해져 있습니다
+      //   모이사나이트·큐빅 → 매립(우물) / 천연석 캐보션 → 테두리로 감싸기
+      setting: stoneType === 'none' ? 'none' : settingsFor(stoneType)[0],
       width: round1(w),
       thickness: round1(t),
       size: 13,
@@ -357,7 +359,8 @@
       wave: model.wave, twist: model.twist, taper: model.taper, facets: model.facets,
       stoneType: stoneType,
       stone: stoneType === 'natural' ? stone : null,
-      stoneSize: stoneType === 'moissanite' ? 2.0 : CONFIG.stones.natural.mm,
+      stoneSize: stoneType === 'none' ? 0 : CONFIG.stones[stoneType].sizes[1].mm,
+      stoneShape: 'round',
       engraving: '',
       ilju: record ? record.id : null
     };
@@ -423,16 +426,10 @@
     /* 원석 값. 물리는 공임은 원석 값에 포함돼 있어 따로 더하지 않습니다.
      * 컬러큐빅은 색과 크기를 상담에서 정하므로 값을 비워 둡니다. */
     var stoneCost = 0, pending = [];
-    if (spec.stoneType === 'moissanite') {
-      var pick = CONFIG.stones.moissanite.sizes.filter(function (z) {
-        return Math.abs(z.mm - (Number(spec.stoneSize) || 2)) < 0.01;
-      })[0];
-      stoneCost = pick ? pick.price : CONFIG.stones.moissanite.sizes[1].price;
-    } else if (spec.stoneType === 'natural') {
-      stoneCost = CONFIG.stones.natural.price;
-    } else if (spec.stoneType === 'cubic') {
-      if (CONFIG.stones.cubic.price == null) pending.push('컬러큐빅 값');
-      else stoneCost = CONFIG.stones.cubic.price;
+    var kind = CONFIG.stones[spec.stoneType];
+    if (kind && kind.sizes) {
+      stoneCost = sizePrice(spec.stoneType, spec.stoneSize);
+      if (stoneCost == null) { pending.push(kind.label + ' 값'); stoneCost = 0; }
     }
     var setting = P.setting[spec.setting] || 0;
 
@@ -514,7 +511,7 @@
     none:  '원석 없이',
     bezel: '테두리로 감싼 (베젤)',
     prong: '발로 물어 올린 (프롱)',
-    flush: '표면에 묻은 (플러시)'
+    flush: '표면에 묻은 매립 (우물 세팅)'
   };
   var STONE_TYPE_LABEL = {
     none: '원석 없이', moissanite: '모이사나이트', natural: '천연석', cubic: '컬러큐빅'
@@ -540,10 +537,27 @@
 
   /** 지금 사양의 원석 지름(mm) */
   function stoneMm(spec) {
-    if (spec.stoneType === 'moissanite') return Number(spec.stoneSize) || 2.0;
-    if (spec.stoneType === 'cubic') return Number(spec.stoneSize) || 2.0;
-    if (spec.stoneType === 'natural') return CONFIG.stones.natural.mm;
-    return 0;
+    var kind = CONFIG.stones[spec.stoneType];
+    if (!kind) return 0;
+    var mm = Number(spec.stoneSize);
+    if (!isNaN(mm) && mm > 0) return mm;
+    return kind.mm || (kind.sizes ? kind.sizes[0].mm : 0);
+  }
+
+  /** 그 종류·그 크기의 원석 값. 값이 정해지지 않았으면 null (= 상담) */
+  function sizePrice(stoneType, mm) {
+    var kind = CONFIG.stones[stoneType];
+    if (!kind || !kind.sizes) return 0;
+    var want = Number(mm);
+    var pick = kind.sizes.filter(function (z) { return Math.abs(z.mm - want) < 0.01; })[0];
+    if (!pick) pick = kind.sizes[Math.min(1, kind.sizes.length - 1)];
+    return pick.price == null ? null : pick.price;
+  }
+
+  /** 그 종류가 고를 수 있는 크기 목록 */
+  function sizesFor(stoneType) {
+    var kind = CONFIG.stones[stoneType];
+    return (kind && kind.sizes) || [];
   }
 
   /** 이 원석에 쓸 수 있는 고정 방식 (천연석 캐보션은 감싸는 방식만) */
@@ -555,14 +569,14 @@
   /** 원석을 사람이 읽는 한 줄로 */
   function stoneLabel(spec) {
     if (spec.stoneType === 'moissanite') {
-      return '모이사나이트 ' + (Number(spec.stoneSize) || 2).toFixed(1) + 'mm (라운드)';
+      return '모이사나이트 ' + stoneMm(spec).toFixed(1) + 'mm (라운드)';
     }
     if (spec.stoneType === 'natural' && spec.stone) {
-      return spec.stone + ' ' + CONFIG.stones.natural.mm.toFixed(1) + 'mm (캐보션)';
+      var shape = CONFIG.stones.natural.shapes[spec.stoneShape || 'round'];
+      return spec.stone + ' ' + stoneMm(spec).toFixed(1) + 'mm (캐보션 · ' + shape + ')';
     }
     if (spec.stoneType === 'cubic') {
-      return '컬러큐빅 ' + (spec.cubicColor || '색 상담') + ' ' +
-        (Number(spec.stoneSize) || 2).toFixed(1) + 'mm';
+      return '컬러큐빅 ' + (spec.cubicColor || '색 상담') + ' ' + stoneMm(spec).toFixed(1) + 'mm';
     }
     return '원석 없이';
   }
@@ -743,7 +757,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'setting', 'stoneType', 'stone', 'stoneSize', 'cubicColor', 'plating', 'oxidize', 'epoxy',
+    'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy',
     'engraving', 'ilju', 'qty'];
 
   /** 사양 → URL 쿼리 문자열 (리포트 → 스튜디오 → 주문으로 넘길 때 사용) */
@@ -756,6 +770,7 @@
       if (k === 'cubicColor' && spec.stoneType !== 'cubic') return;
       if (k === 'grain' && spec.texture !== 'sandbar') return;
       if (k === 'stone' && spec.stoneType !== 'natural') return;
+      if (k === 'stoneShape' && spec.stoneType !== 'natural') return;
       q.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
     });
     if (extra) Object.keys(extra).forEach(function (k) {
@@ -780,6 +795,7 @@
     if (p.has('oxidize')) spec.oxidize = p.get('oxidize') === 'true';
     if (p.has('epoxy')) spec.epoxy = p.get('epoxy') || '';
     if (p.has('cubicColor')) spec.cubicColor = p.get('cubicColor') || '';
+    if (p.get('stoneShape')) spec.stoneShape = p.get('stoneShape');
     if (p.get('texture') && TEXTURE_LABEL[p.get('texture')]) spec.texture = p.get('texture');
     if (p.get('grain') && GRAIN_LABEL[p.get('grain')]) spec.grain = p.get('grain');
     if (p.get('profile')) spec.profile = p.get('profile');
@@ -813,6 +829,8 @@
     metalColor: metalColor,
     stoneColorOf: stoneColorOf,
     stoneMm: stoneMm,
+    sizePrice: sizePrice,
+    sizesFor: sizesFor,
     settingsFor: settingsFor,
     stoneLabel: stoneLabel,
     TEXTURE_LABEL: TEXTURE_LABEL,
