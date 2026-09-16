@@ -352,9 +352,12 @@
       size: 13,
       metal: opts.metal || 'silver925',
       grain: 'vertical',      // 사포바를 골랐을 때 줄 방향
+      backThickness: 0,       // 0 = 앞뒤 같은 두께. 값을 주면 손바닥 쪽이 그만큼 얇아집니다
+      organic: 0,             // 왁스를 손으로 깎았을 때의 불규칙한 굴곡 (0~1)
       plating: 'none',
       oxidize: false,         // 유화 — 도금과 같이 못 합니다
       epoxy: '',
+      epoxyCoverage: 'part',
       cubicColor: '',         // 컬러큐빅 색 (상담에서 확정)
       wave: model.wave, twist: model.twist, taper: model.taper, facets: model.facets,
       stoneType: stoneType,
@@ -428,7 +431,7 @@
     var stoneCost = 0, pending = [];
     var kind = CONFIG.stones[spec.stoneType];
     if (kind && kind.sizes) {
-      stoneCost = sizePrice(spec.stoneType, spec.stoneSize);
+      stoneCost = sizePrice(spec.stoneType, spec.stoneSize, spec.stoneShape);
       if (stoneCost == null) { pending.push(kind.label + ' 값'); stoneCost = 0; }
     }
     var setting = P.setting[spec.setting] || 0;
@@ -436,7 +439,7 @@
     /* 도금과 유화는 같이 못 하므로 둘 중 하나만 더해집니다 */
     var plating = (CONFIG.plating[spec.plating || 'none'] || {}).price || 0;
     var oxidize = spec.oxidize ? CONFIG.oxidize.price : 0;
-    var epoxy = spec.epoxy ? CONFIG.epoxy.price : 0;
+    var epoxy = spec.epoxy ? epoxyPrice(spec) : 0;
     var engrave = spec.engraving ? P.engraving : 0;
 
     var one = (base + extraW + extraT) * metal.mult +
@@ -479,7 +482,8 @@
     knife:  '가운데가 솟은 (나이프)',
     wave:   '물결치는 (웨이브)',
     facet:  '각이 진 (패싯)',
-    step:   '층이 진 (스텝)'
+    step:   '층이 진 (스텝)',
+    signet: '윗면이 평평한 판 (인장)'
   };
   /* 겉면 마감은 실제로 만들 수 있는 다섯 가지만 둡니다. */
   var TEXTURE_LABEL = {
@@ -509,9 +513,16 @@
   }
   var SETTING_LABEL = {
     none:  '원석 없이',
-    bezel: '테두리로 감싼 (베젤)',
+    bezel: '테두리로 감싸 누른 (베젤)',
+    seat:  '자리를 파고 심어 넣은 (심기)',
     prong: '발로 물어 올린 (프롱)',
     flush: '표면에 묻은 매립 (우물 세팅)'
+  };
+  var SETTING_DESC = {
+    bezel: '돌 둘레를 금속 테두리가 한 바퀴 감싸 눌러 줍니다. 가장 튼튼하고 걸림이 적습니다.',
+    seat:  '돌이 앉을 자리를 파낸 뒤 그 홈에 심어 접착으로 고정합니다. 가장 낮게 앉아 손에 안 걸립니다.',
+    prong: '발 네 개를 세워 돌 허리를 물어 올립니다. 돌이 높이 떠서 빛을 많이 받습니다.',
+    flush: '표면에 우물을 파 돌을 넣고 둘레 금속을 밀어 덮습니다. 윗면이 반지와 거의 같은 높이입니다.'
   };
   var STONE_TYPE_LABEL = {
     none: '원석 없이', moissanite: '모이사나이트', natural: '천연석', cubic: '컬러큐빅'
@@ -545,13 +556,22 @@
   }
 
   /** 그 종류·그 크기의 원석 값. 값이 정해지지 않았으면 null (= 상담) */
-  function sizePrice(stoneType, mm) {
+  function sizePrice(stoneType, mm, shape) {
     var kind = CONFIG.stones[stoneType];
     if (!kind || !kind.sizes) return 0;
+    // 오벌 캐보션은 6×8mm 한 규격뿐이라 값도 하나입니다
+    if (shape === 'oval' && kind.ovalPrice != null) return kind.ovalPrice;
     var want = Number(mm);
     var pick = kind.sizes.filter(function (z) { return Math.abs(z.mm - want) < 0.01; })[0];
     if (!pick) pick = kind.sizes[Math.min(1, kind.sizes.length - 1)];
     return pick.price == null ? null : pick.price;
+  }
+
+  /** 색 채움 값 — 부분만 채우는지 한 바퀴 다 두르는지로 갈립니다 */
+  function epoxyPrice(spec) {
+    if (!spec.epoxy) return 0;
+    var cov = CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'];
+    return cov ? cov.price : CONFIG.epoxy.price;
   }
 
   /** 그 종류가 고를 수 있는 크기 목록 */
@@ -572,8 +592,11 @@
       return '모이사나이트 ' + stoneMm(spec).toFixed(1) + 'mm (라운드)';
     }
     if (spec.stoneType === 'natural' && spec.stone) {
-      var shape = CONFIG.stones.natural.shapes[spec.stoneShape || 'round'];
-      return spec.stone + ' ' + stoneMm(spec).toFixed(1) + 'mm (캐보션 · ' + shape + ')';
+      var N = CONFIG.stones.natural;
+      if (spec.stoneShape === 'oval') {
+        return spec.stone + ' ' + N.ovalMm.w + '×' + N.ovalMm.h + 'mm (오벌 캐보션)';
+      }
+      return spec.stone + ' ' + stoneMm(spec).toFixed(1) + 'mm (라운드 캐보션)';
     }
     if (spec.stoneType === 'cubic') {
       return '컬러큐빅 ' + (spec.cubicColor || '색 상담') + ' ' + stoneMm(spec).toFixed(1) + 'mm';
@@ -757,7 +780,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy',
+    'backThickness', 'organic', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'ilju', 'qty'];
 
   /** 사양 → URL 쿼리 문자열 (리포트 → 스튜디오 → 주문으로 넘길 때 사용) */
@@ -771,6 +794,7 @@
       if (k === 'grain' && spec.texture !== 'sandbar') return;
       if (k === 'stone' && spec.stoneType !== 'natural') return;
       if (k === 'stoneShape' && spec.stoneType !== 'natural') return;
+      if (k === 'epoxyCoverage' && !spec.epoxy) return;
       q.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
     });
     if (extra) Object.keys(extra).forEach(function (k) {
@@ -785,7 +809,7 @@
     var model = ONM.rings.getModel(p.get('modelId')) || MODELS[0];
     var record = p.get('ilju') && ONM.ILJU ? ONM.ILJU[p.get('ilju')] : null;
     var spec = defaultSpec(model, record, { metal: p.get('metal') || undefined });
-    ['width', 'thickness', 'size'].forEach(function (k) {
+    ['width', 'thickness', 'size', 'backThickness', 'organic'].forEach(function (k) {
       var v = parseFloat(p.get(k));
       if (!isNaN(v)) spec[k] = v;
     });
@@ -794,6 +818,7 @@
     if (p.get('plating')) spec.plating = p.get('plating');
     if (p.has('oxidize')) spec.oxidize = p.get('oxidize') === 'true';
     if (p.has('epoxy')) spec.epoxy = p.get('epoxy') || '';
+    if (p.get('epoxyCoverage')) spec.epoxyCoverage = p.get('epoxyCoverage');
     if (p.has('cubicColor')) spec.cubicColor = p.get('cubicColor') || '';
     if (p.get('stoneShape')) spec.stoneShape = p.get('stoneShape');
     if (p.get('texture') && TEXTURE_LABEL[p.get('texture')]) spec.texture = p.get('texture');
@@ -835,6 +860,8 @@
     stoneLabel: stoneLabel,
     TEXTURE_LABEL: TEXTURE_LABEL,
     SETTING_LABEL: SETTING_LABEL,
+    SETTING_DESC: SETTING_DESC,
+    epoxyPrice: epoxyPrice,
     recommend: recommend,
     defaultSpec: defaultSpec,
     readStyleBias: readStyleBias,

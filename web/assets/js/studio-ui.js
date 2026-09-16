@@ -90,6 +90,10 @@
     ], spec.stoneType || 'none');
 
     fillSelect($('c-stoneshape'), pairs(CONFIG.stones.natural.shapes), spec.stoneShape || 'round');
+    fillSelect($('c-epoxycov'), Object.keys(CONFIG.epoxy.coverage).map(function (k) {
+      var v = CONFIG.epoxy.coverage[k];
+      return [k, v.label + ' (+' + v.price.toLocaleString('ko-KR') + '원)'];
+    }), spec.epoxyCoverage || 'part');
 
     // 천연석 — 내 일주 추천을 위로
     var rec = spec.ilju && ONM.ILJU[spec.ilju];
@@ -171,6 +175,7 @@
         '금속에 스며드는 것이 아니라 홈에 잠기는 것이라 경계가 또렷하고, 만졌을 때 단차가 없습니다.';
     }
     $('epoxy-note').textContent = note;
+    $('f-epoxycov').classList.toggle('is-hidden', !spec.epoxy);
   }
 
   /* 고른 원석에 따라 필요한 칸만 남기고, 고를 수 있는 고정 방법도 추려 준다.
@@ -184,8 +189,17 @@
     $('f-stone').classList.toggle('is-hidden', type !== 'natural');
     $('f-stoneshape').classList.toggle('is-hidden', type !== 'natural');
     $('f-cubic').classList.toggle('is-hidden', type !== 'cubic');
-    // 고정 방법은 원석마다 하나로 정해져 있어 고를 것이 없습니다 — 사양표에만 남깁니다
-    $('f-setting').classList.add('is-hidden');
+    /* 물림 방식 — 천연석만 세 가지 중에 고릅니다.
+     * 모이사나이트와 컬러큐빅은 매립(우물) 한 가지뿐이라 고를 것이 없습니다. */
+    var allowed = R.settingsFor(type);
+    $('f-setting').classList.toggle('is-hidden', allowed.length < 2);
+    if (allowed.length > 1) {
+      if (allowed.indexOf(spec.setting) === -1) spec.setting = allowed[0];
+      fillSelect($('c-setting'), allowed.map(function (k) {
+        return [k, R.SETTING_LABEL[k]];
+      }), spec.setting);
+      $('setting-note').textContent = R.SETTING_DESC[spec.setting] || '';
+    }
 
     if (has) {
       var kind = CONFIG.stones[type];
@@ -207,7 +221,7 @@
     refreshCubicPeek();
 
     if (!has) { spec.setting = 'none'; return; }
-    spec.setting = R.settingsFor(type)[0];
+    if (allowed.indexOf(spec.setting) === -1) spec.setting = allowed[0];
   }
 
   /* 고른 천연석이 실제로 어떤 알인지 옆에 바로 보여 준다 */
@@ -242,12 +256,31 @@
     });
     var sz = CONFIG.limits.sizeKR;
     $('c-size').min = sz.min; $('c-size').max = sz.max; $('c-size').value = spec.size;
+
+    /* 뒤쪽 두께는 앞쪽을 넘을 수 없습니다 (뒤가 더 두꺼운 반지는 손에 걸립니다).
+     * 0 은 "앞뒤 같게"라는 뜻이라 최솟값을 앞 두께의 절반으로 둡니다. */
+    var back = $('c-backthickness');
+    var lim = R.limitsFor(model, 'thickness');
+    back.min = Math.max(lim.min, spec.thickness * 0.45).toFixed(1);
+    back.max = spec.thickness.toFixed(1);
+    if (!spec.backThickness || spec.backThickness > spec.thickness) spec.backThickness = spec.thickness;
+    if (spec.backThickness < Number(back.min)) spec.backThickness = Number(back.min);
+    back.value = spec.backThickness;
+    $('c-organic').value = spec.organic || 0;
   }
 
   function setOutputs() {
     $('o-thickness').textContent = spec.thickness.toFixed(1) + 'mm';
     $('o-width').textContent = spec.width.toFixed(1) + 'mm';
     $('o-size').textContent = spec.size + '호';
+
+    var gap = spec.thickness - (spec.backThickness || spec.thickness);
+    $('o-backthickness').textContent = (spec.backThickness || spec.thickness).toFixed(1) + 'mm' +
+      (gap > 0.05 ? ' (단차 ' + gap.toFixed(1) + 'mm)' : ' (앞뒤 같게)');
+
+    var org = Number(spec.organic) || 0;
+    $('o-organic').textContent = org === 0 ? '반듯하게'
+      : org < 0.35 ? '살짝' : org < 0.7 ? '뚜렷하게' : '많이';
   }
 
   /* ───────────── 이벤트 ───────────── */
@@ -264,9 +297,23 @@
   [['c-thickness', 'thickness'], ['c-width', 'width'], ['c-size', 'size']].forEach(function (p) {
     $(p[0]).addEventListener('input', function () {
       spec[p[1]] = p[1] === 'size' ? parseInt(this.value, 10) : parseFloat(this.value);
+      // 앞 두께를 줄이면 뒤 두께도 따라 줄어야 앞뒤가 뒤집히지 않습니다
+      if (p[1] === 'thickness') applyModelLimits();
       setOutputs();
       studio.changed();
     });
+  });
+
+  $('c-backthickness').addEventListener('input', function () {
+    spec.backThickness = parseFloat(this.value);
+    setOutputs();
+    studio.changed();
+  });
+
+  $('c-organic').addEventListener('input', function () {
+    spec.organic = parseFloat(this.value);
+    setOutputs();
+    studio.changed();
   });
 
   ['texture', 'profile', 'plating'].forEach(function (key) {
@@ -340,6 +387,17 @@
     studio.changed();
   });
 
+  $('c-epoxycov').addEventListener('change', function () {
+    spec.epoxyCoverage = this.value;
+    studio.changed();
+  });
+
+  $('c-setting').addEventListener('change', function () {
+    spec.setting = this.value;
+    $('setting-note').textContent = R.SETTING_DESC[spec.setting] || '';
+    studio.changed();
+  });
+
   $('c-engraving').addEventListener('input', function () {
     spec.engraving = this.value.trim();
     syncPanel();
@@ -381,6 +439,31 @@
       '<br><span class="small">' + R.esc(ONM.iljuPhrase(rec)) + '</span></span>';
     box.classList.remove('is-hidden');
   }
+
+  /* ───────────── 체험하기 / 주문 제작 ─────────────
+   * 값은 어느 쪽이든 똑같습니다. 다만 "그냥 구경 중"인 분에게
+   * 주문 버튼을 계속 들이밀지 않으려고 화면만 바꿉니다. */
+  var use = localStorage.getItem('onm-use') === 'play' ? 'play' : 'order';
+
+  function setUse(next, remember) {
+    use = next === 'play' ? 'play' : 'order';
+    if (remember) { try { localStorage.setItem('onm-use', use); } catch (e) {} }
+    $('use-play').setAttribute('aria-pressed', String(use === 'play'));
+    $('use-order').setAttribute('aria-pressed', String(use === 'order'));
+
+    var playing = use === 'play';
+    $('to-order').classList.toggle('is-hidden', playing && !couple.on);
+    var hint = $('use-hint');
+    if (hint) {
+      hint.textContent = playing
+        ? '지금은 체험 모드입니다. 마음껏 바꿔 보세요. 값은 그대로 보여 드리고, 주문으로 넘어가는 버튼만 감춰 뒀습니다.'
+        : '';
+      hint.classList.toggle('is-hidden', !playing);
+    }
+  }
+
+  $('use-play').addEventListener('click', function () { setUse('play', true); });
+  $('use-order').addEventListener('click', function () { setUse('order', true); });
 
   /* 커플링 단계 안내 — 지금 누구 반지를 만지고 있는지, 다음에 뭘 하는지 */
   function paintCoupleStep() {
@@ -442,7 +525,11 @@
       ['겉면 마감', spec.oxidize
         ? CONFIG.oxidize.label
         : (CONFIG.plating[spec.plating || 'none'] || {}).label],
-      ['색 채움', (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label],
+      ['앞뒤 두께', spec.thickness.toFixed(1) + ' / ' +
+        (spec.backThickness || spec.thickness).toFixed(1) + ' mm'],
+      ['굴곡', $('o-organic').textContent],
+      ['색 채움', (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label +
+        (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : '')],
       ['각인', spec.engraving || '없음']
     );
     $('spec-body').innerHTML = rows.map(function (r) {
@@ -485,6 +572,8 @@
       history.replaceState(null, '', location.pathname + '?' + R.specToQuery(spec, extra));
     }
     paintCoupleStep();
+    if (couple.on) $('use-switch').classList.add('is-hidden');
+    else setUse(use, false);
   }
 
   /* ───────────── 버튼 ───────────── */

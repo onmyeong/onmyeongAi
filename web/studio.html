@@ -42,6 +42,18 @@
       예상 금액도 함께 바뀝니다. 마음에 드는 상태 그대로 주문서로 넘어갈 수 있어요.
     </p>
 
+    <div class="mode-switch" id="use-switch" role="group" aria-label="이용 방식 고르기">
+      <button type="button" class="mode-card" id="use-play" data-use="play" aria-pressed="false">
+        <span class="mark" aria-hidden="true">체험</span>
+        <span><b>반지 체험하기</b><span>마음껏 돌려보고 바꿔보기만 합니다</span></span>
+      </button>
+      <button type="button" class="mode-card" id="use-order" data-use="order" aria-pressed="true">
+        <span class="mark" aria-hidden="true">주문</span>
+        <span><b>주문 제작</b><span>맞춘 그대로 주문서로 넘어갑니다</span></span>
+      </button>
+    </div>
+    <p class="notice is-hidden" id="use-hint" style="margin-bottom:20px"></p>
+
     <!-- 커플링일 때만 뜨는 단계 안내 -->
     <div class="card couple-step is-hidden" id="couple-step" style="margin-bottom:20px">
       <div class="step-dots" id="step-dots"></div>
@@ -129,6 +141,32 @@
         </div>
 
         <fieldset style="display:grid;gap:12px">
+          <legend class="eyebrow" style="margin:0 0 4px">손맛 — 직접 깎은 느낌</legend>
+          <div class="field">
+            <label for="c-backthickness">뒤쪽 두께 — 손바닥에 닿는 쪽</label>
+            <div class="slider-row">
+              <input id="c-backthickness" type="range" step="0.1">
+              <output id="o-backthickness"></output>
+            </div>
+            <p class="small" style="margin:2px 0 0">
+              앞(손등 쪽)보다 뒤를 얇게 깎으면 손에 편하고 앞면이 더 도톰해 보입니다.
+              인장반지처럼 앞뒤 단차를 크게 두고 싶을 때 여기를 내리세요.
+            </p>
+          </div>
+          <div class="field">
+            <label for="c-organic">굴곡 — 왁스를 손으로 깎은 정도</label>
+            <div class="slider-row">
+              <input id="c-organic" type="range" min="0" max="1" step="0.05">
+              <output id="o-organic"></output>
+            </div>
+            <p class="small" style="margin:2px 0 0">
+              0이면 기계로 깎은 듯 반듯하고, 올릴수록 왁스를 손으로 깎았을 때처럼
+              두께와 폭이 자연스럽게 흔들립니다.
+            </p>
+          </div>
+        </fieldset>
+
+        <fieldset style="display:grid;gap:12px">
           <legend class="eyebrow" style="margin:0 0 4px">원석</legend>
           <div class="field">
             <label for="c-stonetype">어떤 원석을 올릴까요</label>
@@ -154,8 +192,9 @@
             <div class="stone-peek" id="cubic-peek"></div>
           </div>
           <div class="field is-hidden" id="f-setting">
-            <label for="c-setting">어떻게 고정할까요</label>
+            <label for="c-setting">어떻게 물릴까요</label>
             <select id="c-setting"></select>
+            <p class="small" id="setting-note" style="margin:2px 0 0"></p>
           </div>
         </fieldset>
 
@@ -170,6 +209,10 @@
               <label for="c-epoxy">홈에 색 채우기</label>
               <select id="c-epoxy"></select>
               <p class="small" id="epoxy-note" style="margin:2px 0 0"></p>
+            </div>
+            <div class="field is-hidden" id="f-epoxycov">
+              <label for="c-epoxycov">색을 얼마나 채울까요</label>
+              <select id="c-epoxycov"></select>
             </div>
           </div>
           <label class="checkline" for="c-oxidize">
