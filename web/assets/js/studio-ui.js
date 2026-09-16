@@ -189,6 +189,8 @@
     $('f-stone').classList.toggle('is-hidden', type !== 'natural');
     $('f-stoneshape').classList.toggle('is-hidden', type !== 'natural');
     $('f-cubic').classList.toggle('is-hidden', type !== 'cubic');
+    $('f-stoneheight').classList.toggle('is-hidden', !has);
+    $('c-stoneheight').value = spec.stoneHeight || 0;
     /* 물림 방식 — 천연석만 세 가지 중에 고릅니다.
      * 모이사나이트와 컬러큐빅은 매립(우물) 한 가지뿐이라 고를 것이 없습니다. */
     var allowed = R.settingsFor(type);
@@ -281,6 +283,10 @@
     var org = Number(spec.organic) || 0;
     $('o-organic').textContent = org === 0 ? '반듯하게'
       : org < 0.35 ? '살짝' : org < 0.7 ? '뚜렷하게' : '많이';
+
+    var lift = Number(spec.stoneHeight) || 0;
+    $('o-stoneheight').textContent = (lift > 0 ? '+' : '') + lift.toFixed(1) + 'mm' +
+      (Math.abs(lift) < 0.05 ? ' (기본)' : lift < 0 ? ' (낮게)' : ' (높게)');
   }
 
   /* ───────────── 이벤트 ───────────── */
@@ -315,6 +321,50 @@
     setOutputs();
     studio.changed();
   });
+
+  $('c-stoneheight').addEventListener('input', function () {
+    spec.stoneHeight = parseFloat(this.value);
+    setOutputs();
+    studio.changed();
+  });
+
+  /* ───────────── 손으로 다듬기 ─────────────
+   * 3D가 떠 있을 때만 쓸 수 있습니다. 켜면 화면 돌리기가 잠깐 멈추고,
+   * 반지 위에서 위아래로 끌면 그 자리가 두꺼워지거나 얇아집니다. */
+  (function sculptButtons() {
+    var toggle = $('sculpt-toggle'), clear = $('sculpt-clear'), hint = $('sculpt-hint');
+
+    function refresh(on) {
+      toggle.setAttribute('aria-pressed', String(on));
+      toggle.textContent = on ? '다듬기 끝내기' : '손으로 다듬기';
+      toggle.classList.toggle('btn-primary', on);
+      hint.textContent = on
+        ? '반지 위에서 위로 끌면 그 자리가 두꺼워지고, 아래로 끌면 얇아집니다. 끌면서 옆으로 움직이면 붓처럼 이어집니다. 끝내면 다시 화면을 돌릴 수 있습니다.'
+        : '';
+      hint.classList.toggle('is-hidden', !on);
+      clear.classList.toggle('is-hidden', !spec.sculpt && !on);
+    }
+
+    // 3D가 준비되면 버튼을 꺼내 줍니다
+    var wait = setInterval(function () {
+      if (!studio.setSculptMode) return;
+      clearInterval(wait);
+      toggle.classList.remove('is-hidden');
+      refresh(false);
+
+      toggle.addEventListener('click', function () {
+        refresh(studio.setSculptMode(toggle.getAttribute('aria-pressed') !== 'true'));
+      });
+      clear.addEventListener('click', function () {
+        studio.clearSculpt();
+        refresh(toggle.getAttribute('aria-pressed') === 'true');
+      });
+      studio.onChange(function () {
+        clear.classList.toggle('is-hidden', !spec.sculpt && toggle.getAttribute('aria-pressed') !== 'true');
+      });
+    }, 200);
+    setTimeout(function () { clearInterval(wait); }, 12000);
+  })();
 
   ['texture', 'profile', 'plating'].forEach(function (key) {
     $('c-' + key).addEventListener('change', function () {
@@ -527,7 +577,7 @@
         : (CONFIG.plating[spec.plating || 'none'] || {}).label],
       ['앞뒤 두께', spec.thickness.toFixed(1) + ' / ' +
         (spec.backThickness || spec.thickness).toFixed(1) + ' mm'],
-      ['굴곡', $('o-organic').textContent],
+      ['굴곡', $('o-organic').textContent + (spec.sculpt ? ' · 손으로 다듬음' : '')],
       ['색 채움', (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label +
         (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : '')],
       ['각인', spec.engraving || '없음']
