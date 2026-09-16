@@ -463,3 +463,9 @@ input[type="range"]::-moz-range-thumb {
 .step-done { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .step-done .preview-box { width: 74px; height: 74px; padding: 6px; margin: 0; }
 .step-done .small { max-width: 16ch; }
+
+/* ── 다듬기 도구 ────────────────────────────────────── */
+.tool-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.tool-row .btn[aria-pressed="true"] {
+  background: var(--green); color: #fff; border-color: transparent; font-weight: 600;
+}

@@ -388,8 +388,13 @@
       grain: 'vertical',      // 사포바를 골랐을 때 줄 방향
       backThickness: 0,       // 0 = 앞뒤 같은 두께. 값을 주면 손바닥 쪽이 그만큼 얇아집니다
       organic: 0,             // 왁스를 손으로 깎았을 때의 불규칙한 굴곡 (0~1)
-      sculpt: '',             // 손으로 밀고 당겨 다듬은 자국 (아래 SCULPT 참고)
+      sculpt: '',             // 손으로 민 두께 자국 (아래 SCULPT 참고)
+      sculptW: '',            // 손으로 민 폭 자국
+      matte: '',              // 부분 무광으로 칠한 자리
       stoneHeight: 0,         // 돌을 얼마나 올리고 내릴지 (mm)
+      stoneAngle: 0,          // 돌을 반지 둘레 어디에 앉힐지 (도). 0 = 손등 쪽 한가운데
+      stoneCount: 1,          // 돌 개수. 2개 이상이면 둘레에 고르게 나눠 앉힙니다
+      epoxyLines: 1,          // 색을 채울 홈 줄 수 (1~3)
       plating: 'none',
       oxidize: false,         // 유화 — 도금과 같이 못 합니다
       epoxy: '',
@@ -477,6 +482,7 @@
     if (kind && kind.sizes) {
       stoneCost = sizePrice(spec.stoneType, spec.stoneSize, spec.stoneShape);
       if (stoneCost == null) { pending.push(kind.label + ' 값'); stoneCost = 0; }
+      stoneCost *= Math.max(1, Number(spec.stoneCount) || 1);   // 알 개수만큼
     }
     var setting = P.setting[spec.setting] || 0;
 
@@ -611,11 +617,19 @@
     return pick.price == null ? null : pick.price;
   }
 
+  /** 손으로 손댄 흔적이 하나라도 있는가 */
+  function hasSculpt(spec) {
+    return !!(spec.sculpt || spec.sculptW || spec.matte);
+  }
+
   /** 색 채움 값 — 부분만 채우는지 한 바퀴 다 두르는지로 갈립니다 */
   function epoxyPrice(spec) {
     if (!spec.epoxy) return 0;
     var cov = CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'];
-    return cov ? cov.price : CONFIG.epoxy.price;
+    var base = cov ? cov.price : CONFIG.epoxy.price;
+    // 줄이 늘면 그만큼 파고 채우는 품이 늘어납니다 (두 줄째부터 절반씩)
+    var lines = Math.max(1, Math.min(3, Number(spec.epoxyLines) || 1));
+    return Math.round(base * (1 + (lines - 1) * 0.5) / 1000) * 1000;
   }
 
   /** 그 종류가 고를 수 있는 크기 목록 */
@@ -632,6 +646,12 @@
 
   /** 원석을 사람이 읽는 한 줄로 */
   function stoneLabel(spec) {
+    var n = Math.max(1, Number(spec.stoneCount) || 1);
+    if (n > 1) return stoneLabelOne(spec) + ' × ' + n + '개';
+    return stoneLabelOne(spec);
+  }
+
+  function stoneLabelOne(spec) {
     if (spec.stoneType === 'moissanite') {
       return '모이사나이트 ' + stoneMm(spec).toFixed(1) + 'mm (라운드)';
     }
@@ -858,7 +878,8 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'backThickness', 'organic', 'sculpt', 'stoneHeight', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
+    'backThickness', 'organic', 'sculpt', 'sculptW', 'matte',
+    'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'ilju', 'qty'];
 
   /** 사양 → URL 쿼리 문자열 (리포트 → 스튜디오 → 주문으로 넘길 때 사용) */
@@ -887,7 +908,7 @@
     var model = ONM.rings.getModel(p.get('modelId')) || MODELS[0];
     var record = p.get('ilju') && ONM.ILJU ? ONM.ILJU[p.get('ilju')] : null;
     var spec = defaultSpec(model, record, { metal: p.get('metal') || undefined });
-    ['width', 'thickness', 'size', 'backThickness', 'organic', 'stoneHeight'].forEach(function (k) {
+    ['width', 'thickness', 'size', 'backThickness', 'organic', 'stoneHeight', 'stoneAngle'].forEach(function (k) {
       var v = parseFloat(p.get(k));
       if (!isNaN(v)) spec[k] = v;
     });
@@ -900,6 +921,10 @@
     if (p.has('cubicColor')) spec.cubicColor = p.get('cubicColor') || '';
     if (p.get('stoneShape')) spec.stoneShape = p.get('stoneShape');
     if (p.get('sculpt')) spec.sculpt = p.get('sculpt').slice(0, SCULPT_N);
+    if (p.get('sculptW')) spec.sculptW = p.get('sculptW').slice(0, SCULPT_N);
+    if (p.get('matte')) spec.matte = p.get('matte').slice(0, SCULPT_N);
+    if (p.get('stoneCount')) spec.stoneCount = Math.max(1, Math.min(8, parseInt(p.get('stoneCount'), 10) || 1));
+    if (p.get('epoxyLines')) spec.epoxyLines = Math.max(1, Math.min(3, parseInt(p.get('epoxyLines'), 10) || 1));
     if (p.get('texture') && TEXTURE_LABEL[p.get('texture')]) spec.texture = p.get('texture');
     if (p.get('grain') && GRAIN_LABEL[p.get('grain')]) spec.grain = p.get('grain');
     if (p.get('profile')) spec.profile = p.get('profile');
@@ -937,6 +962,7 @@
     SCULPT_N: SCULPT_N,
     sculptRead: sculptRead,
     sculptWrite: sculptWrite,
+    hasSculpt: hasSculpt,
     sizesFor: sizesFor,
     settingsFor: settingsFor,
     stoneLabel: stoneLabel,

@@ -94,8 +94,15 @@ function bumpFor(s) {
  *   (한 바퀴 돌아와도 이어지도록 cos/sin 을 노이즈 입력으로 씁니다.) */
 /* 손으로 다듬은 자국을 각도에 맞춰 부드럽게 읽어 온다.
  * 24 지점 사이를 부드러운 곡선으로 이어, 민 자리와 안 민 자리가 툭 끊기지 않게 한다. */
-function sculptAt(s, th) {
-  const arr = s._sculpt;
+function sculptOf(s, key) {
+  const cache = key === 'sculptW' ? '_sculptW' : key === 'matte' ? '_matte' : '_sculpt';
+  if (!s[cache] || R.sculptWrite(s[cache]) !== (s[key] || '')) {
+    s[cache] = R.sculptRead(s[key] || '');
+  }
+  return s[cache];
+}
+
+function readAt(arr, th) {
   if (!arr) return 0;
   const n = arr.length;
   // th = π/2 가 손등 쪽(위). 그 자리를 0번 지점으로 둔다.
@@ -105,6 +112,11 @@ function sculptAt(s, th) {
   const w = f * f * (3 - 2 * f);
   return a + (b - a) * w;
 }
+
+function sculptAt(s, th) { return readAt(sculptOf(s, 'sculpt'), th); }
+function sculptWidthAt(s, th) { return readAt(sculptOf(s, 'sculptW'), th); }
+/** 부분 무광 — 0이면 그대로, 1에 가까울수록 무광으로 칠해진 자리 */
+function matteAt(s, th) { return Math.max(0, readAt(sculptOf(s, 'matte'), th)); }
 
 function thicknessAt(s, th) {
   const front = s.thickness;
@@ -127,13 +139,30 @@ function thicknessAt(s, th) {
 
 /* 폭도 함께 흔들려야 왁스카빙처럼 보입니다 (두께만 흔들면 튜브가 울퉁불퉁한 느낌) */
 function widthScaleAt(s, th) {
+  let k = 1;
   const org = Number(s.organic) || 0;
-  if (org <= 0) return 1;
-  const n = valueNoise(Math.cos(th) * 2.1 + 61, Math.sin(th) * 2.1 + 37);
-  return 1 + org * 0.26 * (n - 0.5) * 2;
+  if (org > 0) {
+    const n = valueNoise(Math.cos(th) * 2.1 + 61, Math.sin(th) * 2.1 + 37);
+    k *= 1 + org * 0.26 * (n - 0.5) * 2;
+  }
+  // 손으로 넓히거나 좁힌 만큼 (최대 ±50%)
+  k *= 1 + 0.5 * sculptWidthAt(s, th);
+  return Math.max(0.25, k);
 }
 
 const MIN_WALL = 0.28;   // mm — 이보다 얇아지면 면이 겹쳐 뚫린 것처럼 보입니다
+const EPOXY_HALF = 0.075;  // 홈 하나의 폭(반지 폭 대비 절반값) — 실물처럼 가늘게
+const EPOXY_DEPTH = 0.2;   // 홈 깊이 (두께 대비)
+
+/** 색을 채우는 구간인가 — 부분이면 손등 쪽 일부만 */
+function epoxyArc(s, th) {
+  const cov = CONFIG.epoxy.coverage[s.epoxyCoverage || 'part'];
+  const ratio = cov ? cov.ratio : 1;
+  if (ratio >= 1) return true;
+  let d = Math.abs(th - Math.PI / 2);
+  if (d > Math.PI) d = Math.PI * 2 - d;
+  return d <= Math.PI * ratio;
+}
 
 function buildBand(s, model) {
   const innerR = R.sizeToInnerDiameter(s.size) / 2;
@@ -196,6 +225,21 @@ function buildBand(s, model) {
         let u = p.u * uScale;
         // 각진 면(패싯)은 모서리가 가장 두꺼워지므로, 모서리가 정확히 두께에 닿게 맞춘다
         if (facets > 0) u *= facetR * Math.cos(Math.PI / facets);
+        /* 색을 채울 홈 — 폭 방향으로 좁게 파인 줄입니다.
+         * 실물은 넓은 면에 색을 바르는 게 아니라 가는 홈을 파고 그 안에 수지를 채웁니다. */
+        if (s.epoxy && epoxyArc(s, th)) {
+          const lines = Math.max(1, Math.min(3, Number(s.epoxyLines) || 1));
+          const halfW = p.v / Math.max(0.001, s.width);   // -0.5 ~ 0.5
+          for (let L = 0; L < lines; L++) {
+            const at = lines === 1 ? 0 : -0.22 + (0.44 * L) / (lines - 1);
+            const d = Math.abs(halfW - at);
+            if (d < EPOXY_HALF) {
+              const cut = EPOXY_DEPTH * Math.max(t, 1.2) * (1 - (d / EPOXY_HALF) * 0.15);
+              u -= cut;
+              carved += cut;
+            }
+          }
+        }
         if (grooves > 0) {
           const spiral = Math.sin(grooves * th + p.v * groovePitch);
           const cut = grooveDepth * t * (0.5 + 0.5 * spiral);
@@ -235,9 +279,14 @@ function buildBand(s, model) {
     }
   }
 
-  const idx = [];
+  /* 부분 무광을 칠한 자리는 다른 재질로 그려야 하므로,
+   * 면을 "그대로"와 "무광" 두 무리로 나눠 담고 그룹으로 표시해 둡니다. */
+  const plain = [], matte = [];
+  const hasMatte = !!s.matte;
   for (let i = 0; i < SEG; i++) {
     const i2 = (i + 1) % SEG;          // 마지막 줄은 첫 줄로 돌아온다
+    const thm = ((i + 0.5) / SEG) * Math.PI * 2;
+    const box = (hasMatte && matteAt(s, thm) > 0.34) ? matte : plain;
     for (let j = 0; j < P; j++) {
       const j2 = (j + 1) % P;
       const a = i * P + j;
@@ -247,9 +296,10 @@ function buildBand(s, model) {
       /* 감는 방향이 뒤집혀 있으면 바깥 면의 법선이 안쪽을 향해
        * 그 면이 통째로 잘려 나가고, 각도에 따라 반지가 뚫려 보입니다.
        * 단면을 도는 방향(S)과 둘레를 도는 방향(T)의 외적이 바깥을 향하도록 감습니다. */
-      idx.push(a, b, c, b, d, c);
+      box.push(a, b, c, b, d, c);
     }
   }
+  const idx = plain.concat(matte);
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -262,6 +312,10 @@ function buildBand(s, model) {
   for (let i = 0; i < depth.length; i++) if (depth[i] > maxCarve) maxCarve = depth[i];
   geo.userData.depth = depth;
   geo.userData.maxCarve = maxCarve;
+  // 0번 무리 = 원래 마감, 1번 무리 = 손으로 칠한 부분 무광
+  geo.addGroup(0, plain.length, 0);
+  if (matte.length) geo.addGroup(plain.length, matte.length, 1);
+  geo.userData.hasMatte = matte.length > 0;
   return geo;
 }
 
@@ -309,7 +363,8 @@ function buildEpoxyFill(bandGeo, spec) {
   const depth = bandGeo.userData.depth;
   const pos = bandGeo.attributes.position;
   const idx = bandGeo.getIndex();
-  const thr = maxCarve * 0.42;          // 이보다 얕은 곳은 수지가 고이지 않습니다
+  // 색 채움 홈은 다른 가공보다 깊게 파므로, 그 깊이에 가까운 자리만 고릅니다
+  const thr = maxCarve * 0.62;
 
   const fill = new Float32Array(pos.count * 3);
   for (let i = 0; i < pos.count; i++) {
@@ -321,17 +376,8 @@ function buildEpoxyFill(bandGeo, spec) {
     fill[i * 3 + 2] = pos.getZ(i);
   }
 
-  /* 부분만 채우면 반지 한쪽 구간에만 색이 들어갑니다.
-   * 손등 쪽(위)을 가운데로 두고 그 둘레만 덮습니다. */
-  const cov = CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || { ratio: 1 };
-  const half = Math.PI * Math.min(1, cov.ratio);     // 위쪽 기준 좌우로 덮는 각도
   function inArc(i) {
-    if (cov.ratio >= 1) return true;
-    const x = pos.getX(i), y = pos.getY(i);
-    const ang = Math.atan2(y, x);                    // 위쪽(+Y)이 π/2
-    let d = Math.abs(ang - Math.PI / 2);
-    if (d > Math.PI) d = Math.PI * 2 - d;
-    return d <= half;
+    return epoxyArc(spec, Math.atan2(pos.getY(i), pos.getX(i)));
   }
 
   const keep = [];
@@ -371,6 +417,15 @@ const FINISH = {
   fine:    { roughness: 0.46, env: 0.70, tone: 0.86 },
   soft:    { roughness: 0.36, env: 0.82, tone: 0.90 }
 };
+
+/** 부분 무광으로 칠한 자리에 쓸 재질 — 같은 색, 반사만 죽인다 */
+function matteMaterial(s) {
+  const m = metalMaterial(s);
+  m.roughness = Math.min(0.85, Math.max(0.5, m.roughness + 0.42));
+  m.envMapIntensity = m.envMapIntensity * 0.55;
+  m.clearcoat = 0;
+  return m;
+}
 
 function metalMaterial(s) {
   const f = FINISH[s.texture] || FINISH.polish;
@@ -416,6 +471,20 @@ function stoneMaterial(spec) {
 }
 
 /* ─────────────────── 원석 · 세팅 ─────────────────── */
+/** 원석을 반지 둘레 여러 자리에 앉힌다 */
+function buildStones(s, group) {
+  if (!s.stoneType || s.stoneType === 'none' || s.setting === 'none') return;
+  const n = Math.max(1, Math.min(8, Number(s.stoneCount) || 1));
+  const base = (Number(s.stoneAngle) || 0) * Math.PI / 180;
+  for (let k = 0; k < n; k++) {
+    const holder = new THREE.Group();
+    buildStone(s, holder);
+    // 0도가 손등 쪽 한가운데. 여러 개면 둘레에 고르게 나눠 앉힙니다.
+    holder.rotation.z = base + (n > 1 ? (k / n) * Math.PI * 2 : 0);
+    group.add(holder);
+  }
+}
+
 function buildStone(s, group) {
   if (!s.stoneType || s.stoneType === 'none' || s.setting === 'none') return;
   const innerR = R.sizeToInnerDiameter(s.size) / 2;
@@ -648,15 +717,27 @@ function initScene() {
  * 24 지점을 손으로 미는 셈이고, 붓처럼 옆까지 조금씩 번지게 해서
  * 실제로 왁스를 손가락으로 밀어낸 것처럼 이어집니다.
  */
-const SCULPT_BRUSH = 2.6;      // 몇 지점까지 번지는가
-const SCULPT_GAIN = 0.010;     // 1px 끌 때 얼마나 밀리는가
-
 let sculptOn = false;
 let sculpting = null;
 
-function ensureSculpt() {
-  if (!spec._sculpt) spec._sculpt = R.sculptRead(spec.sculpt || '');
-  return spec._sculpt;
+/* 도구 — 무엇을 밀고 있는지에 따라 손대는 자국이 달라집니다.
+ *   push   두께    : 위로 끌면 도톰, 아래로 끌면 얇게
+ *   wide   폭      : 위로 끌면 넓게, 아래로 끌면 좁게
+ *   chisel 각 세우기: 좁은 붓으로 깊게 깎아 각을 냅니다 (파기만 합니다)
+ *   matte  부분무광 : 그 자리만 무광으로 칠합니다 (아래로 끌면 지웁니다)
+ * brush = 몇 지점까지 번지는가, gain = 1px 끌 때 얼마나 밀리는가 */
+const TOOLS = {
+  push:   { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '두께' },
+  wide:   { key: 'sculptW', brush: 2.6, gain: 0.010, label: '폭' },
+  chisel: { key: 'sculpt',  brush: 0.9, gain: 0.024, label: '각 세우기', carveOnly: true },
+  matte:  { key: 'matte',   brush: 2.2, gain: 0.020, label: '부분 무광' }
+};
+const sculptState = { tool: 'push', size: 1, mirror: false };
+
+function ensureSculpt(key) {
+  const cache = key === 'sculptW' ? '_sculptW' : key === 'matte' ? '_matte' : '_sculpt';
+  if (!spec[cache]) spec[cache] = R.sculptRead(spec[key] || '');
+  return spec[cache];
 }
 
 /** 화면 좌표 → 반지 위 각도. 반지 평면(회전 적용)과 광선을 만나게 해서 구한다. */
@@ -693,19 +774,36 @@ function angleAtPointer(ev) {
   return Math.atan2(local2.y, local2.x);
 }
 
-function sculptPush(angle, amount) {
-  const arr = ensureSculpt();
-  const n = arr.length;
-  // 위쪽(π/2)을 0번으로 맞춘다 — sculptAt 과 같은 규칙
-  const center = ((angle - Math.PI / 2) / (Math.PI * 2) * n % n + n) % n;
+function dab(arr, n, center, radius, amount, carveOnly) {
   for (let i = 0; i < n; i++) {
     let d = Math.abs(i - center);
     if (d > n / 2) d = n - d;                // 한 바퀴이므로 가까운 쪽으로
-    if (d > SCULPT_BRUSH) continue;
-    const w = Math.cos((d / SCULPT_BRUSH) * Math.PI / 2);   // 가운데가 가장 세게
-    arr[i] = Math.max(-1, Math.min(1, arr[i] + amount * w * w));
+    if (d > radius) continue;
+    const w = Math.cos((d / radius) * Math.PI / 2);         // 가운데가 가장 세게
+    let v = arr[i] + amount * w * w;
+    if (carveOnly) v = Math.min(arr[i], v);                 // 깎기 전용 도구는 파기만 합니다
+    arr[i] = Math.max(-1, Math.min(1, v));
   }
-  spec.sculpt = R.sculptWrite(arr);
+}
+
+function sculptPush(angle, drag) {
+  const tool = TOOLS[sculptState.tool] || TOOLS.push;
+  const arr = ensureSculpt(tool.key);
+  const n = arr.length;
+  const radius = Math.max(0.8, tool.brush * sculptState.size);
+  // 각 세우기는 어느 쪽으로 끌든 파내기만 합니다
+  const amount = tool.carveOnly ? -Math.abs(drag) * tool.gain : drag * tool.gain;
+
+  // 위쪽(π/2)을 0번으로 맞춘다 — readAt 과 같은 규칙
+  const center = ((angle - Math.PI / 2) / (Math.PI * 2) * n % n + n) % n;
+  dab(arr, n, center, radius, amount, tool.carveOnly);
+
+  // 대칭을 켜면 손등 쪽 중심선을 기준으로 반대편도 똑같이 손봅니다
+  if (sculptState.mirror) {
+    const mirrored = ((n - center) % n + n) % n;
+    if (Math.abs(mirrored - center) > 0.01) dab(arr, n, mirrored, radius, amount, tool.carveOnly);
+  }
+  spec[tool.key] = R.sculptWrite(arr);
 }
 
 function bindSculpt() {
@@ -728,7 +826,11 @@ function bindSculpt() {
     sculpting.moved = true;
     // 끄는 동안 현재 가리키는 자리를 따라가면 붓처럼 칠할 수 있다
     const a = angleAtPointer(ev);
-    sculptPush(a === null ? sculpting.angle : a, dy * SCULPT_GAIN);
+    const at = a === null ? sculpting.angle : a;
+    if (at === null || at === undefined) return;   // 아직 자리를 못 잡았으면 건너뜁니다
+    sculpting.angle = at;
+    // 끈 거리(px)만 넘기면 도구가 알아서 제 세기로 밀어 냅니다
+    sculptPush(at, dy);
     studio.changed();
   });
 
@@ -755,24 +857,31 @@ function rebuild() {
     scene.remove(ringGroup);
     ringGroup.traverse((o) => {
       if (o.geometry) o.geometry.dispose();
-      if (o.material) o.material.dispose();
+      // 부분 무광을 칠하면 재질이 여러 개짜리 배열이 됩니다
+      if (Array.isArray(o.material)) o.material.forEach((m) => m && m.dispose());
+      else if (o.material) o.material.dispose();
     });
   }
   const model = R.getModel(spec.modelId);
   // 주소에서 들어온 자국은 처음 한 번 숫자로 풀어 둡니다
-  if (!spec._sculpt || R.sculptWrite(spec._sculpt) !== (spec.sculpt || '')) {
-    spec._sculpt = R.sculptRead(spec.sculpt || '');
-  }
+  sculptOf(spec, 'sculpt'); sculptOf(spec, 'sculptW'); sculptOf(spec, 'matte');
   ringGroup = new THREE.Group();
   const bandGeo = buildBand(spec, model);
   const bandMat = metalMaterial(spec);
   if (paintOxidize(bandGeo, spec)) bandMat.vertexColors = true;
-  ringGroup.add(new THREE.Mesh(bandGeo, bandMat));
+  // 부분 무광을 칠했으면 그 무리만 무광 재질로 그립니다
+  if (bandGeo.userData.hasMatte) {
+    const mm = matteMaterial(spec);
+    mm.vertexColors = bandMat.vertexColors;
+    ringGroup.add(new THREE.Mesh(bandGeo, [bandMat, mm]));
+  } else {
+    ringGroup.add(new THREE.Mesh(bandGeo, bandMat));
+  }
   // 홈에 고여 굳은 수지를 따로 덮는다 (금속에 스며드는 것이 아니다)
   const resin = buildEpoxyFill(bandGeo, spec);
   if (resin) ringGroup.add(resin);
 
-  buildStone(spec, ringGroup);
+  buildStones(spec, ringGroup);
   ringGroup.rotation.x = -0.12;
   scene.add(ringGroup);
 
@@ -801,10 +910,14 @@ try {
   studio.setSculptMode = setSculptMode;
   studio.angleAtPointer = angleAtPointer;
   studio.clearSculpt = () => {
-    spec._sculpt = null;
-    spec.sculpt = '';
+    spec._sculpt = spec._sculptW = spec._matte = null;
+    spec.sculpt = spec.sculptW = spec.matte = '';
     studio.changed();
   };
+  studio.sculptState = sculptState;
+  studio.setSculptTool = (t) => { if (TOOLS[t]) sculptState.tool = t; return sculptState.tool; };
+  studio.setSculptSize = (v) => { sculptState.size = Math.max(0.4, Math.min(2.2, Number(v) || 1)); };
+  studio.setSculptMirror = (on) => { sculptState.mirror = !!on; return sculptState.mirror; };
   studio.onChange(rebuild);
   $('preview-2d').classList.add('is-hidden');
 } catch (err) {
