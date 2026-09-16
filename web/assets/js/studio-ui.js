@@ -278,8 +278,10 @@
 
     var price = R.estimatePrice(spec, 1);
     $('price-out').textContent = price ? R.formatKRW(price.unit) : '-';
-    $('to-order').href = 'order.html?' + R.specToQuery(spec);
-    history.replaceState(null, '', location.pathname + '?' + R.specToQuery(spec));
+    // 수량(커플링이면 2개)은 스튜디오를 거쳐도 주문서까지 그대로 따라갑니다
+    var extra = spec.quantity > 1 ? { qty: spec.quantity } : null;
+    $('to-order').href = 'order.html?' + R.specToQuery(spec, extra);
+    history.replaceState(null, '', location.pathname + '?' + R.specToQuery(spec, extra));
   }
 
   /* ───────────── 버튼 ───────────── */

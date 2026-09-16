@@ -30,6 +30,10 @@
     $('o-size2').value = spec.size;
   })();
 
+  // 커플링 링크(qty=2)로 들어오면 수량칸과 두 번째 호수칸을 미리 맞춰 둔다
+  $('o-qty').value = String(qty);
+  $('o-size2').disabled = qty < 2;
+
   $('o-engraving').value = spec.engraving || '';
   $('privacy-text').textContent = CONFIG.privacy;
   $('foot-lead').textContent = '제작 기간 · ' + CONFIG.order.leadTime;
