@@ -146,6 +146,9 @@
   function refreshTextureFields() {
     $('f-grain').classList.toggle('is-hidden', spec.texture !== 'sandbar');
     $('texture-note').textContent = R.TEXTURE_DESC[spec.texture] || '';
+    // 인장일 때만 판 크기를 고릅니다
+    $('f-plate').classList.toggle('is-hidden', spec.profile !== 'signet');
+    $('c-plate').value = spec.plateSize || 1;
   }
 
   /* 도금과 유화는 같이 못 합니다. 하나를 고르면 다른 하나를 잠급니다. */
@@ -182,6 +185,17 @@
 
   /* 고른 원석에 따라 필요한 칸만 남기고, 고를 수 있는 고정 방법도 추려 준다.
    * 천연석은 캐보션이라 테두리로 감싸는 방식밖에 안 되기 때문이다. */
+  /** 알 개수·자리 칸만 현재 사양에 맞춰 둡니다 (알 놓기 도구로 바뀌면 여기가 따라옵니다) */
+  function syncStonePlace() {
+    $('c-stonecount').value = String(spec.stoneCount || 1);
+    $('c-stoneangle').value = spec.stoneAngle || 0;
+    $('stone-place-note').innerHTML = spec.stoneAt
+      ? '손으로 놓은 자리 <b>' + R.stoneAngles(spec).length + '곳</b>을 쓰고 있습니다. ' +
+        '위 개수나 위치를 건드리면 다시 고르게 나눠 앉습니다.'
+      : '둘레에 고르게 나눠 앉습니다. <b>손으로 다듬기 → 알 놓기</b>로 반지를 짚으면 ' +
+        '원하는 자리에 하나씩 놓을 수 있습니다.';
+  }
+
   function refreshStoneFields() {
     var type = spec.stoneType || 'none';
     var has = type !== 'none';
@@ -194,8 +208,7 @@
     $('f-stoneheight').classList.toggle('is-hidden', !has);
     $('c-stoneheight').value = spec.stoneHeight || 0;
     $('f-stoneplace').classList.toggle('is-hidden', !has);
-    $('c-stonecount').value = String(spec.stoneCount || 1);
-    $('c-stoneangle').value = spec.stoneAngle || 0;
+    syncStonePlace();
     /* 물림 방식 — 천연석만 세 가지 중에 고릅니다.
      * 모이사나이트와 컬러큐빅은 매립(우물) 한 가지뿐이라 고를 것이 없습니다. */
     var allowed = R.settingsFor(type);
@@ -289,6 +302,9 @@
     $('o-organic').textContent = org === 0 ? '반듯하게'
       : org < 0.35 ? '살짝' : org < 0.7 ? '뚜렷하게' : '많이';
 
+    var plate = Number(spec.plateSize) || 1;
+    $('o-plate').textContent = plate < 0.8 ? '작게' : plate > 1.3 ? '크게' : '보통';
+
     var ang = Number(spec.stoneAngle) || 0;
     $('o-stoneangle').textContent = ang === 0 ? '손등 쪽 가운데'
       : (ang > 0 ? '오른쪽 ' : '왼쪽 ') + Math.abs(ang) + '°';
@@ -325,6 +341,12 @@
     studio.changed();
   });
 
+  $('c-plate').addEventListener('input', function () {
+    spec.plateSize = parseFloat(this.value);
+    setOutputs();
+    studio.changed();
+  });
+
   $('c-organic').addEventListener('input', function () {
     spec.organic = parseFloat(this.value);
     setOutputs();
@@ -339,12 +361,14 @@
 
   $('c-stoneangle').addEventListener('input', function () {
     spec.stoneAngle = parseFloat(this.value);
+    spec.stoneAt = '';        // 손으로 찍어 둔 자리는 비웁니다
     setOutputs();
     studio.changed();
   });
 
   $('c-stonecount').addEventListener('change', function () {
     spec.stoneCount = parseInt(this.value, 10) || 1;
+    spec.stoneAt = '';
     studio.changed();
   });
 
@@ -367,7 +391,10 @@
       push:   '위로 끌면 그 자리가 도톰해지고, 아래로 끌면 얇아집니다.',
       wide:   '위로 끌면 그 자리가 넓어지고, 아래로 끌면 좁아집니다.',
       chisel: '좁은 붓으로 깊게 깎아 각을 세웁니다. 어느 쪽으로 끌든 파내기만 합니다.',
-      matte:  '끄는 자리를 무광으로 칠합니다. 아래로 끌면 다시 광이 납니다.'
+      matte:  '끄는 자리를 무광으로 칠합니다. 아래로 끌면 다시 광이 납니다.',
+      engrave: '반지 위에 그대로 선을 그으면 그 자리가 파여 무늬가 됩니다. 유화나 에폭시를 고르면 새긴 선에 색이 들어갑니다.',
+      erase:  '잘못 새긴 자리를 문질러 지웁니다.',
+      stone:  '반지를 짚으면 그 자리에 알이 놓이고, 놓인 알을 다시 짚으면 빠집니다.'
     };
 
     function tool() {
@@ -375,12 +402,31 @@
       return on ? on.getAttribute('data-tool') : 'push';
     }
 
+    /** 원석을 안 골랐으면 '알 놓기'는 쓸 수 없습니다 */
+    function syncStoneTool() {
+      var btn = $('sculpt-tools').querySelector('[data-tool="stone"]');
+      if (!btn) return;
+      var has = spec.stoneType && spec.stoneType !== 'none' && spec.setting !== 'none';
+      btn.disabled = !has;
+      btn.title = has ? '' : '먼저 오른쪽에서 원석을 고르세요';
+      // 원석을 빼면 다른 도구로 돌려 놓습니다
+      if (!has && btn.getAttribute('aria-pressed') === 'true') {
+        Array.prototype.forEach.call($('sculpt-tools').querySelectorAll('[data-tool]'), function (x) {
+          x.setAttribute('aria-pressed', String(x.getAttribute('data-tool') === 'push'));
+        });
+        if (studio.setSculptTool) studio.setSculptTool('push');
+      }
+    }
+
     function refresh(on) {
+      syncStoneTool();
       toggle.setAttribute('aria-pressed', String(on));
       toggle.textContent = on ? '다듬기 끝내기' : '손으로 다듬기';
       toggle.classList.toggle('btn-primary', on);
       box.classList.toggle('is-hidden', !on);
-      hint.textContent = (HINTS[tool()] || '') + ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.';
+      var t = tool();
+      hint.textContent = (HINTS[t] || '') +
+        (t === 'stone' ? '' : ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.');
       clear.classList.toggle('is-hidden', !R.hasSculpt(spec) && !on);
     }
 
@@ -421,6 +467,7 @@
       });
 
       studio.onChange(function () {
+        syncStoneTool();
         clear.classList.toggle('is-hidden',
           !R.hasSculpt(spec) && toggle.getAttribute('aria-pressed') !== 'true');
       });
@@ -431,7 +478,7 @@
   ['texture', 'profile', 'plating'].forEach(function (key) {
     $('c-' + key).addEventListener('change', function () {
       spec[key] = this.value;
-      if (key === 'texture') refreshTextureFields();
+      if (key === 'texture' || key === 'profile') refreshTextureFields();
       if (key === 'plating') {
         // 도금을 고르면 유화는 꺼집니다
         if (spec.plating !== 'none') { spec.oxidize = false; $('c-oxidize').checked = false; }
@@ -624,10 +671,13 @@
     if (spec.sculpt) bits.push('두께');
     if (spec.sculptW) bits.push('폭');
     if (spec.matte) bits.push('부분 무광');
+    if (spec.engrave) bits.push('도안 새김');
+    if (spec.stoneAt) bits.push('알 자리 지정');
     return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
   }
 
   function syncPanel() {
+    syncStonePlace();
     var model = R.getModel(spec.modelId);
     var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
     var rows = [];

@@ -113,6 +113,35 @@ function readAt(arr, th) {
   return a + (b - a) * w;
 }
 
+/* ── 도안 새기기 ──
+ * 둘레 48칸 × 폭 8칸 격자에 "얼마나 깊게 팠는지"를 담아 두고,
+ * 정점마다 그 사이를 부드럽게 이어 읽습니다.
+ * 두께 자국(24지점)과 달리 폭 방향으로도 나뉘어 있어,
+ * 반지 윗면 한쪽에만 선을 그어 새길 수 있습니다. */
+function engraveOf(s) {
+  if (!s._engrave || R.engraveWrite(s._engrave) !== (s.engrave || '')) {
+    s._engrave = R.engraveRead(s.engrave || '');
+  }
+  return s._engrave;
+}
+
+const EX = R.ENGRAVE_X, EY = R.ENGRAVE_Y;
+const smooth = (x) => x * x * (3 - 2 * x);
+
+/** th = 둘레 각도, vN = 폭 방향 위치(-0.5 ~ 0.5). 돌아오는 값은 0~1 깊이 */
+function engraveAt(s, th, vN) {
+  const g = engraveOf(s);
+  // 둘레는 한 바퀴 이어지고(감싸기), 폭은 양끝에서 멈춥니다
+  const x = ((th - Math.PI / 2) / (Math.PI * 2) * EX % EX + EX) % EX;
+  const y = Math.max(0, Math.min(EY - 1, (vN + 0.5) * (EY - 1)));
+  const x0 = Math.floor(x), y0 = Math.min(EY - 2, Math.floor(y));
+  const fx = smooth(x - x0), fy = smooth(y - y0);
+  const i0 = x0 % EX, i1 = (x0 + 1) % EX;
+  const a = g[y0 * EX + i0], b = g[y0 * EX + i1];
+  const c = g[(y0 + 1) * EX + i0], d = g[(y0 + 1) * EX + i1];
+  return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy;
+}
+
 function sculptAt(s, th) { return readAt(sculptOf(s, 'sculpt'), th); }
 function sculptWidthAt(s, th) { return readAt(sculptOf(s, 'sculptW'), th); }
 /** 부분 무광 — 0이면 그대로, 1에 가까울수록 무광으로 칠해진 자리 */
@@ -151,6 +180,24 @@ function widthScaleAt(s, th) {
 }
 
 const MIN_WALL = 0.28;   // mm — 이보다 얇아지면 면이 겹쳐 뚫린 것처럼 보입니다
+
+/* ─────────────────── 인장(시그넷) ───────────────────
+ * 인장 반지는 한 바퀴 내내 같은 굵기가 아닙니다.
+ * 뒤쪽은 가는 밴드로 얇게 지나가다가 손등 쪽에서만 어깨가 부풀어 오르고,
+ * 맨 위는 원호를 따라가지 않는 "평평한 판"이 됩니다. 도장을 찍는 면이니까요.
+ *
+ * swell : 0 = 그냥 밴드, 1 = 판 한가운데
+ */
+function signetSwell(th, size) {
+  // 손등 쪽(π/2)에서 얼마나 떨어져 있는가
+  let d = Math.abs(th - Math.PI / 2);
+  if (d > Math.PI) d = Math.PI * 2 - d;
+  const reach = (Math.PI / 180) * 78 * Math.max(0.5, size);   // 판과 어깨가 차지하는 범위
+  if (d >= reach) return 0;
+  const t = 1 - d / reach;
+  return t * t * (3 - 2 * t);        // 어깨가 부드럽게 솟아오르도록
+}
+const ENGRAVE_DEPTH = 0.3;  // 도안을 가장 깊게 팠을 때의 깊이 (두께 대비)
 const EPOXY_HALF = 0.075;  // 홈 하나의 폭(반지 폭 대비 절반값) — 실물처럼 가늘게
 const EPOXY_DEPTH = 0.2;   // 홈 깊이 (두께 대비)
 
@@ -171,6 +218,12 @@ function buildBand(s, model) {
   const profile = makeProfile(s);
   const P = profile.length;
   const bump = bumpFor(s);
+
+  const hasEngrave = !!s.engrave;
+  const isSignet = s.profile === 'signet';
+  const plateSize = Math.max(0.5, Math.min(1.5, Number(s.plateSize) || 1));
+  // 판 바깥면이 놓일 높이 — 이 높이에 평평하게 맞춥니다
+  const plateY = innerR + t * 1.5;
 
   const taper = model ? model.taper : 0;
   const wave = model ? model.wave : 0;
@@ -200,8 +253,17 @@ function buildBand(s, model) {
     const th = (i / SEG) * Math.PI * 2;
     // 앞뒤 두께 차이와 손으로 깎은 굴곡을 여기서 함께 반영합니다
     const tAt = thicknessAt(s, th);
-    const tRatio = tAt / t;
-    const wScale = (1 - taper * (0.5 - 0.5 * Math.sin(th))) * widthScaleAt(s, th);
+    let tRatio = tAt / t;
+    let wScale = (1 - taper * (0.5 - 0.5 * Math.sin(th))) * widthScaleAt(s, th);
+
+    /* 인장이면 손등 쪽만 어깨가 부풀어 판이 됩니다.
+     * 뒤쪽은 가늘게 지나가므로 낀 느낌이 가볍습니다. */
+    const swell = isSignet ? signetSwell(th, plateSize) : 0;
+    if (swell > 0) {
+      wScale *= 1 + 0.95 * swell * plateSize;   // 판이 옆으로 넓어지고
+      tRatio *= 1 + 0.5 * swell;                // 두께도 같이 오릅니다
+    }
+
     // 웨이브는 안쪽으로만 들어가므로 최대 두께는 그대로 유지된다
     const uScale = (1 - wave * 0.3 * (0.5 + 0.5 * Math.sin(3 * th))) * tRatio;
 
@@ -240,6 +302,17 @@ function buildBand(s, model) {
             }
           }
         }
+        /* 손으로 그린 도안 — 그 자리만 파고 들어갑니다.
+         * 파인 깊이는 아래 유화·에폭시가 그대로 읽어 가므로,
+         * 새긴 선에 색을 채우거나 까맣게 남길 수 있습니다. */
+        if (hasEngrave) {
+          const e = engraveAt(s, th, profile[j].v / Math.max(0.001, s.width));
+          if (e > 0.002) {
+            const cut = e * ENGRAVE_DEPTH * Math.max(t, 1.2);
+            u -= cut;
+            carved += cut;
+          }
+        }
         if (grooves > 0) {
           const spiral = Math.sin(grooves * th + p.v * groovePitch);
           const cut = grooveDepth * t * (0.5 + 0.5 * spiral);
@@ -267,6 +340,17 @@ function buildBand(s, model) {
           radius -= cut;
           carved += cut;
         }
+        /* 판은 원호를 따라 휘지 않고 한 평면 위에 평평하게 놓입니다.
+         * 각도 th 에서 그 평면까지의 거리는 plateY / sin(th) 입니다. */
+        if (swell > 0.02) {
+          const sn = Math.sin(th);
+          if (sn > 0.28) {
+            const flatR = plateY / sn;
+            const k = swell * 0.9;
+            radius = radius * (1 - k) + Math.min(flatR, radius * 1.9) * k;
+          }
+        }
+
         // 벽이 0이 되면 안쪽 면과 바깥 면이 겹쳐 반지가 뚫려 보입니다.
         if (radius < innerR + MIN_WALL) radius = innerR + MIN_WALL;
       }
@@ -474,15 +558,14 @@ function stoneMaterial(spec) {
 /** 원석을 반지 둘레 여러 자리에 앉힌다 */
 function buildStones(s, group) {
   if (!s.stoneType || s.stoneType === 'none' || s.setting === 'none') return;
-  const n = Math.max(1, Math.min(8, Number(s.stoneCount) || 1));
-  const base = (Number(s.stoneAngle) || 0) * Math.PI / 180;
-  for (let k = 0; k < n; k++) {
+  // 0도가 손등 쪽 한가운데. 손으로 찍어 놓은 자리가 있으면 그대로,
+  // 없으면 개수대로 둘레에 고르게 나눠 앉힙니다.
+  R.stoneAngles(s).forEach((deg) => {
     const holder = new THREE.Group();
     buildStone(s, holder);
-    // 0도가 손등 쪽 한가운데. 여러 개면 둘레에 고르게 나눠 앉힙니다.
-    holder.rotation.z = base + (n > 1 ? (k / n) * Math.PI * 2 : 0);
+    holder.rotation.z = (Number(deg) || 0) * Math.PI / 180;
     group.add(holder);
-  }
+  });
 }
 
 function buildStone(s, group) {
@@ -507,17 +590,20 @@ function buildStone(s, group) {
     const cab = s.stoneType === 'natural';
 
     if (cab) {
-      const oval0 = s.stoneShape === 'oval';
+      const acr0 = s.stoneShape === 'ovalH';
+      const oval0 = s.stoneShape === 'oval' || acr0;
       const ov0 = CONFIG.stones.natural.ovalMm;
+      const ax0 = oval0 ? ((acr0 ? ov0.h : ov0.w) / 2) / gemR : 1;
+      const az0 = oval0 ? ((acr0 ? ov0.w : ov0.h) / 2) / gemR : 1;
       const dome = new THREE.Mesh(
         new THREE.SphereGeometry(gemR, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-      dome.scale.set(oval0 ? (ov0.w / 2) / gemR : 1, 0.72, oval0 ? (ov0.h / 2) / gemR : 1);
+      dome.scale.set(ax0, 0.72, az0);
       dome.position.set(0, girdle - gemR * 0.1, 0);
       group.add(dome);
 
       const seatDisc = new THREE.Mesh(
         new THREE.CylinderGeometry(gemR * 0.96, gemR * 0.9, gemR * 0.5 + up * 2, 36), metalMat);
-      seatDisc.scale.set(oval0 ? (ov0.w / 2) / gemR : 1, 1, oval0 ? (ov0.h / 2) / gemR : 1);
+      seatDisc.scale.set(ax0, 1, az0);
       seatDisc.position.set(0, girdle - gemR * 0.36 - up, 0);
       group.add(seatDisc);
     } else {
@@ -570,10 +656,14 @@ function buildStone(s, group) {
      *   bezel  테두리 금속이 돌 허리를 한 바퀴 감싸 누릅니다.
      *   seat   자리를 파고 돌을 심어 접착으로 고정합니다 — 테두리 없이 가장 낮게 앉습니다.
      * 오벌은 6×8mm 한 규격이라 실제 비율(3:4)로 눌러 그립니다. */
-    const oval = s.stoneShape === 'oval';
+    /* 오벌은 눕히는 방향이 두 가지입니다.
+     *   세로 : 긴 쪽(8mm)이 손가락을 따라 — 반지 폭 방향(z)
+     *   가로 : 긴 쪽(8mm)이 반지 둘레를 따라 — 접선 방향(x) */
     const ov = CONFIG.stones.natural.ovalMm;
-    const sx = oval ? (ov.w / 2) / size : 1;      // 폭 6mm
-    const sz = oval ? (ov.h / 2) / size : 1;      // 길이 8mm
+    const across = s.stoneShape === 'ovalH';
+    const oval = s.stoneShape === 'oval' || across;
+    const sx = oval ? ((across ? ov.h : ov.w) / 2) / size : 1;
+    const sz = oval ? ((across ? ov.w : ov.h) / 2) / size : 1;
     const seat = s.setting === 'seat';
 
     const gem = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
@@ -730,7 +820,12 @@ const TOOLS = {
   push:   { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '두께' },
   wide:   { key: 'sculptW', brush: 2.6, gain: 0.010, label: '폭' },
   chisel: { key: 'sculpt',  brush: 0.9, gain: 0.024, label: '각 세우기', carveOnly: true },
-  matte:  { key: 'matte',   brush: 2.2, gain: 0.020, label: '부분 무광' }
+  matte:  { key: 'matte',   brush: 2.2, gain: 0.020, label: '부분 무광' },
+  // 아래 둘은 격자 위에 그립니다 — 끄는 방향이 아니라 지나간 자리가 그대로 무늬가 됩니다
+  engrave: { grid: true, brush: 1.3, label: '도안 새기기' },
+  erase:   { grid: true, brush: 1.7,  label: '도안 지우기', wipe: true },
+  // 반지를 짚으면 그 자리에 알이 놓이고, 놓인 알을 다시 짚으면 빠집니다
+  stone:   { click: true, label: '알 놓기' }
 };
 const sculptState = { tool: 'push', size: 1, mirror: false };
 
@@ -746,7 +841,9 @@ const _plane = new THREE.Plane();
 const _hit = new THREE.Vector3();
 const _normal = new THREE.Vector3();
 
-function angleAtPointer(ev) {
+/** 화면 좌표 → { angle: 둘레 각도, v: 폭 방향 위치(-0.5~0.5) }.
+ * 반지를 정확히 짚지 못했으면 v 는 null 입니다 (도안은 정확히 짚어야 그립니다). */
+function pointAtPointer(ev) {
   const rect = renderer.domElement.getBoundingClientRect();
   if (!rect.width || !rect.height) return null;
   const ndc = new THREE.Vector2(
@@ -759,7 +856,9 @@ function angleAtPointer(ev) {
   const hits = _ray.intersectObjects(ringGroup.children, true);
   if (hits.length) {
     const local = ringGroup.worldToLocal(hits[0].point.clone());
-    return Math.atan2(local.y, local.x);      // 위쪽(+Y)이 π/2
+    // 폭 방향은 z. 반지 폭으로 나눠 -0.5 ~ 0.5 로 맞춥니다.
+    const v = Math.max(-0.5, Math.min(0.5, local.z / Math.max(0.001, spec.width)));
+    return { angle: Math.atan2(local.y, local.x), v };   // 위쪽(+Y)이 π/2
   }
 
   /* 조금 빗나가게 짚었어도 다듬을 수 있어야 합니다.
@@ -771,7 +870,12 @@ function angleAtPointer(ev) {
   const local2 = ringGroup.worldToLocal(_hit.clone());
   if (!isFinite(local2.x) || !isFinite(local2.y)) return null;
   if (local2.x === 0 && local2.y === 0) return null;
-  return Math.atan2(local2.y, local2.x);
+  return { angle: Math.atan2(local2.y, local2.x), v: null };
+}
+
+function angleAtPointer(ev) {
+  const pt = pointAtPointer(ev);
+  return pt ? pt.angle : null;
 }
 
 function dab(arr, n, center, radius, amount, carveOnly) {
@@ -806,23 +910,118 @@ function sculptPush(angle, drag) {
   spec[tool.key] = R.sculptWrite(arr);
 }
 
+/** 도안 격자에 한 번 찍기. vN = 폭 방향 위치(-0.5~0.5)
+ * 조각칼은 손이 빨리 지나가든 천천히 지나가든 같은 깊이로 팝니다.
+ * 그래서 깊이를 더해 쌓지 않고 "그 깊이까지 판다"로 둡니다 — 선이 고르게 이어집니다. */
+function engravePaint(angle, vN, wipe) {
+  if (!spec._engrave || R.engraveWrite(spec._engrave) !== (spec.engrave || '')) {
+    spec._engrave = R.engraveRead(spec.engrave || '');
+  }
+  const g = spec._engrave;
+  const rx = Math.max(0.7, (TOOLS[sculptState.tool].brush || 1.2) * sculptState.size);
+  const ry = rx * 0.8;
+  const cx = ((angle - Math.PI / 2) / (Math.PI * 2) * EX % EX + EX) % EX;
+  const cy = (vN + 0.5) * (EY - 1);
+
+  const dab = (centerX) => {
+    for (let y = 0; y < EY; y++) {
+      const dy = (y - cy) / ry;
+      if (Math.abs(dy) > 1) continue;
+      for (let x = 0; x < EX; x++) {
+        let dx = Math.abs(x - centerX);
+        if (dx > EX / 2) dx = EX - dx;         // 둘레는 한 바퀴 이어집니다
+        dx /= rx;
+        const d = Math.hypot(dx, dy);
+        if (d > 1) continue;
+        const i = y * EX + x;
+        /* 조각칼 자국은 바닥이 평평하고 가장자리만 비스듬합니다.
+         * 가운데는 제 깊이로 파이고 가장자리로 가며 얕아지게 둡니다. */
+        const cut = Math.min(1, (1 - d) * 1.8);
+        // 지우개는 파 놓은 만큼 메우고, 조각칼은 그 깊이까지만 팝니다
+        g[i] = wipe ? Math.max(0, g[i] - cut) : Math.max(g[i], cut);
+      }
+    }
+  };
+  dab(cx);
+  // 대칭을 켜면 손등 쪽 가운데를 기준으로 반대편에도 똑같이 새깁니다
+  if (sculptState.mirror) {
+    const mirrored = ((EX - cx) % EX + EX) % EX;
+    if (Math.abs(mirrored - cx) > 0.01) dab(mirrored);
+  }
+  spec.engrave = R.engraveWrite(g);
+}
+
+/** -180 ~ 180 도로 접기 */
+function fold(deg) {
+  let d = ((deg % 360) + 360) % 360;
+  return d > 180 ? d - 360 : d;
+}
+
+/** 짚은 자리에 알을 놓거나, 이미 놓인 알을 뺍니다 */
+function stoneToggle(angle) {
+  const deg = Math.round(fold((angle - Math.PI / 2) * 180 / Math.PI));
+  const list = R.stoneAngles(spec).slice();
+  let hit = -1;
+  for (let i = 0; i < list.length; i++) {
+    if (Math.abs(fold(list[i] - deg)) < 15) { hit = i; break; }
+  }
+  if (hit >= 0) {
+    if (list.length <= 1) return false;        // 마지막 한 알은 남겨 둡니다
+    list.splice(hit, 1);
+  } else {
+    if (list.length >= 8) return false;
+    list.push(deg);
+  }
+  spec.stoneAt = list.map((v) => Math.round(v)).join(',');
+  spec.stoneCount = list.length;
+  return true;
+}
+
 function bindSculpt() {
   const el = renderer.domElement;
 
   el.addEventListener('pointerdown', (ev) => {
     if (!sculptOn || ev.button !== 0) return;
-    const a = angleAtPointer(ev);
-    if (a === null) return;
+    const pt = pointAtPointer(ev);
+    if (!pt) return;
+    const tool = TOOLS[sculptState.tool] || TOOLS.push;
     ev.preventDefault();
+
+    // 알 놓기는 끌지 않고 한 번 짚는 도구입니다
+    if (tool.click) {
+      if (stoneToggle(pt.angle)) studio.changed();
+      return;
+    }
     el.setPointerCapture(ev.pointerId);
-    sculpting = { angle: a, y: ev.clientY, moved: false };
+    sculpting = { angle: pt.angle, x: ev.clientX, y: ev.clientY, moved: false };
+    // 도안은 짚은 그 자리부터 바로 새겨집니다
+    if (tool.grid && pt.v !== null) {
+      engravePaint(pt.angle, pt.v, tool.wipe);
+      studio.changed();
+    }
   });
 
   el.addEventListener('pointermove', (ev) => {
     if (!sculpting) return;
+    const tool = TOOLS[sculptState.tool] || TOOLS.push;
+
+    /* 도안은 "지나간 자리"가 그대로 무늬가 됩니다.
+     * 위아래로 끌 필요 없이, 옆으로 그어도 선이 이어져야 하니까요. */
+    if (tool.grid) {
+      if (Math.abs(ev.clientX - sculpting.x) < 1 && Math.abs(ev.clientY - sculpting.y) < 1) return;
+      sculpting.x = ev.clientX; sculpting.y = ev.clientY;
+      const pt = pointAtPointer(ev);
+      if (!pt || pt.v === null) return;          // 반지를 벗어난 자리는 건너뜁니다
+      sculpting.moved = true;
+      engravePaint(pt.angle, pt.v, tool.wipe);
+      studio.changed();
+      return;
+    }
+
     const dy = sculpting.y - ev.clientY;       // 위로 끌면 두껍게
     if (Math.abs(dy) < 1) return;
     sculpting.y = ev.clientY;
+    sculpting.x = ev.clientX;
     sculpting.moved = true;
     // 끄는 동안 현재 가리키는 자리를 따라가면 붓처럼 칠할 수 있다
     const a = angleAtPointer(ev);
@@ -843,12 +1042,17 @@ function bindSculpt() {
   el.addEventListener('pointercancel', finish);
 }
 
+function cursorForTool() {
+  const tool = TOOLS[sculptState.tool] || TOOLS.push;
+  return tool.grid ? 'crosshair' : tool.click ? 'pointer' : 'ns-resize';
+}
+
 /** 다듬기 모드를 켜고 끈다. 켜면 화면 돌리기는 잠깐 멈춘다. */
 function setSculptMode(on) {
   sculptOn = !!on;
   controls.enableRotate = !sculptOn;
   controls.autoRotate = sculptOn ? false : controls.autoRotate;
-  renderer.domElement.style.cursor = sculptOn ? 'ns-resize' : '';
+  renderer.domElement.style.cursor = sculptOn ? cursorForTool() : '';
   return sculptOn;
 }
 
@@ -865,6 +1069,7 @@ function rebuild() {
   const model = R.getModel(spec.modelId);
   // 주소에서 들어온 자국은 처음 한 번 숫자로 풀어 둡니다
   sculptOf(spec, 'sculpt'); sculptOf(spec, 'sculptW'); sculptOf(spec, 'matte');
+  engraveOf(spec);
   ringGroup = new THREE.Group();
   const bandGeo = buildBand(spec, model);
   const bandMat = metalMaterial(spec);
@@ -910,12 +1115,19 @@ try {
   studio.setSculptMode = setSculptMode;
   studio.angleAtPointer = angleAtPointer;
   studio.clearSculpt = () => {
-    spec._sculpt = spec._sculptW = spec._matte = null;
-    spec.sculpt = spec.sculptW = spec.matte = '';
+    spec._sculpt = spec._sculptW = spec._matte = spec._engrave = null;
+    spec.sculpt = spec.sculptW = spec.matte = spec.engrave = '';
+    spec.stoneAt = '';
     studio.changed();
   };
   studio.sculptState = sculptState;
-  studio.setSculptTool = (t) => { if (TOOLS[t]) sculptState.tool = t; return sculptState.tool; };
+  // 화면 안을 들여다볼 수 있게 열어 둡니다 (시점 확인 · 검사용)
+  studio.view = { camera, controls, scene, group: () => ringGroup };
+  studio.setSculptTool = (t) => {
+    if (TOOLS[t]) sculptState.tool = t;
+    if (sculptOn) renderer.domElement.style.cursor = cursorForTool();
+    return sculptState.tool;
+  };
   studio.setSculptSize = (v) => { sculptState.size = Math.max(0.4, Math.min(2.2, Number(v) || 1)); };
   studio.setSculptMirror = (on) => { sculptState.mirror = !!on; return sculptState.mirror; };
   studio.onChange(rebuild);

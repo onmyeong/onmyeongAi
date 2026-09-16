@@ -186,7 +186,15 @@
       tags: ['유연', '조화', '자연에서 영감', '포용', '섬세', '감성'],
       preset: { organic: 0.55, stoneShape: 'oval', stoneSize: 6.0, stoneHeight: -0.3 },
       desc: '녹아 흐르다 굳은 듯한 밴드가 원석을 넝쿨처럼 감아 옵니다. 길쭉한 오벌 캐보션을 ' +
-        '자리를 파고 심어 넣어, 돌이 금속 안에 잠긴 것처럼 앉습니다.' }
+        '자리를 파고 심어 넣어, 돌이 금속 안에 잠긴 것처럼 앉습니다.' },
+
+    { id: 'onm-signet', name: '인장', family: 'minimal', profile: 'signet', texture: 'polish', setting: 'none',
+      width: [2.5, 3.2, 5], thickness: [1.4, 1.8, 2.6], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['토', '금'], moods: ['시그니처', '선물'], basePrice: 134000,
+      tags: ['신념', '책임', '확고함', '품격', '중심', '이름'],
+      preset: { plateSize: 1 },
+      desc: '뒤쪽은 가는 밴드로 가볍게 지나가다가 손등 쪽에서만 어깨가 솟아 평평한 판이 됩니다. ' +
+        '그 판에 이름 첫 글자나 문양을 새겨 도장처럼 씁니다.' }
   ];
 
   /* ────────────────────── 캔바 원문 → 스타일 해석 ────────────────────── */
@@ -386,10 +394,13 @@
       size: 13,
       metal: opts.metal || 'silver925',
       grain: 'vertical',      // 사포바를 골랐을 때 줄 방향
+      plateSize: 1,           // 인장 판 크기 (0.5~1.8)
       backThickness: 0,       // 0 = 앞뒤 같은 두께. 값을 주면 손바닥 쪽이 그만큼 얇아집니다
       organic: 0,             // 왁스를 손으로 깎았을 때의 불규칙한 굴곡 (0~1)
       sculpt: '',             // 손으로 민 두께 자국 (아래 SCULPT 참고)
       sculptW: '',            // 손으로 민 폭 자국
+      engrave: '',            // 도안 새기기 (둘레 32 × 폭 6 격자)
+      stoneAt: '',            // 돌을 놓은 자리들 (도, 쉼표로 구분)
       matte: '',              // 부분 무광으로 칠한 자리
       stoneHeight: 0,         // 돌을 얼마나 올리고 내릴지 (mm)
       stoneAngle: 0,          // 돌을 반지 둘레 어디에 앉힐지 (도). 0 = 손등 쪽 한가운데
@@ -482,7 +493,7 @@
     if (kind && kind.sizes) {
       stoneCost = sizePrice(spec.stoneType, spec.stoneSize, spec.stoneShape);
       if (stoneCost == null) { pending.push(kind.label + ' 값'); stoneCost = 0; }
-      stoneCost *= Math.max(1, Number(spec.stoneCount) || 1);   // 알 개수만큼
+      stoneCost *= stoneAngles(spec).length;                     // 놓은 알 개수만큼
     }
     var setting = P.setting[spec.setting] || 0;
 
@@ -533,7 +544,7 @@
     wave:   '물결치는 (웨이브)',
     facet:  '각이 진 (패싯)',
     step:   '층이 진 (스텝)',
-    signet: '윗면이 평평한 판 (인장)'
+    signet: '손등 쪽만 부푼 판 (인장)'
   };
   /* 겉면 마감은 실제로 만들 수 있는 다섯 가지만 둡니다. */
   var TEXTURE_LABEL = {
@@ -610,7 +621,7 @@
     var kind = CONFIG.stones[stoneType];
     if (!kind || !kind.sizes) return 0;
     // 오벌 캐보션은 6×8mm 한 규격뿐이라 값도 하나입니다
-    if (shape === 'oval' && kind.ovalPrice != null) return kind.ovalPrice;
+    if ((shape === 'oval' || shape === 'ovalH') && kind.ovalPrice != null) return kind.ovalPrice;
     var want = Number(mm);
     var pick = kind.sizes.filter(function (z) { return Math.abs(z.mm - want) < 0.01; })[0];
     if (!pick) pick = kind.sizes[Math.min(1, kind.sizes.length - 1)];
@@ -619,7 +630,7 @@
 
   /** 손으로 손댄 흔적이 하나라도 있는가 */
   function hasSculpt(spec) {
-    return !!(spec.sculpt || spec.sculptW || spec.matte);
+    return !!(spec.sculpt || spec.sculptW || spec.matte || spec.engrave || spec.stoneAt);
   }
 
   /** 색 채움 값 — 부분만 채우는지 한 바퀴 다 두르는지로 갈립니다 */
@@ -646,7 +657,7 @@
 
   /** 원석을 사람이 읽는 한 줄로 */
   function stoneLabel(spec) {
-    var n = Math.max(1, Number(spec.stoneCount) || 1);
+    var n = stoneAngles(spec).length;
     if (n > 1) return stoneLabelOne(spec) + ' × ' + n + '개';
     return stoneLabelOne(spec);
   }
@@ -657,8 +668,11 @@
     }
     if (spec.stoneType === 'natural' && spec.stone) {
       var N = CONFIG.stones.natural;
-      if (spec.stoneShape === 'oval') {
-        return spec.stone + ' ' + N.ovalMm.w + '×' + N.ovalMm.h + 'mm (오벌 캐보션)';
+      if (spec.stoneShape === 'oval' || spec.stoneShape === 'ovalH') {
+        var lay = spec.stoneShape === 'ovalH' ? '가로' : '세로';
+        var a = spec.stoneShape === 'ovalH' ? N.ovalMm.h : N.ovalMm.w;
+        var bq = spec.stoneShape === 'ovalH' ? N.ovalMm.w : N.ovalMm.h;
+        return spec.stone + ' ' + a + '×' + bq + 'mm (오벌 캐보션 · ' + lay + ')';
       }
       return spec.stone + ' ' + stoneMm(spec).toFixed(1) + 'mm (라운드 캐보션)';
     }
@@ -846,10 +860,49 @@
    * 주소에 실어야 하므로 값 하나를 글자 하나로 줄여 둡니다.
    *   0~35 → '0'~'9','a'~'z' (18 이 기준, 그보다 크면 두껍게)
    */
-  var SCULPT_N = 24;
-  var SCULPT_MID = 18;
+  /* ── 도안 새기기 ──
+   * 둘레 48칸 × 폭 8칸 격자에 "얼마나 깊게 팠는지"를 담습니다.
+   * 0 = 안 팜, 35 = 가장 깊게. 24지점 자국과 달리 폭 방향으로도 나뉘어서
+   * 반지 윗면 일부에만 무늬를 새길 수 있습니다. */
+  var ENGRAVE_X = 48, ENGRAVE_Y = 8;
   var SCULPT_MAX = 35;
   var SCULPT_CHARS = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+  function engraveRead(str) {
+    var n = ENGRAVE_X * ENGRAVE_Y, out = new Array(n);
+    for (var i = 0; i < n; i++) {
+      var c = str && str.charAt(i) ? SCULPT_CHARS.indexOf(str.charAt(i)) : 0;
+      out[i] = c < 0 ? 0 : c / SCULPT_MAX;
+    }
+    return out;
+  }
+
+  function engraveWrite(arr) {
+    var any = false, out = '';
+    for (var i = 0; i < arr.length; i++) {
+      var c = Math.max(0, Math.min(SCULPT_MAX, Math.round((arr[i] || 0) * SCULPT_MAX)));
+      if (c > 0) any = true;
+      out += SCULPT_CHARS.charAt(c);
+    }
+    return any ? out : '';
+  }
+
+  /** 돌을 놓은 자리들(도 단위). 비어 있으면 개수대로 고르게 나눠 앉힙니다 */
+  function stoneAngles(spec) {
+    if (spec.stoneAt) {
+      var list = String(spec.stoneAt).split(',').map(function (v) { return parseFloat(v); })
+        .filter(function (v) { return !isNaN(v); });
+      if (list.length) return list;
+    }
+    var n = Math.max(1, Math.min(8, Number(spec.stoneCount) || 1));
+    var base = Number(spec.stoneAngle) || 0;
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(base + (n > 1 ? (i / n) * 360 : 0));
+    return out;
+  }
+
+  var SCULPT_N = 24;
+  var SCULPT_MID = 18;
 
   /** 글자열 → -1~1 숫자 배열. 비어 있으면 전부 0 */
   function sculptRead(str) {
@@ -878,7 +931,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'backThickness', 'organic', 'sculpt', 'sculptW', 'matte',
+    'plateSize', 'backThickness', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'ilju', 'qty'];
 
@@ -908,7 +961,8 @@
     var model = ONM.rings.getModel(p.get('modelId')) || MODELS[0];
     var record = p.get('ilju') && ONM.ILJU ? ONM.ILJU[p.get('ilju')] : null;
     var spec = defaultSpec(model, record, { metal: p.get('metal') || undefined });
-    ['width', 'thickness', 'size', 'backThickness', 'organic', 'stoneHeight', 'stoneAngle'].forEach(function (k) {
+    ['width', 'thickness', 'size', 'plateSize', 'backThickness', 'organic',
+     'stoneHeight', 'stoneAngle'].forEach(function (k) {
       var v = parseFloat(p.get(k));
       if (!isNaN(v)) spec[k] = v;
     });
@@ -923,6 +977,8 @@
     if (p.get('sculpt')) spec.sculpt = p.get('sculpt').slice(0, SCULPT_N);
     if (p.get('sculptW')) spec.sculptW = p.get('sculptW').slice(0, SCULPT_N);
     if (p.get('matte')) spec.matte = p.get('matte').slice(0, SCULPT_N);
+    if (p.get('engrave')) spec.engrave = p.get('engrave').slice(0, ENGRAVE_X * ENGRAVE_Y);
+    if (p.has('stoneAt')) spec.stoneAt = p.get('stoneAt') || '';
     if (p.get('stoneCount')) spec.stoneCount = Math.max(1, Math.min(8, parseInt(p.get('stoneCount'), 10) || 1));
     if (p.get('epoxyLines')) spec.epoxyLines = Math.max(1, Math.min(3, parseInt(p.get('epoxyLines'), 10) || 1));
     if (p.get('texture') && TEXTURE_LABEL[p.get('texture')]) spec.texture = p.get('texture');
@@ -962,6 +1018,11 @@
     SCULPT_N: SCULPT_N,
     sculptRead: sculptRead,
     sculptWrite: sculptWrite,
+    ENGRAVE_X: ENGRAVE_X,
+    ENGRAVE_Y: ENGRAVE_Y,
+    engraveRead: engraveRead,
+    engraveWrite: engraveWrite,
+    stoneAngles: stoneAngles,
     hasSculpt: hasSculpt,
     sizesFor: sizesFor,
     settingsFor: settingsFor,

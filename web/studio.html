@@ -90,6 +90,9 @@
             <button class="btn btn-sm" type="button" data-tool="wide" aria-pressed="false">폭</button>
             <button class="btn btn-sm" type="button" data-tool="chisel" aria-pressed="false">각 세우기</button>
             <button class="btn btn-sm" type="button" data-tool="matte" aria-pressed="false">부분 무광</button>
+            <button class="btn btn-sm" type="button" data-tool="engrave" aria-pressed="false">도안 새기기</button>
+            <button class="btn btn-sm" type="button" data-tool="erase" aria-pressed="false">도안 지우기</button>
+            <button class="btn btn-sm" type="button" data-tool="stone" aria-pressed="false">알 놓기</button>
           </div>
           <div class="grid grid-2" style="gap:12px;margin-top:12px">
             <div class="field">
@@ -165,6 +168,17 @@
           <select id="c-grain"></select>
         </div>
 
+        <div class="field is-hidden" id="f-plate">
+          <label for="c-plate">판 크기 — 손등 쪽이 부푸는 정도</label>
+          <div class="slider-row">
+            <input id="c-plate" type="range" min="0.5" max="1.5" step="0.05">
+            <output id="o-plate"></output>
+          </div>
+          <p class="small" style="margin:2px 0 0">
+            뒤쪽은 가는 밴드로 지나가고 손등 쪽만 어깨가 솟아 평평한 판이 됩니다.
+          </p>
+        </div>
+
         <fieldset style="display:grid;gap:12px">
           <legend class="eyebrow" style="margin:0 0 4px">손맛 — 직접 깎은 느낌</legend>
           <div class="field">
@@ -227,13 +241,21 @@
               <option value="1">1개</option>
               <option value="2">2개</option>
               <option value="3">3개</option>
+              <option value="4">4개</option>
               <option value="5">5개</option>
+              <option value="6">6개</option>
+              <option value="7">7개</option>
+              <option value="8">8개</option>
             </select>
             <label for="c-stoneangle" style="margin-top:8px">알 위치 — 둘레 어디에</label>
             <div class="slider-row">
               <input id="c-stoneangle" type="range" min="-180" max="180" step="5">
               <output id="o-stoneangle"></output>
             </div>
+            <p class="small" id="stone-place-note" style="margin:6px 0 0">
+              둘레에 고르게 나눠 앉습니다. <b>손으로 다듬기 → 알 놓기</b>로 반지를 짚으면
+              원하는 자리에 하나씩 놓을 수 있습니다.
+            </p>
           </div>
           <div class="field is-hidden" id="f-stoneheight">
             <label for="c-stoneheight">돌 높이 — 얼마나 올릴까요</label>
