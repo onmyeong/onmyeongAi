@@ -133,6 +133,8 @@ function widthScaleAt(s, th) {
   return 1 + org * 0.26 * (n - 0.5) * 2;
 }
 
+const MIN_WALL = 0.28;   // mm — 이보다 얇아지면 면이 겹쳐 뚫린 것처럼 보입니다
+
 function buildBand(s, model) {
   const innerR = R.sizeToInnerDiameter(s.size) / 2;
   const t = s.thickness;
@@ -146,11 +148,14 @@ function buildBand(s, model) {
   const twist = model ? model.twist : 0;
   const facets = (s.profile === 'facet' && model) ? model.facets : 0;
 
-  const pos = new Float32Array((SEG + 1) * P * 3);
-  const uv = new Float32Array((SEG + 1) * P * 2);
+  /* 한 바퀴를 SEG 줄로 나눕니다. 예전에는 마지막에 첫 줄과 똑같은 줄을 하나 더 두었는데,
+   * 그러면 이음매에서 법선이 끊겨 그 자리만 검게 뜨거나 면이 비어 보였습니다.
+   * 이제는 마지막 줄이 첫 줄을 그대로 가리키게 해서 완전히 닫힌 고리로 만듭니다. */
+  const pos = new Float32Array(SEG * P * 3);
+  const uv = new Float32Array(SEG * P * 2);
   // 정점마다 "표면에서 얼마나 파였는지"(0=표면, 1=가장 깊은 곳).
   // 홈에 색을 채우는 마감을 그릴 때 이 값을 씁니다.
-  const depth = new Float32Array((SEG + 1) * P);
+  const depth = new Float32Array(SEG * P);
   const rot = new Array(P);
   let n = 0, m = 0, d = 0;
 
@@ -162,7 +167,7 @@ function buildBand(s, model) {
   const grooveDepth = twist * 0.34;
   const groovePitch = 1.1;   // 폭 방향으로 기울어진 정도 — 클수록 비스듬해진다
 
-  for (let i = 0; i <= SEG; i++) {
+  for (let i = 0; i < SEG; i++) {
     const th = (i / SEG) * Math.PI * 2;
     // 앞뒤 두께 차이와 손으로 깎은 굴곡을 여기서 함께 반영합니다
     const tAt = thicknessAt(s, th);
@@ -218,7 +223,8 @@ function buildBand(s, model) {
           radius -= cut;
           carved += cut;
         }
-        if (radius < innerR) radius = innerR;
+        // 벽이 0이 되면 안쪽 면과 바깥 면이 겹쳐 반지가 뚫려 보입니다.
+        if (radius < innerR + MIN_WALL) radius = innerR + MIN_WALL;
       }
       depth[d++] = carved;
       pos[n++] = radius * Math.cos(th);
@@ -231,11 +237,13 @@ function buildBand(s, model) {
 
   const idx = [];
   for (let i = 0; i < SEG; i++) {
+    const i2 = (i + 1) % SEG;          // 마지막 줄은 첫 줄로 돌아온다
     for (let j = 0; j < P; j++) {
+      const j2 = (j + 1) % P;
       const a = i * P + j;
-      const b = i * P + ((j + 1) % P);
-      const c = (i + 1) * P + j;
-      const d = (i + 1) * P + ((j + 1) % P);
+      const b = i * P + j2;
+      const c = i2 * P + j;
+      const d = i2 * P + j2;
       idx.push(a, c, b, b, c, d);
     }
   }
