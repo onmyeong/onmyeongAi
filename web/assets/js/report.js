@@ -236,11 +236,12 @@
       return '<span>' + esc(k) + '</span>';
     }).join('');
 
+    // 천연석은 캐보션(둥글게 갈아 올린 알)으로만 만듭니다
     $('r-stones').innerHTML = rec.stones.map(function (s) {
-      var c = ONM.STONE_COLOR[s[0]] || '#7a8b9c';
       return '<div class="stone-row">' +
-        '<span class="stone-dot" style="background:' + c + '"></span>' +
-        '<span><b>' + esc(s[0]) + '</b><br><span class="small">' + esc(s[1]) + '</span></span></div>';
+        ONM.stoneIcon(s[0], { size: 46, cut: 'cabochon', label: s[0] }) +
+        '<span><b>' + esc(s[0]) + '</b><br><span class="small">' + esc(s[1]) +
+        ' · 캐보션</span></span></div>';
     }).join('');
 
     $('r-ringnote').textContent = rec.ringNote;

@@ -138,6 +138,12 @@
      * 아이콘 자체가 흰색이든 검은색이든 상관없습니다.
      * SVG 로 내려받았다면 ext 를 '.svg' 로 바꾸면 됩니다.
      */
+    /* 원석 그림 — 기본은 코드로 그립니다(파일 없이도 동작).
+     * 캔바에서 내려받은 원석 사진을 쓰려면 custom 을 true 로 바꾸고
+     * assets/icons/stones/ 에 원석 이름 그대로 파일을 넣으세요. (예: 문스톤.png)
+     * 이름은 ilju-data.js 의 STONE_COLOR 키와 똑같아야 합니다. */
+    stoneIcons: { custom: false, path: 'assets/icons/stones/', ext: '.png' },
+
     zodiacIcons: {
       custom: true,
       path: 'assets/icons/zodiac/',

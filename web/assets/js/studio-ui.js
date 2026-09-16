@@ -133,12 +133,23 @@
     $('stone-note').textContent = note;
 
     refreshEpoxyNote();
+    refreshStonePeek();
 
     if (!has) { spec.setting = 'none'; return; }
 
     var allowed = R.settingsFor(type);
     if (allowed.indexOf(spec.setting) === -1) spec.setting = allowed[0];
     fillSelect($('c-setting'), allowed.map(function (k) { return [k, R.SETTING_LABEL[k]]; }), spec.setting);
+  }
+
+  /* 고른 천연석이 실제로 어떤 알인지 옆에 바로 보여 준다 */
+  function refreshStonePeek() {
+    var box = $('stone-peek');
+    if (!box) return;
+    if (spec.stoneType !== 'natural' || !spec.stone) { box.innerHTML = ''; return; }
+    box.innerHTML = ONM.stoneIcon(spec.stone, { size: 40, cut: 'cabochon', label: spec.stone }) +
+      '<span class="small">' + R.esc(spec.stone) + ' · 캐보션 ' +
+      CONFIG.stones.natural.mm.toFixed(1) + 'mm</span>';
   }
 
   function applyModelLimits() {
@@ -202,6 +213,7 @@
 
   $('c-stone').addEventListener('change', function () {
     spec.stone = this.value || null;
+    refreshStonePeek();
     studio.changed();
   });
 

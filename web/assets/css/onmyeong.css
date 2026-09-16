@@ -416,3 +416,11 @@ input[type="range"]::-moz-range-thumb {
   .pair-card .pair-previews { max-width: 340px; margin-inline: auto; }
 }
 .pair-previews.is-single { grid-template-columns: 1fr; max-width: 240px; margin-inline: auto; }
+
+/* ── 원석 그림 ───────────────────────────────────────── */
+.stone-svg, .stone-img {
+  flex: 0 0 auto; border-radius: 50%; display: block;
+  box-shadow: 0 2px 8px rgba(112, 98, 72, .18);
+}
+.stone-peek { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.stone-peek:empty { display: none; }
