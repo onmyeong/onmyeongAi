@@ -299,6 +299,12 @@ input[type="range"]::-moz-range-thumb {
 .spec-table th { color: var(--muted); font-weight: 400; width: 40%; }
 .spec-table td { color: var(--ink); }
 .price-total { font-family: var(--serif); font-size: 1.4rem; color: var(--green-deep); }
+/* 값 내역 — 금액이 어떻게 쌓였는지 작게 펼쳐 둔다 */
+.price-parts { font-size: .8rem; }
+.price-parts th, .price-parts td { padding: 5px 0; border-bottom: 1px dashed var(--line-soft); }
+.price-parts th { width: 64%; }
+.price-parts td { text-align: right; font-variant-numeric: tabular-nums; }
+.price-parts tr:last-child th, .price-parts tr:last-child td { border-bottom: 0; }
 
 /* ── 주문 ───────────────────────────────────────────── */
 .order-grid { display: grid; grid-template-columns: minmax(0, 1fr) 356px; gap: 20px; align-items: start; }

@@ -732,6 +732,10 @@
 
     var price = R.estimatePrice(spec, couple.on ? 1 : (spec.quantity || 1));
     $('price-out').textContent = R.priceText(price, 'unit');
+    // 값이 어떻게 나왔는지 한 줄씩 펼쳐 둡니다
+    $('price-body').innerHTML = R.priceBreakdown(price).map(function (r) {
+      return '<tr><th>' + R.esc(r[0]) + '</th><td>' + R.formatKRW(r[1]) + '</td></tr>';
+    }).join('');
     // 값이 안 나오는 치수면 왜 그런지 바로 알려 준다
     var consultBox = $('price-consult');
     if (consultBox) {
