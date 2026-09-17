@@ -559,6 +559,100 @@ function buildEpoxyFill(bandGeo, spec) {
   return mesh;
 }
 
+/* ─────────────────── 검정 브러쉬로 그린 그림 ───────────────────
+ * 파는 것이 아니라 겉면에 칠하는 층입니다.
+ * 반지 겉면을 펼친 그림판에 선을 그려서, 그 그림을 표면에 그대로 입힙니다.
+ *
+ * 밴드의 uv 는 x = 둘레(0~1, 0이 +X 방향), y = 단면을 한 바퀴 돈 위치입니다.
+ * 바깥 면은 y = 0.5(폭 +쪽) ~ 1.0(폭 -쪽) 구간을 씁니다.
+ * 손등 쪽 한가운데(각도 0도)는 둘레로 치면 1/4 지점입니다.
+ */
+const DRAW_W = 2048;
+
+function drawTexture(s) {
+  const strokes = R.drawStrokes(s);
+  if (!strokes.length) return null;
+
+  const innerR = R.sizeToInnerDiameter(s.size) / 2;
+  const circ = Math.PI * 2 * (innerR + s.thickness);     // 겉둘레 (mm)
+  const pxPerMm = DRAW_W / circ;
+  // 가로세로 배율을 같게 맞춰야 붓이 동그랗게 찍히고 글씨도 안 눌립니다
+  const H = Math.max(64, Math.min(1024, Math.round(2 * s.width * pxPerMm)));
+  /* 위아래로 흰 여백을 둡니다.
+   * 안쪽 면은 그림판 밖을 가리키는데, 가장자리 색이 그대로 늘어나 붙기 때문입니다.
+   * 여백이 희면 안쪽 면에는 아무것도 묻지 않습니다. */
+  const PAD = Math.max(4, Math.round(H * 0.1));
+  const T = H + PAD * 2;
+
+  const cv = document.createElement('canvas');
+  cv.width = DRAW_W; cv.height = T;
+  const x = cv.getContext('2d');
+  x.fillStyle = '#ffffff';
+  x.fillRect(0, 0, DRAW_W, T);
+  x.save();
+  x.beginPath();
+  x.rect(0, PAD, DRAW_W, H);
+  x.clip();                     // 반지 폭 밖으로는 칠이 넘어가지 않습니다
+  x.lineCap = 'round';
+  x.lineJoin = 'round';
+  x.strokeStyle = '#080808';
+  x.fillStyle = '#080808';
+
+  for (const st of strokes) {
+    const lw = Math.max(1.5, st.width * pxPerMm);
+    x.lineWidth = lw;
+    // 이음매를 넘어가는 선이 화면을 가로지르지 않도록, 앞 점에서 가까운 쪽으로 이어 둡니다
+    const xs = [], ys = [];
+    let prev = null;
+    for (const p of st.pts) {
+      let ux = (((0.25 + p.deg / 360) % 1) + 1) % 1 * DRAW_W;
+      if (prev !== null) {
+        while (ux - prev > DRAW_W / 2) ux -= DRAW_W;
+        while (prev - ux > DRAW_W / 2) ux += DRAW_W;
+      }
+      prev = ux;
+      xs.push(ux);
+      // 폭 방향: 여백 안쪽이 반지 폭입니다
+      ys.push(PAD + (0.5 + p.v) * H);
+    }
+
+    for (const off of [-DRAW_W, 0, DRAW_W]) {
+      if (xs.length === 1) {
+        x.beginPath();
+        x.arc(xs[0] + off, ys[0], lw / 2, 0, Math.PI * 2);
+        x.fill();
+        continue;
+      }
+      x.beginPath();
+      for (let i = 0; i < xs.length; i++) {
+        if (i === 0) x.moveTo(xs[i] + off, ys[i]);
+        else x.lineTo(xs[i] + off, ys[i]);
+      }
+      x.stroke();
+    }
+  }
+
+  x.restore();
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 8;
+  /* 그림판은 바깥 면(uv.y 0.5~1)에만 놓입니다. 그 구간에 그림판의 여백 안쪽이 딱 맞게 오도록 옮깁니다. */
+  tex.repeat.set(1, (2 * H) / T);
+  tex.offset.set(0, 1 - (PAD + 2 * H) / T);
+  return tex;
+}
+
+/** 재질에 그림 층을 입힙니다 — 칠한 자리는 검고, 금속기가 빠져 잉크처럼 보입니다 */
+function applyDraw(mat, tex) {
+  if (!tex) return;
+  mat.map = tex;
+  mat.metalnessMap = tex;     // 칠한 자리는 금속이 아니라 칠한 면이 됩니다
+  mat.needsUpdate = true;
+}
+
 /* ─────────────────── 재질 ─────────────────── */
 /* 거친 마감일수록 반사를 줄여야 질감이 보입니다.
  * 반사를 그대로 두면 표면이 하얗게 날아가 결이 사라집니다. */
@@ -894,7 +988,10 @@ const TOOLS = {
   erase:   { grid: true, brush: 1.7,  label: '도안 지우기', wipe: true },
   // 아래 둘은 짚는 도구입니다 — 짚은 자리에 놓이고, 놓인 것을 다시 짚으면 빠집니다
   stone:   { click: true, label: '알 놓기' },
-  star:    { click: true, label: '별 조각', star: true }
+  star:    { click: true, label: '별 조각', star: true },
+  // 그리기는 파지 않습니다 — 겉면에 검게 칠하는 층입니다
+  draw:    { paint: true, label: '그리기' },
+  unpaint: { click: true, label: '그린 선 지우기', wipeDraw: true }
 };
 const sculptState = { tool: 'push', size: 1, mirror: false };
 
@@ -1026,6 +1123,63 @@ function fold(deg) {
   return d > 180 ? d - 360 : d;
 }
 
+/* ── 검정 브러쉬 ──
+ * 끄는 동안 지나간 자리를 점으로 담아 두었다가, 그 선을 표면에 그립니다.
+ * 반지를 다시 만들 필요가 없으므로 그림판만 새로 칠해 바로 보여 줍니다. */
+let drawing = null;       // { before: 지금까지 그린 선들, pts: 지금 긋고 있는 선 }
+
+function drawRepaint() {
+  if (!ringGroup) return;
+  const tex = drawTexture(spec);
+  ringGroup.traverse((o) => {
+    if (!o.userData || !o.userData.band) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach((m) => {
+      if (m.map && m.map.isCanvasTexture) m.map.dispose();
+      m.map = tex || null;
+      m.metalnessMap = tex || null;
+      m.needsUpdate = true;
+    });
+  });
+}
+
+function drawPush(pt) {
+  if (!drawing) return;
+  const deg = fold((pt.angle - Math.PI / 2) * 180 / Math.PI);
+  const last = drawing.pts[drawing.pts.length - 1];
+  // 너무 촘촘한 점은 버립니다 (주소가 길어지기만 합니다)
+  if (last && Math.abs(fold(last.deg - deg)) < 0.4 && Math.abs(last.v - pt.v) < 0.012) return;
+  drawing.pts.push({ deg: deg, v: pt.v });
+  spec.draw = R.drawWrite(drawing.before.concat([{
+    width: Math.max(0.3, Math.min(3, Number(spec.drawSize) || 0.8)),
+    pts: drawing.pts
+  }]));
+  drawRepaint();
+}
+
+/** 짚은 선을 통째로 지웁니다 */
+function drawErase(pt) {
+  const strokes = R.drawStrokes(spec);
+  if (!strokes.length) return false;
+  const outerR = R.sizeToInnerDiameter(spec.size) / 2 + spec.thickness;
+  const deg = fold((pt.angle - Math.PI / 2) * 180 / Math.PI);
+  const vN = pt.v === null ? 0 : pt.v;
+  for (let i = strokes.length - 1; i >= 0; i--) {
+    const st = strokes[i];
+    const near = st.pts.some((p) => {
+      const dx = fold(p.deg - deg) * Math.PI / 180 * outerR;
+      const dy = (p.v - vN) * spec.width;
+      return Math.hypot(dx, dy) <= Math.max(0.9, st.width * 1.2);
+    });
+    if (near) {
+      strokes.splice(i, 1);
+      spec.draw = R.drawWrite(strokes);
+      return true;
+    }
+  }
+  return false;
+}
+
 /** 짚은 자리에 별을 새기거나, 이미 새긴 별을 지웁니다 */
 function starToggle(angle) {
   const deg = Math.round(fold((angle - Math.PI / 2) * 180 / Math.PI));
@@ -1074,10 +1228,21 @@ function bindSculpt() {
     const tool = TOOLS[sculptState.tool] || TOOLS.push;
     ev.preventDefault();
 
-    // 알 놓기와 별 조각은 끌지 않고 한 번 짚는 도구입니다
+    // 알 놓기 · 별 조각 · 그린 선 지우기는 끌지 않고 한 번 짚는 도구입니다
     if (tool.click) {
-      const done = tool.star ? starToggle(pt.angle) : stoneToggle(pt.angle);
+      const done = tool.wipeDraw ? drawErase(pt)
+        : tool.star ? starToggle(pt.angle) : stoneToggle(pt.angle);
       if (done) studio.changed();
+      return;
+    }
+
+    // 그리기 — 반지를 정확히 짚었을 때만 선이 시작됩니다
+    if (tool.paint) {
+      if (pt.v === null) return;
+      el.setPointerCapture(ev.pointerId);
+      drawing = { before: R.drawStrokes(spec), pts: [] };
+      sculpting = { paint: true, angle: pt.angle, x: ev.clientX, y: ev.clientY };
+      drawPush(pt);
       return;
     }
     el.setPointerCapture(ev.pointerId);
@@ -1092,6 +1257,15 @@ function bindSculpt() {
   el.addEventListener('pointermove', (ev) => {
     if (!sculpting) return;
     const tool = TOOLS[sculptState.tool] || TOOLS.push;
+
+    if (tool.paint) {
+      if (Math.abs(ev.clientX - sculpting.x) < 1 && Math.abs(ev.clientY - sculpting.y) < 1) return;
+      sculpting.x = ev.clientX; sculpting.y = ev.clientY;
+      const pt = pointAtPointer(ev);
+      if (!pt || pt.v === null) return;           // 반지를 벗어나면 잠시 끊깁니다
+      drawPush(pt);
+      return;
+    }
 
     /* 도안은 "지나간 자리"가 그대로 무늬가 됩니다.
      * 위아래로 끌 필요 없이, 옆으로 그어도 선이 이어져야 하니까요. */
@@ -1124,7 +1298,11 @@ function bindSculpt() {
   const finish = (ev) => {
     if (!sculpting) return;
     try { el.releasePointerCapture(ev.pointerId); } catch (e) {}
+    const wasPaint = sculpting.paint;
     sculpting = null;
+    drawing = null;
+    // 다 긋고 나서 한 번만 사양표·주문서에 알립니다
+    if (wasPaint) studio.changed();
   };
   el.addEventListener('pointerup', finish);
   el.addEventListener('pointercancel', finish);
@@ -1132,7 +1310,7 @@ function bindSculpt() {
 
 function cursorForTool() {
   const tool = TOOLS[sculptState.tool] || TOOLS.push;
-  return tool.grid ? 'crosshair' : tool.click ? 'pointer' : 'ns-resize';
+  return (tool.grid || tool.paint) ? 'crosshair' : tool.click ? 'pointer' : 'ns-resize';
 }
 
 /** 다듬기 모드를 켜고 끈다. 켜면 화면 돌리기는 잠깐 멈춘다. */
@@ -1150,8 +1328,11 @@ function rebuild() {
     ringGroup.traverse((o) => {
       if (o.geometry) o.geometry.dispose();
       // 부분 무광을 칠하면 재질이 여러 개짜리 배열이 됩니다
-      if (Array.isArray(o.material)) o.material.forEach((m) => m && m.dispose());
-      else if (o.material) o.material.dispose();
+      const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+      mats.forEach((m) => {
+        if (m.map && m.map.isCanvasTexture) m.map.dispose();
+        m.dispose();
+      });
     });
   }
   const model = R.getModel(spec.modelId);
@@ -1162,14 +1343,21 @@ function rebuild() {
   const bandGeo = buildBand(spec, model);
   const bandMat = metalMaterial(spec);
   if (paintOxidize(bandGeo, spec)) bandMat.vertexColors = true;
+  // 검정 브러쉬로 그린 그림을 겉면에 입힙니다
+  const drawTex = drawTexture(spec);
+  applyDraw(bandMat, drawTex);
   // 부분 무광을 칠했으면 그 무리만 무광 재질로 그립니다
+  let band;
   if (bandGeo.userData.hasMatte) {
     const mm = matteMaterial(spec);
     mm.vertexColors = bandMat.vertexColors;
-    ringGroup.add(new THREE.Mesh(bandGeo, [bandMat, mm]));
+    applyDraw(mm, drawTex);
+    band = new THREE.Mesh(bandGeo, [bandMat, mm]);
   } else {
-    ringGroup.add(new THREE.Mesh(bandGeo, bandMat));
+    band = new THREE.Mesh(bandGeo, bandMat);
   }
+  band.userData.band = true;   // 그림만 다시 칠할 때 찾아냅니다
+  ringGroup.add(band);
   // 홈에 고여 굳은 수지를 따로 덮는다 (금속에 스며드는 것이 아니다)
   const resin = buildEpoxyFill(bandGeo, spec);
   if (resin) ringGroup.add(resin);
@@ -1202,11 +1390,13 @@ try {
   bindSculpt();
   studio.setSculptMode = setSculptMode;
   studio.angleAtPointer = angleAtPointer;
+  studio.pointAt = pointAtPointer;
   studio.clearSculpt = () => {
     spec._sculpt = spec._sculptW = spec._matte = spec._engrave = null;
     spec.sculpt = spec.sculptW = spec.matte = spec.engrave = '';
     spec.stoneAt = '';
     spec.stars = '';
+    spec.draw = '';
     studio.changed();
   };
   studio.sculptState = sculptState;
