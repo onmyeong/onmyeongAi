@@ -165,7 +165,7 @@
         '한쪽 어깨를 한 단 낮춰 그 자리에 원석을 발로 물어 올렸습니다.' },
 
     { id: 'onm-ridge', name: '능선', family: 'rugged', profile: 'facet', texture: 'diamond', setting: 'none',
-      width: [3.5, 5.5, 9], thickness: [1.8, 2.6, 4.0], wave: 0.18, twist: 0, taper: 0, facets: 9,
+      width: [3.5, 5.5, 9], thickness: [1.8, 2.6, 4.0], wave: 0.18, twist: 0, taper: 0, facets: 9, sweep: 0.8,
       elements: ['토', '금'], moods: ['커플', '시그니처'], basePrice: 136000,
       tags: ['인내', '우직', '강인', '개척', '자연스러운 질감', '단단함'],
       preset: { oxidize: true, organic: 0.45 },
@@ -187,6 +187,13 @@
       preset: { organic: 0.55, stoneShape: 'oval', stoneSize: 6.0, stoneHeight: -0.3 },
       desc: '녹아 흐르다 굳은 듯한 밴드가 원석을 넝쿨처럼 감아 옵니다. 길쭉한 오벌 캐보션을 ' +
         '자리를 파고 심어 넣어, 돌이 금속 안에 잠긴 것처럼 앉습니다.' },
+
+    { id: 'onm-sweep', name: '물비늘', family: 'rugged', profile: 'flat', texture: 'polish', setting: 'none',
+      width: [3, 5, 9], thickness: [1.6, 2.4, 4.0], wave: 0.1, twist: 0, taper: 0, facets: 0, sweep: 1,
+      elements: ['수', '금'], moods: ['시그니처', '데일리'], basePrice: 126000,
+      tags: ['자연스러운 질감', '유연', '변화', '흐름', '개척', '단단함'],
+      desc: '날을 비스듬히 뉘어 넓은 면을 한 방향으로 쓸어 깎았습니다. 면마다 빛을 받는 각이 달라 ' +
+        '손을 움직일 때마다 물결에 비친 비늘처럼 반짝이는 자리가 옮겨 다닙니다.' },
 
     { id: 'onm-signet', name: '인장', family: 'minimal', profile: 'signet', texture: 'polish', setting: 'none',
       width: [2.5, 3.2, 5], thickness: [1.4, 1.8, 2.6], wave: 0, twist: 0, taper: 0, facets: 0,
@@ -416,6 +423,7 @@
       epoxyCoverage: 'part',
       cubicColor: '',         // 컬러큐빅 색 (상담에서 확정)
       wave: model.wave, twist: model.twist, taper: model.taper, facets: model.facets,
+      sweep: model.sweep || 0,   // 비스듬히 쓸어 깎은 넓은 면 (그 디자인만 가집니다)
       stoneType: stoneType,
       stone: stoneType === 'natural' ? stone : null,
       stoneSize: stoneType === 'none' ? 0 : CONFIG.stones[stoneType].sizes[1].mm,
@@ -552,14 +560,14 @@
   };
   /* 겉면 마감은 실제로 만들 수 있는 다섯 가지만 둡니다. */
   var TEXTURE_LABEL = {
-    diamond: '다이아 텍스쳐 — 거칠게 깎아 반짝이는',
+    diamond: '다이아 텍스쳐 — 잘게 깎아 서리처럼 반짝이는',
     sandbar: '사포바 — 결이 보이는 무광',
     fine:    '고운 무광',
     soft:    '은은한 무광',
     polish:  '유광 — 거울처럼 반짝이는'
   };
   var TEXTURE_DESC = {
-    diamond: '날로 잘게 깎아 낸 면이 빛을 여러 갈래로 튕겨 냅니다. 손에 닿는 느낌은 거칠고, 눈에는 가장 반짝입니다.',
+    diamond: '아주 작은 면을 촘촘히 깎아 서리가 앉은 것처럼 잘게 반짝입니다. 멀리서는 고운 은빛으로 보이고, 가까이서 보면 잔 알갱이마다 빛이 맺힙니다.',
     sandbar: '사포로 한 방향으로 갈아 낸 결. 줄 방향을 세로와 가로 중에 고를 수 있습니다.',
     fine:    '아주 곱게 눌러 낸 무광. 잔기스가 잘 안 보이고 차분합니다.',
     soft:    '빛을 살짝 머금는 정도의 옅은 무광. 유광과 무광의 중간쯤입니다.',
