@@ -94,6 +94,19 @@
             <button class="btn btn-sm" type="button" data-tool="erase" aria-pressed="false">도안 지우기</button>
             <button class="btn btn-sm" type="button" data-tool="stone" aria-pressed="false">알 놓기</button>
             <button class="btn btn-sm" type="button" data-tool="star" aria-pressed="false">별 조각</button>
+            <button class="btn btn-sm" type="button" data-tool="draw" aria-pressed="false">그리기</button>
+            <button class="btn btn-sm" type="button" data-tool="unpaint" aria-pressed="false">그린 선 지우기</button>
+          </div>
+          <div class="field is-hidden" id="f-drawsize" style="margin-top:12px">
+            <label for="c-drawsize">브러쉬 굵기</label>
+            <div class="slider-row">
+              <input id="c-drawsize" type="range" min="0.3" max="3" step="0.1" value="0.8">
+              <output id="o-drawsize">0.8 mm</output>
+            </div>
+            <p class="small" style="margin:2px 0 0">
+              반지 위에 그대로 그으면 검정으로 칠해집니다. 파는 것이 아니라 겉면에 입히는 그림이라,
+              글씨나 그림을 자유롭게 그릴 수 있습니다.
+            </p>
           </div>
           <div class="field is-hidden" id="f-starsize" style="margin-top:12px">
             <label for="c-starsize">별 크기 — 새로 놓을 별의 지름</label>

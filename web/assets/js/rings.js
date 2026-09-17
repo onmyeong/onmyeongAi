@@ -403,6 +403,8 @@
       stoneAt: '',            // 돌을 놓은 자리들 (도, 쉼표로 구분)
       stars: '',              // 별 조각을 새긴 자리들 ('각도_크기', 쉼표로 구분)
       starSize: 3,            // 새로 놓을 별 조각의 지름 (mm)
+      draw: '',               // 검정 브러쉬로 그린 선들 (아래 DRAW 참고)
+      drawSize: 0.8,          // 브러쉬 굵기 (mm)
       matte: '',              // 부분 무광으로 칠한 자리
       stoneHeight: 0,         // 돌을 얼마나 올리고 내릴지 (mm)
       stoneAngle: 0,          // 돌을 반지 둘레 어디에 앉힐지 (도). 0 = 손등 쪽 한가운데
@@ -633,7 +635,7 @@
   /** 손으로 손댄 흔적이 하나라도 있는가 */
   function hasSculpt(spec) {
     return !!(spec.sculpt || spec.sculptW || spec.matte || spec.engrave ||
-      spec.stoneAt || spec.stars);
+      spec.stoneAt || spec.stars || spec.draw);
   }
 
   /** 색 채움 값 — 부분만 채우는지 한 바퀴 다 두르는지로 갈립니다 */
@@ -930,6 +932,63 @@
     return out;
   }
 
+  /* ── 검정 브러쉬로 그리기 ──
+   * 금속을 파는 것이 아니라 겉면에 검게 칠하는 층입니다.
+   * 그은 선을 점으로 담아 두었다가 반지 표면에 그대로 그려 넣습니다.
+   *
+   * 주소에 실어야 하므로 한 점을 세 글자로 줄입니다.
+   *   앞 두 글자 = 둘레 각도 (0~1079, 1/3도 단위)
+   *   뒤 한 글자 = 폭 방향 위치 (0~35)
+   * 선 하나는 [굵기 한 글자][점들] 이고, 선과 선은 '-' 로 나눕니다.
+   */
+  var DRAW_ANG = 1080;
+  var DRAW_MAX_LEN = 6000;
+
+  function enc2(n) {
+    n = Math.max(0, Math.min(1295, Math.round(n)));
+    return SCULPT_CHARS.charAt(Math.floor(n / 36)) + SCULPT_CHARS.charAt(n % 36);
+  }
+  function dec2(str, i) {
+    var a = SCULPT_CHARS.indexOf(str.charAt(i)), b = SCULPT_CHARS.indexOf(str.charAt(i + 1));
+    if (a < 0 || b < 0) return -1;
+    return a * 36 + b;
+  }
+
+  /** 그린 선들 → [{ width: mm, pts: [{ deg, v }] }] */
+  function drawStrokes(spec) {
+    if (!spec.draw) return [];
+    return String(spec.draw).split('-').map(function (chunk) {
+      if (chunk.length < 4) return null;
+      var w = SCULPT_CHARS.indexOf(chunk.charAt(0));
+      if (w < 0) w = 5;
+      var pts = [];
+      for (var i = 1; i + 3 <= chunk.length; i += 3) {
+        var a = dec2(chunk, i);
+        var c = SCULPT_CHARS.indexOf(chunk.charAt(i + 2));
+        if (a < 0 || c < 0) continue;
+        pts.push({ deg: (a / DRAW_ANG) * 360, v: c / 35 - 0.5 });
+      }
+      if (!pts.length) return null;
+      return { width: 0.3 + w * 0.1, pts: pts };
+    }).filter(Boolean);
+  }
+
+  function drawWrite(list) {
+    if (!list || !list.length) return '';
+    var out = list.map(function (st) {
+      var w = Math.max(0, Math.min(35, Math.round(((st.width || 0.8) - 0.3) / 0.1)));
+      var s = SCULPT_CHARS.charAt(w);
+      for (var i = 0; i < st.pts.length; i++) {
+        var deg = st.pts[i].deg;
+        var a = Math.round((((deg % 360) + 360) % 360) / 360 * DRAW_ANG) % DRAW_ANG;
+        var c = Math.max(0, Math.min(35, Math.round((st.pts[i].v + 0.5) * 35)));
+        s += enc2(a) + SCULPT_CHARS.charAt(c);
+      }
+      return s;
+    }).filter(function (s) { return s.length >= 4; }).join('-');
+    return out.slice(0, DRAW_MAX_LEN);
+  }
+
   var SCULPT_N = 24;
   var SCULPT_MID = 18;
 
@@ -960,7 +1019,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'plateSize', 'backThickness', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt', 'stars',
+    'plateSize', 'backThickness', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt', 'stars', 'draw',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'ilju', 'qty'];
 
@@ -1009,6 +1068,7 @@
     if (p.get('engrave')) spec.engrave = p.get('engrave').slice(0, ENGRAVE_X * ENGRAVE_Y);
     if (p.has('stoneAt')) spec.stoneAt = p.get('stoneAt') || '';
     if (p.has('stars')) spec.stars = starWrite(starList({ stars: p.get('stars') || '' }));
+    if (p.has('draw')) spec.draw = drawWrite(drawStrokes({ draw: p.get('draw') || '' }));
     if (p.get('stoneCount')) spec.stoneCount = Math.max(1, Math.min(8, parseInt(p.get('stoneCount'), 10) || 1));
     if (p.get('epoxyLines')) spec.epoxyLines = Math.max(1, Math.min(3, parseInt(p.get('epoxyLines'), 10) || 1));
     if (p.get('texture') && TEXTURE_LABEL[p.get('texture')]) spec.texture = p.get('texture');
@@ -1055,6 +1115,8 @@
     stoneAngles: stoneAngles,
     starList: starList,
     starWrite: starWrite,
+    drawStrokes: drawStrokes,
+    drawWrite: drawWrite,
     STAR_MIN: STAR_MIN,
     STAR_MAX: STAR_MAX,
     hasSculpt: hasSculpt,

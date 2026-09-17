@@ -126,6 +126,8 @@
       bits.push('별 조각 ' + st.length + '개 ' +
         st.map(function (x) { return x.size.toFixed(1); }).join('·') + 'mm');
     }
+    var dr = R.drawStrokes(sp);
+    if (dr.length) bits.push('손으로 그린 그림 ' + dr.length + '획');
     return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
   }
 
