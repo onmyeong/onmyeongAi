@@ -294,7 +294,10 @@
   function setOutputs() {
     $('o-thickness').textContent = spec.thickness.toFixed(1) + 'mm';
     $('o-width').textContent = spec.width.toFixed(1) + 'mm';
-    $('o-size').textContent = spec.size + '호';
+    var bigFrom = CONFIG.price.bigSize ? CONFIG.price.bigSize.from : 99;
+    // 손가락이 굵으면 은이 더 들어가므로 큰 호수부터 값이 한 번 오릅니다
+    $('o-size').textContent = spec.size + '호' +
+      (spec.size >= bigFrom ? ' (+' + R.formatKRW(CONFIG.price.bigSize.price) + ')' : '');
 
     var gap = spec.thickness - (spec.backThickness || spec.thickness);
     $('o-backthickness').textContent = (spec.backThickness || spec.thickness).toFixed(1) + 'mm' +

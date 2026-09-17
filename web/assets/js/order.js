@@ -33,8 +33,10 @@
     var lim = CONFIG.limits.sizeKR;
     var html = '';
     for (var s = lim.min; s <= lim.max; s++) {
+      var big = CONFIG.price.bigSize && s >= CONFIG.price.bigSize.from;
       html += '<option value="' + s + '">' + s + '호 (내경 ' +
-        R.sizeToInnerDiameter(s).toFixed(1) + 'mm)</option>';
+        R.sizeToInnerDiameter(s).toFixed(1) + 'mm)' +
+        (big ? ' · +' + R.formatKRW(CONFIG.price.bigSize.price) : '') + '</option>';
     }
     $('o-size').innerHTML = html;
     $('o-size2').innerHTML = html;
