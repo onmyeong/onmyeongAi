@@ -236,6 +236,14 @@
         (price && !price.consult && qty >= 2 ? ' (커플 할인 적용)' : ''),
       '제작 기간  : ' + CONFIG.order.leadTime
     );
+    // 값이 어떻게 나왔는지 (한 개 기준)
+    var parts = R.priceBreakdown(price);
+    if (parts.length) {
+      lines.push('', '[값 내역 · 1개 기준]');
+      parts.forEach(function (r) {
+        lines.push('  ' + (r[0] + '                    ').slice(0, 22) + R.formatKRW(r[1]));
+      });
+    }
     if (price && price.consult) lines.push('', '※ ' + price.consult);
     if (spec.stoneType === 'cubic') {
       lines.push('', '※ 컬러큐빅은 색과 크기를 상담에서 함께 정합니다. 위 색상은 희망 색상입니다.');
@@ -356,6 +364,11 @@
 
     var price = currentPrice();
     $('sum-price').textContent = R.priceText(price, 'total');
+    /* 값 내역 — 한 개 기준으로 보여 줍니다 (커플이면 두 반지를 따로 계산하므로 생략) */
+    var parts = isCouple ? [] : R.priceBreakdown(price);
+    $('sum-parts').innerHTML = parts.map(function (r) {
+      return '<tr><th>' + esc(r[0]) + '</th><td>' + R.formatKRW(r[1]) + '</td></tr>';
+    }).join('');
     $('sum-lead').textContent = '제작 기간 · ' + CONFIG.order.leadTime;
 
     $('sheet').textContent = currentSheet();
