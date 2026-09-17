@@ -167,12 +167,14 @@
    * 매끈한 디자인에 색 채움을 고르면 값만 오르고 티가 안 나므로 미리 알려 준다. */
   function refreshEpoxyNote() {
     var model = R.getModel(spec.modelId) || {};
-    var deepTexture = ['diamond', 'sandbar'].indexOf(spec.texture) !== -1;
-    var hasGroove = (model.twist || 0) > 0 || deepTexture || spec.profile === 'step';
+    var deepTexture = spec.texture === 'sandbar';
+    var hasGroove = (model.twist || 0) > 0 || (model.sweep || 0) > 0 ||
+      deepTexture || spec.profile === 'step';
     var note = '';
     if (spec.epoxy && !hasGroove) {
       note = '이 디자인은 표면이 매끈해서 채울 홈이 거의 없습니다. ' +
-        '다이아 텍스쳐나 사포바처럼 결이 깊은 마감, 또는 비틀린 디자인이라야 색이 고입니다.';
+        '사포바처럼 결이 깊은 마감이나, 면을 깎아 낸 디자인 · 비틀린 디자인이라야 색이 고입니다. ' +
+        '도안 새기기로 직접 홈을 판 자리에도 색이 채워집니다.';
     } else if (spec.epoxy) {
       note = '파인 홈 안에 수지를 부어 굳힌 뒤 표면과 같은 높이로 깎아 냅니다. ' +
         '금속에 스며드는 것이 아니라 홈에 잠기는 것이라 경계가 또렷하고, 만졌을 때 단차가 없습니다.';

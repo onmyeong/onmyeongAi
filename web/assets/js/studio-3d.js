@@ -74,7 +74,7 @@ const BUMP = {
   polish:  { amp: 0,     ring: 0,   axial: 0 },
   soft:    { amp: 0.008, ring: 10,  axial: 8 },   // 은은한 무광 — 아주 얕게
   fine:    { amp: 0.014, ring: 16,  axial: 14 },  // 고운 무광 — 촘촘하고 얕게
-  diamond: { amp: 0.12,  ring: 3.5, axial: 2.0 }, // 다이아 텍스쳐 — 깊게 깎아 면을 만든다
+  diamond: { amp: 0.055, ring: 0,   axial: 0 },   // 다이아 텍스쳐 — 아주 작은 면을 촘촘히 (아래 별도 계산)
   // 사포바는 줄 방향에 따라 결이 달라지므로 아래에서 따로 잡습니다
   sandbar: { amp: 0.016, ring: 1.2, axial: 30 }
 };
@@ -263,11 +263,12 @@ function epoxyArc(s, th) {
 function buildBand(s, model) {
   const innerR = R.sizeToInnerDiameter(s.size) / 2;
   const t = s.thickness;
-  /* 도안이나 별 조각을 새기면 골이 아주 가늘어서, 면이 성기면 골이 계단처럼 보입니다.
+  /* 도안 · 별 조각 · 다이아 텍스쳐는 자국이 아주 잘아서, 면이 성기면 계단처럼 보입니다.
    * 그럴 때만 면을 촘촘하게 잡습니다 (평소에는 가볍게 돌아갑니다). */
-  const fine = !!s.engrave || !!s.stars;
-  const SEG = fine ? 560 : 320;
-  const profile = makeProfile(s, fine ? 46 : PROFILE_STEPS);
+  const sparkle = s.texture === 'diamond';
+  const fine = !!s.engrave || !!s.stars || sparkle;
+  const SEG = sparkle ? 720 : fine ? 560 : 320;
+  const profile = makeProfile(s, sparkle ? 54 : fine ? 46 : PROFILE_STEPS);
   const P = profile.length;
   const bump = bumpFor(s);
 
@@ -285,6 +286,11 @@ function buildBand(s, model) {
 
   const taper = model ? model.taper : 0;
   const wave = model ? model.wave : 0;
+  // 넓은 면을 비스듬히 쓸어 깎은 디자인 (그 디자인만 가집니다)
+  const sweep = model ? (model.sweep || 0) : 0;
+  /* 다이아 텍스쳐의 잔 면 — 한 바퀴에 정수 개가 들어가야 이음매에서 무늬가 어긋나지 않습니다 */
+  const CELL = 0.5;                                  // 면 하나의 크기 (mm)
+  const cellsAround = Math.max(24, Math.round(Math.PI * 2 * (innerR + t) / CELL));
   const twist = model ? model.twist : 0;
   const facets = (s.profile === 'facet' && model) ? model.facets : 0;
 
@@ -389,17 +395,40 @@ function buildBand(s, model) {
         }
         if (u < 0) u = 0;
         radius += u;
+        /* 넓은 면을 한 방향으로 쓸어 깎은 자국.
+         * 날을 비스듬히 뉘어 밀기 때문에 면이 대각선으로 길게 눕습니다.
+         * 한 바퀴에 정수 개가 들어가도록 두어 돌아와도 무늬가 어긋나지 않습니다. */
+        if (sweep > 0) {
+          const RIDGES = 11;          // 한 바퀴에 들어가는 면의 수
+          const SLANT = 2.6;          // 클수록 더 비스듬하게 눕습니다
+          const phase = RIDGES * th + SLANT * p.v;
+          const saw = Math.abs(((phase / Math.PI) % 2) - 1);     // 0~1 삼각파 = 또렷한 모서리
+          const jitter = valueNoise(Math.cos(th) * 3 + 31, Math.sin(th) * 3 + p.v * 1.4);
+          const cut = (saw * 0.74 + jitter * 0.26) * 0.12 * sweep * Math.max(t, 1.2);
+          radius -= cut;
+          carved += cut;
+        }
         if (bump.amp > 0) {
           let nz;
-          if (s.texture === 'diamond') {
-            /* 다이아 텍스쳐는 날을 비스듬히 대고 깎아 내므로 골이 대각선으로 흐릅니다.
-             * 한 바퀴에 정수 개가 들어가도록 두어 돌아와도 무늬가 어긋나지 않습니다. */
-            const RIDGES = 11;          // 한 바퀴에 들어가는 골의 수
-            const SLANT = 2.6;          // 클수록 더 비스듬하게 눕습니다
-            const phase = RIDGES * th + SLANT * p.v;
-            const saw = Math.abs(((phase / Math.PI) % 2) - 1);   // 0~1 삼각파 = 날카로운 골
-            const jitter = valueNoise(Math.cos(th) * 3 + 31, Math.sin(th) * 3 + p.v * 1.4);
-            nz = saw * 0.74 + jitter * 0.26;                     // 손으로 깎은 만큼 흔들림도 섞는다
+          if (sparkle) {
+            /* 다이아 텍스쳐 — 아주 작은 면을 촘촘히 깎아 냅니다.
+             * 칸마다 기울기가 달라서 칸과 칸 사이가 각이 지고, 그 각들이 빛을 잘게 튕깁니다.
+             * (서리가 앉은 것처럼 보이는 이유입니다.) */
+            const ay = p.v / CELL;
+            const iy = Math.floor(ay);
+            const fy = ay - iy;
+            /* 줄마다 시작점을 어긋나게 둡니다 — 바둑판처럼 줄이 맞으면 손으로 깎은 것처럼 안 보입니다.
+             * (한 바퀴 칸 수가 정수라 이렇게 밀어도 이음매는 그대로 이어집니다.) */
+            const rowOff = hash(iy * 7.3 + 3, 19);
+            const ax = (th / (Math.PI * 2)) * cellsAround + rowOff;
+            const ix = Math.floor(ax);
+            const fx = ax - ix;
+            const wx = ((ix % cellsAround) + cellsAround) % cellsAround;   // 이음매에서 같은 칸을 가리키도록
+            const gx = (hash(wx * 1.7 + 5, iy * 2.3 + 11) * 2 - 1) * (0.6 + hash(wx + 3, iy + 5) * 0.8);
+            const gy = (hash(wx * 3.1 + 17, iy * 1.3 + 29) * 2 - 1) * (0.6 + hash(wx + 13, iy + 2) * 0.8);
+            const lift = hash(wx + 41, iy + 7);                  // 칸마다 깊이도 다르게
+            nz = 0.5 + 0.38 * (gx * (fx - 0.5) + gy * (fy - 0.5)) + 0.3 * (lift - 0.5);
+            nz = Math.max(0, Math.min(1, nz));
           } else {
             // 둘레 방향으로 주기적인 노이즈 — 한 바퀴 돌아와도 결이 어긋나지 않는다
             nz = valueNoise(Math.cos(th) * bump.ring + 31, Math.sin(th) * bump.ring + p.v * bump.axial);
@@ -658,7 +687,7 @@ function applyDraw(mat, tex) {
  * 반사를 그대로 두면 표면이 하얗게 날아가 결이 사라집니다. */
 const FINISH = {
   polish:  { roughness: 0.07, env: 1.30, tone: 1.00 },
-  diamond: { roughness: 0.14, env: 1.24, tone: 0.98 },
+  diamond: { roughness: 0.17, env: 1.20, tone: 0.97 },
   sandbar: { roughness: 0.30, env: 0.96, tone: 0.92 },
   fine:    { roughness: 0.46, env: 0.70, tone: 0.86 },
   soft:    { roughness: 0.36, env: 0.82, tone: 0.90 }
