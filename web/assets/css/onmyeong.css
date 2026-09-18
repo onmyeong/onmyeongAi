@@ -266,13 +266,15 @@ fieldset { border: 0; padding: 0; margin: 0; }
 /* ── 스튜디오 ───────────────────────────────────────── */
 .studio { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 @media (max-width: 900px) { .studio { grid-template-columns: 1fr; } }
-#stage, #preview-2d {
+/* 3D 미리보기 칸 — 스튜디오 안에서만 잡습니다.
+ * (다른 페이지에 같은 이름의 구역이 생기면 통째로 눌려 빈칸처럼 보입니다) */
+.studio #stage, .studio #preview-2d {
   width: 100%; aspect-ratio: 4 / 3; min-height: 320px; border-radius: var(--radius-lg);
   border: 1px solid var(--line-soft); overflow: hidden; position: relative;
   box-shadow: var(--shadow);
 }
-#preview-2d { padding: 24px; }
-#stage canvas { display: block; width: 100%; height: 100%; }
+.studio #preview-2d { padding: 24px; }
+.studio #stage canvas { display: block; width: 100%; height: 100%; }
 .stage-hint { position: absolute; left: 16px; bottom: 13px; font-size: .76rem; color: var(--muted); pointer-events: none; }
 .slider-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
 .slider-row output {
