@@ -314,6 +314,13 @@
     $('r-source').textContent = sourceLine(rec);
 
     renderDeep(rec);
+
+    // 일주 지도로 넘어갈 때 내 일주와 이름을 함께 싣습니다
+    var map = $('go-map');
+    if (map) {
+      map.href = 'map.html?me=' + encodeURIComponent(rec.id) +
+        (state.nameA ? '&n=' + encodeURIComponent(state.nameA) : '');
+    }
   }
 
   /* ───────────── 깊이 읽기 (십신 · 십이운성 · 배속 · 생활 · 궁합) ───────────── */
@@ -731,6 +738,12 @@
 
   /* ───────────── 공유하기 ───────────── */
   function resetCards() {
+    // 결과가 새로 나오면 고를 문장도 새로 채웁니다
+    fillLines(state.resultB ? 'couple' : 'solo');
+    ['line-solo-box', 'line-couple-box'].forEach(function (id) {
+      var el = $(id);
+      if (el) { el.innerHTML = ''; el.classList.add('is-hidden'); }
+    });
     ['card-solo-box', 'card-couple-box'].forEach(function (id) {
       var el = $(id);
       el.innerHTML = '';
@@ -762,6 +775,104 @@
       url: location.href
     };
   }
+
+  /* ───────────── 한 줄 카드 ─────────────
+   * 리포트 전체가 아니라 웃기거나 뜨끔한 한 문장이 공유됩니다.
+   * 그래서 고를 만한 문장을 몇 개 뽑아 두고, 고른 한 줄만 카드로 만듭니다. */
+  function firstSentence(text) {
+    var t = String(text || '').trim();
+    var cut = t.split(/(?<=\.)\s/)[0] || t;
+    return cut.length > 80 ? t.slice(0, 78) + '…' : cut;
+  }
+
+  function soloLines(rec) {
+    var deep = ONM.reading && ONM.reading.solo(rec);
+    var out = [rec.closing, rec.keywords];
+    if (deep) {
+      out.push('내 일지에 앉은 자리는 ' + deep.sipsin.name + ' — ' + deep.sipsin.short);
+      if (deep.stage) out.push('지금 내 기운은 ' + deep.stage.name + ' — ' + deep.stage.title);
+      var money = deep.life.filter(function (l) { return l.key === '돈'; })[0];
+      if (money) out.push(firstSentence(money.text));
+    }
+    out.push(firstSentence(rec.strength));
+    return out.filter(Boolean);
+  }
+
+  function coupleLines(a, b, cp) {
+    var deep = ONM.reading && ONM.reading.couple(a, b, cp);
+    var out = [cp.headline, '어울림 ' + cp.score + '점 — ' + cp.grade];
+    if (deep) {
+      out.push(deep.roles.title);
+      if (deep.words && deep.words.avoid[0]) {
+        out.push('우리 사이에서 제일 오래 남는 말 — ' + deep.words.avoid[0].text);
+      }
+      if (deep.words && deep.words.good[0]) {
+        out.push('이 말 한마디면 풀립니다 — ' + deep.words.good[0].text);
+      }
+      if (deep.stages && deep.stages[3]) out.push(deep.stages[3].title);
+    }
+    return out.filter(Boolean);
+  }
+
+  function fillLines(kind) {
+    var box = $('line-' + kind + '-chips');
+    if (!box) return;
+    var lines = kind === 'couple'
+      ? (state.resultB && state.compat
+          ? coupleLines(state.result.record, state.resultB.record, state.compat) : [])
+      : (state.result ? soloLines(state.result.record) : []);
+    box.innerHTML = lines.map(function (t, i) {
+      return '<button type="button" class="line-chip" data-line="' + esc(t) + '"' +
+        (i === 0 ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' + esc(t) + '</button>';
+    }).join('');
+  }
+
+  function pickedLine(kind) {
+    var on = $('line-' + kind + '-chips').querySelector('[aria-pressed="true"]');
+    return on ? on.getAttribute('data-line') : '';
+  }
+
+  function makeLineCard(kind, btn) {
+    if (!ONM.share || !state.result) return;
+    var line = pickedLine(kind);
+    if (!line) return;
+    var rec = state.result.record;
+    var who, sub;
+    if (kind === 'couple' && state.resultB) {
+      var rb = state.resultB.record;
+      who = (state.nameA ? state.nameA : rec.id) + ' × ' + (state.nameB ? state.nameB : rb.id);
+      sub = rec.id + ' × ' + rb.id + ' · 어울림 ' + state.compat.score + '점 · ' + state.compat.grade;
+    } else {
+      who = state.nameA ? state.nameA + ' 님' : rec.id + ' 일주';
+      sub = rec.id + '(' + rec.hanja + ') · ' + ONM.iljuPhrase(rec);
+    }
+    ONM.share.flash(btn, '카드를 만드는 중…');
+    ONM.share.lineCard({ line: line, who: who, sub: sub, record: rec, url: location.href })
+      .then(function (blob) {
+        if (!blob) throw new Error('실패');
+        var box = $('line-' + kind + '-box');
+        box.innerHTML = '<img alt="온명 한 줄 카드" src="' + URL.createObjectURL(blob) + '">' +
+          '<p class="small" style="margin-top:8px">이미지를 길게 눌러 저장하거나, 방금 내려받은 파일을 올려 주세요.</p>';
+        box.classList.remove('is-hidden');
+        ONM.share.download(blob, 'onmyeong-line-' + rec.id + '.png');
+        ONM.share.flash(btn, '저장했습니다');
+      }).catch(function () {
+        ONM.share.flash(btn, '카드 저장에 실패했어요');
+      });
+  }
+
+  ['solo', 'couple'].forEach(function (kind) {
+    var chips = $('line-' + kind + '-chips');
+    if (!chips) return;
+    chips.addEventListener('click', function (e) {
+      var btn = e.target.closest('.line-chip');
+      if (!btn) return;
+      Array.prototype.forEach.call(this.querySelectorAll('.line-chip'), function (x) {
+        x.setAttribute('aria-pressed', String(x === btn));
+      });
+    });
+    $('line-' + kind + '-make').addEventListener('click', function () { makeLineCard(kind, this); });
+  });
 
   function makeCard(kind, btn, boxId) {
     if (!ONM.share || !state.result) return;
