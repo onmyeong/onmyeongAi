@@ -475,3 +475,40 @@ input[type="range"]::-moz-range-thumb {
 .tool-row .btn[aria-pressed="true"] {
   background: var(--green); color: #fff; border-color: transparent; font-weight: 600;
 }
+
+
+/* ── 깊이 읽기 (십이운성 · 궁합 · 말) ───────────────────── */
+/* 십이운성 — 열두 단계 위에 지금 자리를 얹는다 */
+.stage-bar {
+  position: relative; height: 10px; border-radius: 999px;
+  background: var(--paper-2); border: 1px solid var(--line-soft); overflow: visible;
+}
+.stage-bar i {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-tint), var(--accent));
+}
+.stage-bar span {
+  position: absolute; top: -26px; transform: translateX(-50%);
+  font-size: .72rem; color: var(--accent-ink); white-space: nowrap;
+}
+.stage-scale {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px;
+  margin-top: 10px; font-size: .68rem; color: var(--muted); text-align: center;
+}
+.stage-scale .on { color: var(--accent-ink); font-weight: 600; }
+
+/* 잘 맞는 일주 카드 — 누르면 그 궁합 리포트로 */
+a.match-card { display: block; text-decoration: none; color: inherit; transition: transform .16s ease, border-color .16s ease; }
+a.match-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.match-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.match-head b { font-family: var(--serif); font-size: 1.1rem; }
+.match-head em {
+  font-style: normal; font-size: .82rem; color: var(--accent-ink);
+  background: var(--accent-tint); border-radius: 999px; padding: 2px 10px;
+}
+
+/* 서로에게 잘 듣는 말 */
+.quote-line {
+  display: inline-block; margin: 4px 0; padding: 6px 12px;
+  background: var(--paper-2); border-radius: 12px; border: 1px solid var(--line-soft);
+}

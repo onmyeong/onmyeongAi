@@ -175,6 +175,37 @@
     $('couple-top').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  /* ───────────── 일주 이름만으로 보기 ─────────────
+   * "나와 결이 맞는 일주" 카드처럼, 생년월일 없이 일주만 알고 있을 때 씁니다. */
+  function showByIlju(idA, idB) {
+    var recA = ONM.ILJU[idA];
+    if (!recA) return false;
+    var resA = { record: recA, id: recA.id, hanja: recA.hanja, notes: [] };
+
+    if (idB && ONM.ILJU[idB]) {
+      var resB = { record: ONM.ILJU[idB], id: idB, hanja: ONM.ILJU[idB].hanja, notes: [] };
+      state.result = resA; state.resultB = resB;
+      state.seed = Math.floor(Math.random() * 100000) + 1;
+      state.compat = ONM.compat.compare(recA, resB.record);
+      renderCouple(resA, resB, state.compat);
+      $('report').classList.add('is-hidden');
+      $('couple').classList.remove('is-hidden');
+      resetCards();
+      $('couple-top').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    }
+
+    state.result = resA; state.resultB = null; state.compat = null;
+    state.seed = Math.floor(Math.random() * 100000) + 1;
+    renderReport(resA);
+    renderRings();
+    $('couple').classList.add('is-hidden');
+    $('report').classList.remove('is-hidden');
+    resetCards();
+    $('ilju').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  }
+
   function syncUrl(o) {
     var q = [];
     if (o.mode === 'couple') q.push('mode=couple');
@@ -247,6 +278,89 @@
     $('r-ringnote').textContent = rec.ringNote;
     $('r-closing').textContent = rec.closing;
     $('r-source').textContent = sourceLine(rec);
+
+    renderDeep(rec);
+  }
+
+  /* ───────────── 깊이 읽기 (십신 · 십이운성 · 배속 · 생활 · 궁합) ───────────── */
+  function renderDeep(rec) {
+    var deep = ONM.reading && ONM.reading.solo(rec);
+    if (!deep) return;
+
+    // 일간과 일지가 만나는 방식
+    $('r-flow-title').textContent = deep.flow.title;
+    $('r-flow-head').textContent = deep.flow.head;
+    $('r-flow-body').textContent = deep.flow.body;
+
+    // 십신
+    $('r-sipsin-name').textContent = deep.sipsin.name + ' (十神)';
+    $('r-sipsin-title').textContent = deep.sipsin.title;
+    $('r-sipsin-body').textContent = deep.sipsin.body;
+    $('r-sipsin-good').textContent = deep.sipsin.good;
+    $('r-sipsin-watch').textContent = deep.sipsin.watch;
+    $('r-sipsin-spouse').textContent = deep.sipsin.spouse;
+
+    // 십이운성 — 열두 단계 위에 지금 자리를 표시합니다
+    var st = deep.stage;
+    if (st) {
+      $('r-stage-line').textContent = st.line;
+      $('r-stage-title').textContent = st.name + ' — ' + st.title;
+      $('r-stage-fill').style.width = st.level + '%';
+      $('r-stage-mark').textContent = '기운 ' + st.level;
+      $('r-stage-mark').style.left = Math.min(92, Math.max(4, st.level)) + '%';
+      $('r-stage-body').textContent = st.body;
+      $('r-stage-tip').textContent = st.tip;
+      $('r-stage-scale').innerHTML = ONM.reading.STAGE_ORDER.map(function (name) {
+        return '<span' + (name === st.name ? ' class="on"' : '') + '>' + esc(name) + '</span>';
+      }).join('');
+    }
+
+    // 오행 배속
+    var se = deep.elem.stem, be = deep.elem.branch;
+    var rows = [
+      ['타고난 기운', se.of + '(' + se.name + ') · ' + se.info.word +
+        (se.name === be.name ? '' : ' / ' + be.of + '(' + be.name + ') · ' + be.info.word)],
+      ['어울리는 색', se.info.color + (se.name === be.name ? '' : ' · ' + be.info.color)],
+      ['방향', se.info.dir], ['숫자', se.info.num],
+      ['계절', se.info.season], ['하루 중', se.info.hour]
+    ];
+    $('r-elemtable').innerHTML = rows.map(function (r) {
+      return '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>';
+    }).join('');
+
+    // 생활에서 쓰는 법
+    $('r-life').innerHTML = deep.life.map(function (l) {
+      return '<div class="card trait"><h3>' + esc(l.label) + '</h3><p>' + esc(l.text) + '</p></div>';
+    }).join('');
+
+    // 한눈에 보기
+    var sum = [
+      ['일간 (윗글자)', rec.stem + '(' + rec.stemInfo.hanja + ') · ' + rec.stemInfo.elem +
+        ' · ' + (['갑', '병', '무', '경', '임'].indexOf(rec.stem) !== -1 ? '양' : '음')],
+      ['일지 (아랫글자)', rec.branch + '(' + rec.branchInfo.hanja + ') · ' + rec.branchInfo.elem +
+        ' · ' + rec.branchInfo.animal],
+      ['일지에 앉은 자리', deep.sipsin.name],
+      ['기운의 단계', deep.stage ? deep.stage.name + ' (' + deep.stage.order + '/12)' : '-'],
+      ['60갑자', (rec.index + 1) + '번째']
+    ];
+    $('r-summary-table').innerHTML = sum.map(function (r) {
+      return '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>';
+    }).join('');
+
+    // 나와 결이 맞는 일주
+    if (deep.matches) {
+      $('r-match').innerHTML = deep.matches.best.map(function (m) {
+        return '<a class="card match-card" href="?mode=couple&amp;a=' + encodeURIComponent(rec.id) +
+          '&amp;b=' + encodeURIComponent(m.id) + '">' +
+          '<div class="match-head"><b>' + esc(m.id) + '</b><em>' + m.score + '</em></div>' +
+          '<p class="small" style="margin:2px 0 6px">' + esc(m.phrase) + ' · ' + esc(m.grade) + '</p>' +
+          '<p style="margin:0">' + esc(m.why) + '</p></a>';
+      }).join('');
+      $('r-match-care').innerHTML = deep.matches.careful.map(function (m) {
+        return '<p style="margin:0 0 8px"><b>' + esc(m.id) + '</b> <span class="small">' +
+          esc(m.phrase) + ' · 어울림 ' + m.score + '</span><br>' + esc(m.why) + '</p>';
+      }).join('');
+    }
   }
 
   function sourceLine(rec) {
@@ -271,7 +385,9 @@
       '<h2 style="margin-bottom:4px">' + esc(info.hanja) + ' <span style="font-size:.6em;color:var(--muted)">' +
       esc(ko) + ' · ' + esc(info.elem) + '</span></h2>' +
       '<h3 style="color:' + (ELEM_COLOR[info.elem] || 'var(--accent-ink)') + '">' + esc(info.title) + '</h3>' +
-      '<p style="margin:0">' + esc(info.desc) + '</p></div>';
+      '<p style="margin:0 0 10px">' + esc(info.desc) + '</p>' +
+      (info.long ? '<p style="margin:0" class="pillar-long">' + esc(info.long) + '</p>' : '') +
+      '</div>';
   }
 
   /* ───────────── 반지 추천 카드 ───────────── */
@@ -398,7 +514,68 @@
 
     $('c-each').innerHTML = [eachCard(a, ca, ''), eachCard(b, cb, '2')].join('');
 
+    renderCoupleDeep(a, b, cp);
+
     $('c-closing').textContent = '두 사람의 결을 한 쌍의 반지에 담아 드립니다.';
+  }
+
+  /* ───────────── 궁합 깊이 읽기 ───────────── */
+  function renderCoupleDeep(a, b, cp) {
+    var deep = ONM.reading && ONM.reading.couple(a, b, cp);
+    if (!deep) return;
+
+    $('c-stages').innerHTML = deep.stages.map(function (s) {
+      return '<div class="card trait"><p class="eyebrow">' + esc(s.label) + '</p>' +
+        '<h3>' + esc(s.title) + '</h3><p>' + esc(s.text) + '</p></div>';
+    }).join('');
+
+    $('c-roles-title').textContent = deep.roles.title;
+    $('c-roles-text').textContent = deep.roles.text;
+    $('c-tempo-title').textContent = deep.tempo.title;
+    $('c-tempo-text').textContent = deep.tempo.text;
+    $('c-long-title').textContent = deep.longRun.title;
+    $('c-long-text').textContent = deep.longRun.text;
+
+    // 두 사람 한눈에 보기
+    var row = function (label, x, y) {
+      return '<tr><th>' + esc(label) + '</th><td>' + esc(x) + '</td><td>' + esc(y) + '</td></tr>';
+    };
+    var da = deep.eachA, db = deep.eachB;
+    $('c-summary-table').innerHTML =
+      row('', a.id + ' (' + a.hanja + ')', b.id + ' (' + b.hanja + ')') +
+      row('일간', a.stem + ' · ' + a.stemInfo.elem, b.stem + ' · ' + b.stemInfo.elem) +
+      row('일지', a.branch + ' · ' + a.branchInfo.elem, b.branch + ' · ' + b.branchInfo.elem) +
+      row('일지에 앉은 자리', da.sipsin.name, db.sipsin.name) +
+      row('기운의 단계', da.stage ? da.stage.name : '-', db.stage ? db.stage.name : '-') +
+      row('상대가 내게 되는 자리', cp.sipsinA.name, cp.sipsinB.name);
+
+    // 같은 일주끼리면 같은 말이 두 번 나오므로 한 번만 보여 줍니다
+    var same = a.id === b.id;
+    var wordBlock = function (list) {
+      return (same ? list.slice(0, 1) : list).map(function (w) {
+        return '<p style="margin:0 0 12px"><b>' + esc(same ? '두 분 모두' : w.who + ' 님에게') + '</b><br>' +
+          '<span class="quote-line">' + esc(w.text) + '</span><br>' +
+          '<span class="small">' + esc(same ? '같은 일주라 서로에게 같은 자리입니다.' : w.note) + '</span></p>';
+      }).join('');
+    };
+    $('c-words-good').innerHTML = wordBlock(deep.words.good);
+    $('c-words-avoid').innerHTML = wordBlock(deep.words.avoid);
+
+    // 각자의 자리 — 십신과 십이운성
+    $('c-each-deep').innerHTML = [[a, deep.eachA], [b, deep.eachB]].map(function (p) {
+      var rec = p[0], d = p[1];
+      if (!d) return '';
+      return '<div class="card">' +
+        '<p class="eyebrow">' + esc(rec.id) + ' · 일지에 앉은 자리</p>' +
+        '<h3 style="margin-bottom:6px">' + esc(d.sipsin.name) + ' — ' + esc(d.sipsin.title) + '</h3>' +
+        '<p style="margin:0 0 10px">' + esc(d.sipsin.spouse) + '</p>' +
+        (d.stage ? '<p class="small" style="margin:0 0 10px"><b>' + esc(d.stage.name) + '</b> · ' +
+          esc(d.stage.title) + ' — ' + esc(d.stage.tip) + '</p>' : '') +
+        '<table class="spec-table">' + d.life.slice(0, 3).map(function (l) {
+          return '<tr><th>' + esc(l.label) + '</th><td>' + esc(l.text) + '</td></tr>';
+        }).join('') + '</table>' +
+        '</div>';
+    }).join('');
   }
 
   function li(text) { return '<li>' + esc(text) + '</li>'; }
@@ -583,6 +760,15 @@
   /* ───────────── URL로 들어온 경우 자동 실행 ───────────── */
   (function fromUrl() {
     var p = new URLSearchParams(location.search);
+
+    /* 일주 이름으로 바로 들어온 경우 — 리포트 안의 "결이 맞는 일주" 카드에서 넘어옵니다 */
+    var iljuA = p.get('ilju') || p.get('a');
+    var iljuB = p.get('b');
+    if (iljuA && ONM.ILJU[iljuA]) {
+      setMode(iljuB && ONM.ILJU[iljuB] ? 'couple' : 'solo', { clear: false });
+      if (showByIlju(iljuA, iljuB)) return;
+    }
+
     var couple = p.get('mode') === 'couple' && p.get('y2') && p.get('m2') && p.get('d2');
     setMode(couple ? 'couple' : 'solo', { clear: false });
 
