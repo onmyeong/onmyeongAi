@@ -187,6 +187,79 @@
           <h2>천간과 지지</h2>
         </div>
         <div class="grid grid-2" id="r-pillars"></div>
+
+        <div class="card" style="margin-top:16px">
+          <p class="eyebrow">At a Glance</p>
+          <h3 style="margin-bottom:10px">한눈에 보기</h3>
+          <table class="spec-table"><tbody id="r-summary-table"></tbody></table>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <p class="eyebrow">Inner Flow</p>
+          <h3 id="r-flow-title" style="margin-bottom:6px"></h3>
+          <p class="small" id="r-flow-head" style="margin:0 0 8px"></p>
+          <p id="r-flow-body" style="margin:0"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="sipsin" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Ten Gods</p>
+          <h2>일지에 앉은 자리 · 십신</h2>
+          <p class="lead">
+            일지(아랫글자)는 사주에서 내가 매일 앉아 있는 자리이자, 배우자의 자리로 봅니다.
+            일간이 그 자리를 어떻게 보느냐에 따라 생활에서 나오는 버릇이 달라집니다.
+          </p>
+        </div>
+        <div class="grid grid-2">
+          <div class="card tone-green">
+            <p class="eyebrow" id="r-sipsin-name"></p>
+            <h3 id="r-sipsin-title" style="margin-bottom:8px"></h3>
+            <p id="r-sipsin-body" style="margin:0"></p>
+          </div>
+          <div style="display:grid;gap:12px;align-content:start">
+            <div class="card"><h3 style="margin-bottom:6px">이럴 때 가장 잘합니다</h3>
+              <p id="r-sipsin-good" style="margin:0"></p></div>
+            <div class="card"><h3 style="margin-bottom:6px">이건 챙겨 두세요</h3>
+              <p id="r-sipsin-watch" style="margin:0"></p></div>
+            <div class="card"><h3 style="margin-bottom:6px">곁에 두면 편한 사람</h3>
+              <p id="r-sipsin-spouse" style="margin:0"></p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Twelve Stages</p>
+          <h2>기운의 단계 · 십이운성</h2>
+          <p class="lead">
+            열두 단계는 기운이 태어나 자라고 저물었다 다시 태어나는 흐름입니다.
+            높고 낮음이 좋고 나쁨은 아닙니다. 지금 내 기운이 어느 결에 놓였는지를 봅니다.
+          </p>
+        </div>
+        <div class="card">
+          <p class="eyebrow" id="r-stage-line"></p>
+          <h3 id="r-stage-title" style="margin:6px 0 10px"></h3>
+          <div class="stage-bar"><i id="r-stage-fill"></i><span id="r-stage-mark"></span></div>
+          <div class="stage-scale" id="r-stage-scale"></div>
+          <p id="r-stage-body" style="margin:14px 0 0"></p>
+          <p class="small" id="r-stage-tip" style="margin:8px 0 0"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="life" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Daily</p>
+          <h2>생활에서 쓰는 법</h2>
+          <p class="lead">일간의 오행이 큰 결을 잡고, 일지의 십신이 한 줄을 더합니다.</p>
+        </div>
+        <div class="grid grid-3" id="r-life"></div>
       </div>
     </section>
 
@@ -197,12 +270,31 @@
             <p class="eyebrow">Lucky Keywords</p>
             <h2 style="margin-bottom:14px">행운의 키워드</h2>
             <div class="lucky-wheel" id="r-lucky"></div>
+            <table class="spec-table" style="margin-top:16px"><tbody id="r-elemtable"></tbody></table>
           </div>
           <div class="card">
             <p class="eyebrow">Gemstones</p>
             <h2 style="margin-bottom:14px">추천 원석</h2>
             <div class="grid" id="r-stones" style="gap:12px"></div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="match" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Best Match</p>
+          <h2>나와 결이 맞는 일주</h2>
+          <p class="lead">
+            60갑자를 전부 마주 놓고 천간의 합·충, 지지의 육합·삼합·충·형·해를 따져 고른 결과입니다.
+            이름을 누르면 두 사람의 궁합 리포트로 바로 넘어갑니다.
+          </p>
+        </div>
+        <div class="grid grid-2" id="r-match"></div>
+        <div class="card" style="margin-top:16px">
+          <p class="eyebrow">조금 더 살펴야 하는 자리</p>
+          <div id="r-match-care"></div>
         </div>
       </div>
     </section>
@@ -384,6 +476,66 @@
       </div>
     </section>
 
+    <section id="couple-stages" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Four Scenes</p>
+          <h2>관계의 네 장면</h2>
+          <p class="lead">처음 만났을 때부터 오래 본 뒤까지, 두 분의 글자가 말해 주는 흐름입니다.</p>
+        </div>
+        <div class="grid grid-2x2" id="c-stages"></div>
+      </div>
+    </section>
+
+    <section id="couple-roles" style="padding-top:0">
+      <div class="wrap">
+        <div class="grid grid-3">
+          <div class="card tone-green">
+            <p class="eyebrow">Roles</p>
+            <h3 id="c-roles-title" style="margin-bottom:8px"></h3>
+            <p id="c-roles-text" style="margin:0"></p>
+          </div>
+          <div class="card">
+            <p class="eyebrow">Tempo</p>
+            <h3 id="c-tempo-title" style="margin-bottom:8px"></h3>
+            <p id="c-tempo-text" style="margin:0"></p>
+          </div>
+          <div class="card tone-blue">
+            <p class="eyebrow">Long Run</p>
+            <h3 id="c-long-title" style="margin-bottom:8px"></h3>
+            <p id="c-long-text" style="margin:0"></p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <p class="eyebrow">At a Glance</p>
+          <h3 style="margin-bottom:10px">두 사람 한눈에 보기</h3>
+          <table class="spec-table"><tbody id="c-summary-table"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section id="couple-words" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Words</p>
+          <h2>서로에게 잘 듣는 말</h2>
+          <p class="lead">
+            상대가 나를 어떤 자리로 보는지(십신)에 따라, 같은 말도 다르게 닿습니다.
+          </p>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <p class="eyebrow">이 말이 잘 듣습니다</p>
+            <div id="c-words-good"></div>
+          </div>
+          <div class="card">
+            <p class="eyebrow">이 말은 오래 남습니다</p>
+            <div id="c-words-avoid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="couple-rings" style="padding-top:0">
       <div class="wrap">
         <div class="section-head">
@@ -406,6 +558,7 @@
           <h2>각자의 일주</h2>
         </div>
         <div class="grid grid-2" id="c-each"></div>
+        <div class="grid grid-2" id="c-each-deep" style="margin-top:16px"></div>
       </div>
     </section>
 
@@ -450,6 +603,7 @@
 <script src="assets/js/saju.js"></script>
 <script src="assets/js/rings.js"></script>
 <script src="assets/js/compat.js"></script>
+<script src="assets/js/reading.js"></script>
 <script src="assets/js/share.js"></script>
 <script src="assets/js/report.js"></script>
 </body>
