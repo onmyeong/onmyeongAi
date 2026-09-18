@@ -22,6 +22,11 @@
    * 마지막에 둘을 함께 주문서로 넘깁니다.
    * 앞 단계에서 정한 사양은 주소(a=…)에 실어 그대로 들고 다닙니다. */
   var Q = new URLSearchParams(location.search);
+  var invite = {
+    on: Q.get('invite') === '1',
+    from: Q.get('na') || ''          // 초대한 분 이름 (적었을 때만)
+  };
+
   var couple = {
     on: Q.get('couple') === '1',
     step: Q.get('step') === 'b' ? 'b' : 'a',
@@ -655,6 +660,102 @@
   $('use-play').addEventListener('click', function () { setUse('play', true); });
   $('use-order').addEventListener('click', function () { setUse('order', true); });
 
+  /* ───────────── 짝 맞추기 초대장 ─────────────
+   * 보내는 쪽: 지금 맞춘 반지를 링크에 담습니다.
+   * 받는 쪽: 생일만 넣으면 그 사람 일주에 맞는 반지가 옆자리에 놓입니다. */
+
+  function inviteLink() {
+    var me = ($('inv-me') && $('inv-me').value || '').trim();
+    var seed = R.defaultSpec(R.getModel(spec.modelId), null, { metal: spec.metal });
+    seed.size = spec.size;
+    var base = location.origin + location.pathname;
+    return base + '?couple=1&step=b&invite=1' +
+      (me ? '&na=' + encodeURIComponent(me) : '') +
+      '&a=' + pack(spec) + '&' + R.specToQuery(seed);
+  }
+
+  (function inviteMaker() {
+    var open = $('make-invite'), box = $('invite-make');
+    if (!open || !box) return;
+    // 초대장은 커플 흐름이 아닐 때만 만듭니다 (이미 둘이 맞추는 중이면 필요 없습니다)
+    if (couple.on) { open.classList.add('is-hidden'); return; }
+
+    function refreshUrl() { $('inv-url').value = inviteLink(); }
+
+    open.addEventListener('click', function () {
+      var hidden = box.classList.toggle('is-hidden');
+      if (!hidden) { refreshUrl(); $('inv-me').focus(); }
+    });
+    $('inv-me').addEventListener('input', refreshUrl);
+    // 반지를 더 만지면 링크도 따라 바뀌어야 합니다
+    studio.onChange(function () { if (!box.classList.contains('is-hidden')) refreshUrl(); });
+
+    $('inv-copy').addEventListener('click', function () {
+      refreshUrl();
+      if (ONM.share) ONM.share.copyLink(inviteLink(), this);
+    });
+
+    $('inv-share').addEventListener('click', function () {
+      var me = ($('inv-me').value || '').trim();
+      var text = (me ? me + ' 님이' : '누군가') + ' 반지를 맞춰 두었어요. 옆에 둘 반지를 골라 주세요.';
+      if (ONM.share) {
+        ONM.share.share({ title: '온명 — 짝 맞추기', text: text, url: inviteLink() }, this);
+      }
+    });
+  })();
+
+  (function inviteLanding() {
+    var box = $('invite-box');
+    if (!box || !invite.on || !couple.on || couple.step !== 'b') return;
+    box.classList.remove('is-hidden');
+
+    $('invite-title').textContent = (invite.from ? invite.from + ' 님이' : '누군가') +
+      ' 반지를 맞춰 두었어요.';
+    $('invite-desc').textContent = '옆에 둘 반지를 골라 주세요. 생일을 넣으면 그 일주에 맞는 반지를 ' +
+      '골라 드리고, 마음대로 바꾸셔도 됩니다.';
+    if (specA) $('invite-ring').innerHTML = R.ringSvg(specA, { size: 96 });
+
+    function seedFromIlju(rec) {
+      // 그 일주에 가장 잘 맞는 디자인으로 갈아 끼웁니다 (첫 번째 분의 호수는 그대로 두지 않습니다)
+      var pick = R.recommend(rec, { seed: 3, limit: 1, mood: 'all' })[0];
+      var model = pick ? pick.model : R.getModel(spec.modelId);
+      var seeded = R.defaultSpec(model, rec, { metal: spec.metal });
+      seeded.size = spec.size;
+      Object.keys(seeded).forEach(function (k) { spec[k] = seeded[k]; });
+      spec.ilju = rec.id;
+      buildControls();
+      studio.changed();
+    }
+
+    $('inv-go').addEventListener('click', function () {
+      var y = $('inv-y').value, m = $('inv-m').value, d = $('inv-d').value;
+      var out = $('inv-result');
+      if (!y || !m || !d) { out.textContent = '생년월일을 모두 넣어 주세요.'; return; }
+      var res;
+      try {
+        res = ONM.getIlju({ year: y, month: m, day: d, hour: '' });
+      } catch (err) {
+        out.textContent = err.message;
+        return;
+      }
+      var name = ($('inv-name').value || '').trim();
+      seedFromIlju(res.record);
+      out.textContent = (name ? name + ' 님은 ' : '') + res.record.id + '(' + res.record.hanja + ') 일주 — ' +
+        ONM.iljuPhrase(res.record) + '. 이 일주에 어울리는 반지로 골라 뒀습니다. 마음대로 바꿔 보세요.';
+      $('invite-form').classList.add('is-hidden');
+      $('inv-go').classList.add('is-hidden');
+      $('inv-skip').textContent = '다시 고르기';
+    });
+
+    $('inv-skip').addEventListener('click', function () {
+      $('invite-form').classList.toggle('is-hidden');
+      $('inv-go').classList.toggle('is-hidden');
+      $('inv-result').textContent = '';
+      this.textContent = $('invite-form').classList.contains('is-hidden')
+        ? '생일 넣고 골라 받기' : '그냥 내가 직접 고를게요';
+    });
+  })();
+
   /* 커플링 단계 안내 — 지금 누구 반지를 만지고 있는지, 다음에 뭘 하는지 */
   function paintCoupleStep() {
     if (!couple.on) return;
@@ -666,19 +767,27 @@
       '<span class="' + (onB ? 'did' : 'on') + '">1</span>' +
       '<span class="' + (onB ? 'on' : '') + '">2</span>';
 
-    $('step-title').textContent = onB
-      ? '2단계 — 두 번째 분 반지 (' + personOf('b') + ')'
-      : '1단계 — 첫 번째 분 반지 (' + personOf('a') + ')';
-    $('step-desc').textContent = onB
-      ? '두 분 반지를 각각 다르게 맞출 수 있습니다. 이 반지까지 정하면 주문서에서 한 쌍으로 묶입니다.'
-      : '먼저 첫 번째 분 반지를 맞춥니다. 다 정하고 나면 두 번째 분 반지로 넘어갑니다.';
+    // 초대장으로 들어온 분에게는 "두 번째 분"보다 "내 반지"가 자연스럽습니다
+    if (invite.on && onB) {
+      $('step-title').textContent = '옆에 둘 내 반지 고르기';
+      $('step-desc').textContent = (invite.from ? invite.from + ' 님이 맞춰 둔 반지 옆에 놓입니다. ' : '') +
+        '다 고르면 두 반지가 한 쌍으로 주문서에 담깁니다.';
+    } else {
+      $('step-title').textContent = onB
+        ? '2단계 — 두 번째 분 반지 (' + personOf('b') + ')'
+        : '1단계 — 첫 번째 분 반지 (' + personOf('a') + ')';
+      $('step-desc').textContent = onB
+        ? '두 분 반지를 각각 다르게 맞출 수 있습니다. 이 반지까지 정하면 주문서에서 한 쌍으로 묶입니다.'
+        : '먼저 첫 번째 분 반지를 맞춥니다. 다 정하고 나면 두 번째 분 반지로 넘어갑니다.';
+    }
 
     // 앞 단계에서 정해 둔 반지를 옆에 띄워 두면 짝을 맞추기 쉽습니다
     var done = $('step-done');
     if (onB && specA) {
       done.classList.remove('is-hidden');
       done.innerHTML = '<div class="preview-box stage-bg">' + R.ringSvg(specA, { size: 74 }) + '</div>' +
-        '<span class="small">첫 번째 분<br>' + R.esc(specA.modelName) + ' · ' +
+        '<span class="small">' + R.esc(invite.on && invite.from ? invite.from + ' 님' : '첫 번째 분') +
+        '<br>' + R.esc(specA.modelName) + ' · ' +
         specA.width + '×' + specA.thickness + 'mm</span>';
     } else {
       done.classList.add('is-hidden');

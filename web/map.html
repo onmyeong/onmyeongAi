@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온명 · 일주 지도</title>
+<meta name="description" content="내 일주를 가운데 두고, 친구들이 궁합 점수만큼 가까이 놓이는 일주 지도. 생일만 넣으면 내 자리가 표시됩니다.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./"><b>ONMYEONG</b><span>온명</span></a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="./">일주 리포트</a>
+      <a href="studio.html">반지 스튜디오</a>
+      <a href="order.html">커스텀 주문</a>
+      <a href="map.html" aria-current="page">일주 지도</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- 지도 주인이 없을 때 — 내 지도 만들기 -->
+<section id="map-empty" class="is-hidden">
+  <div class="wrap">
+    <p class="eyebrow">Ilju Map</p>
+    <h1 style="margin-bottom:10px">일주 지도 만들기</h1>
+    <p class="lead" style="margin-bottom:22px">
+      내 일주를 한가운데 두고, 친구들이 <b>궁합 점수만큼 가까이</b> 놓이는 지도입니다.
+      링크를 보내면 받은 사람이 생일만 넣어 자기 자리를 남깁니다.
+    </p>
+    <div class="card">
+      <div class="grid grid-4" style="align-items:end">
+        <div class="field">
+          <label for="new-name">이름 <span class="small">(선택)</span></label>
+          <input id="new-name" type="text" maxlength="12" placeholder="지민">
+        </div>
+        <div class="field">
+          <label for="new-y">태어난 해 (양력)</label>
+          <input id="new-y" type="number" inputmode="numeric" placeholder="1995" min="1900" max="2100">
+        </div>
+        <div class="field">
+          <label for="new-m">월</label>
+          <input id="new-m" type="number" inputmode="numeric" placeholder="7" min="1" max="12">
+        </div>
+        <div class="field">
+          <label for="new-d">일</label>
+          <input id="new-d" type="number" inputmode="numeric" placeholder="21" min="1" max="31">
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-primary" type="button" id="new-go">내 지도 만들기</button>
+        <a class="btn" href="./">일주 리포트 먼저 보기</a>
+      </div>
+      <p class="small" id="new-result" style="margin:10px 0 0"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 지도 -->
+<section id="map-main">
+  <div class="wrap">
+    <p class="eyebrow">Ilju Map</p>
+    <h1 id="map-title" style="margin-bottom:8px">일주 지도</h1>
+    <p class="lead" id="map-sub" style="margin-bottom:22px"></p>
+
+    <div class="map-grid">
+      <div class="card map-card">
+        <div class="map-field">
+          <i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i>
+          <div class="map-me">
+            <span class="seal" id="map-center"></span>
+            <b id="map-center-name"></b>
+          </div>
+          <div id="map-dots"></div>
+        </div>
+        <p class="small" style="margin:14px 0 0;text-align:center">
+          가운데가 나입니다. 어울림 점수가 높을수록 가까이 놓입니다. 점을 누르면 그 사람과의 궁합 리포트가 열립니다.
+        </p>
+      </div>
+
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="card">
+          <p class="eyebrow" style="margin-bottom:4px">내 자리 놓기</p>
+          <p class="small" style="margin:0 0 12px">
+            생일을 넣으면 이 지도에 내 자리가 생기고, 지도 주인과의 어울림 점수가 나옵니다.
+          </p>
+          <div class="grid grid-2" style="gap:10px">
+            <div class="field">
+              <label for="join-name">이름</label>
+              <input id="join-name" type="text" maxlength="12" placeholder="서준">
+            </div>
+            <div class="field">
+              <label for="join-y">태어난 해</label>
+              <input id="join-y" type="number" inputmode="numeric" placeholder="1996" min="1900" max="2100">
+            </div>
+            <div class="field">
+              <label for="join-m">월</label>
+              <input id="join-m" type="number" inputmode="numeric" placeholder="3" min="1" max="12">
+            </div>
+            <div class="field">
+              <label for="join-d">일</label>
+              <input id="join-d" type="number" inputmode="numeric" placeholder="21" min="1" max="31">
+            </div>
+          </div>
+          <div class="btn-row" style="margin-top:12px">
+            <button class="btn btn-primary" type="button" id="join-go">내 자리 놓기</button>
+          </div>
+          <p class="small" id="join-result" style="margin:12px 0 0"></p>
+          <div class="btn-row is-hidden" id="join-after" style="margin-top:12px">
+            <a class="btn" id="join-report" href="#">우리 궁합 자세히 보기</a>
+            <a class="btn" id="join-mine" href="#">내 일주 리포트</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="eyebrow" style="margin-bottom:4px">지도 링크</p>
+          <p class="small" style="margin:0 0 10px">
+            이 링크를 단체방에 돌리면 한 명씩 자리가 채워집니다.
+            자리를 놓은 사람은 <b>새로 생긴 링크를 지도 주인에게 다시 보내 주어야</b> 그 자리가 남습니다.
+          </p>
+          <div class="field">
+            <label for="map-url" class="small">지금 지도 링크 <span id="map-count"></span></label>
+            <input id="map-url" readonly onclick="this.select()">
+          </div>
+          <div class="btn-row" style="margin-top:12px">
+            <button class="btn btn-primary" type="button" id="map-share">지도 보내기</button>
+            <button class="btn" type="button" id="map-copy">링크 복사</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <p class="eyebrow" style="margin-bottom:10px">가까운 순서</p>
+      <div class="map-rows" id="map-list"></div>
+    </div>
+
+    <div class="notice" style="margin-top:20px">
+      일주는 사주에서 '나 자신'을 가리킵니다. 여기 놓인 거리는 두 사람의 천간·지지 관계(합·충·삼합·형·해)로
+      낸 어울림 점수이고, 사람의 좋고 나쁨을 가리는 숫자가 아닙니다.
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>© ONMYEONG · 온명</span>
+    <span>일주 지도</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/ilju-data.js"></script>
+<script src="assets/js/zodiac.js"></script>
+<script src="assets/js/stones.js"></script>
+<script src="assets/js/saju.js"></script>
+<script src="assets/js/rings.js"></script>
+<script src="assets/js/compat.js"></script>
+<script src="assets/js/share.js"></script>
+<script src="assets/js/map.js"></script>
+</body>
+</html>

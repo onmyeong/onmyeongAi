@@ -246,6 +246,78 @@
     });
   }
 
+  /* ───────────────── 한 줄 카드 ─────────────────
+   * 리포트에서 마음에 드는 문장 하나만 크게 떠 있는 카드입니다.
+   * 사람들이 SNS에 올리는 건 리포트 전체가 아니라 웃기거나 뜨끔한 한 문장이라,
+   * 그 한 줄만 큼직하게 놓고 아래에 누구의 말인지 적어 둡니다. */
+
+  /** 한글은 띄어쓰기가 드물어 글자 단위로도 줄을 나눠 줍니다 */
+  function wrapKo(x, text, maxW) {
+    var src = String(text || '').trim();
+    var lines = [], cur = '';
+    for (var i = 0; i < src.length; i++) {
+      var ch = src.charAt(i);
+      if (x.measureText(cur + ch).width > maxW && cur) {
+        // 줄 끝이 공백이면 다듬고 넘깁니다
+        lines.push(cur.replace(/\s+$/, ''));
+        cur = ch === ' ' ? '' : ch;
+      } else {
+        cur += ch;
+      }
+    }
+    if (cur.trim()) lines.push(cur.replace(/\s+$/, ''));
+    return lines;
+  }
+
+  /**
+   * 한 줄 카드
+   * @param {Object} o { line, who, sub, record, url }
+   */
+  function lineCard(o) {
+    var rec = o.record;
+    var color = rec ? ONM.zodiacColor(rec) : { solid: '#3d6431', ink: '#3d6431' };
+    var jobs = [rec ? tintedZodiac(rec.branch, '#ffffff', 190) : Promise.resolve(null)];
+
+    return ready().then(function () { return Promise.all(jobs); }).then(function (res) {
+      var icon = res[0];
+      var c = doc.createElement('canvas'); c.width = W; c.height = H;
+      var x = c.getContext('2d');
+      backdrop(x);
+
+      // 큰 따옴표
+      x.textAlign = 'center';
+      x.font = '160px ' + SERIF; x.fillStyle = color.solid;
+      x.globalAlpha = 0.18;
+      x.fillText('\u201C', W / 2, 400);
+      x.globalAlpha = 1;
+
+      // 문장 — 길이에 따라 글자 크기를 줄여 항상 한 화면에 담습니다
+      var text = String(o.line || '').trim();
+      var size = text.length <= 24 ? 74 : text.length <= 44 ? 62 : text.length <= 70 ? 52 : 44;
+      var maxW = W - 240;
+      var lines;
+      for (;;) {
+        x.font = '600 ' + size + 'px ' + SERIF;
+        lines = wrapKo(x, text, maxW);
+        if (lines.length <= 6 || size <= 34) break;
+        size -= 4;
+      }
+      var lh = Math.round(size * 1.45);
+      var top = 560 - Math.round((lines.length - 1) * lh / 2);
+      x.fillStyle = INK;
+      lines.forEach(function (line, i) { x.fillText(line, W / 2, top + i * lh); });
+
+      // 누구의 말인지
+      var baseY = Math.max(top + lines.length * lh + 90, 900);
+      seal(x, W / 2, baseY, 82, color.solid, icon);
+      centerText(x, o.who || '', baseY + 150, '600 40px ' + SERIF, INK, W - 220);
+      if (o.sub) centerText(x, o.sub, baseY + 196, '26px ' + SANS, MUTED, W - 220);
+
+      footer(x, o.url || global.location.href);
+      return toBlob(c);
+    });
+  }
+
   /** 웹폰트가 준비된 뒤에 그려야 글자가 제대로 나옵니다 */
   function ready() {
     if (doc.fonts && doc.fonts.ready) return doc.fonts.ready.catch(function () {});
@@ -274,6 +346,7 @@
     flash: flash,
     soloCard: soloCard,
     coupleCard: coupleCard,
+    lineCard: lineCard,
     download: download,
     toFile: toFile
   };

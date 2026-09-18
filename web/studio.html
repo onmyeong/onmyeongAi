@@ -28,6 +28,7 @@
       <a href="./">일주 리포트</a>
       <a href="studio.html" aria-current="page">반지 스튜디오</a>
       <a href="order.html">커스텀 주문</a>
+      <a href="map.html">일주 지도</a>
     </nav>
   </div>
 </header>
@@ -53,6 +54,41 @@
       </button>
     </div>
     <p class="notice is-hidden" id="use-hint" style="margin-bottom:20px"></p>
+
+    <!-- 짝 맞추기 초대장으로 들어왔을 때 -->
+    <div class="card is-hidden" id="invite-box" style="margin-bottom:20px">
+      <div class="invite-head">
+        <div class="preview-box stage-bg" id="invite-ring"></div>
+        <div>
+          <p class="eyebrow" style="margin-bottom:4px">짝 맞추기 초대장</p>
+          <h3 id="invite-title" style="margin:0 0 6px"></h3>
+          <p class="small" id="invite-desc" style="margin:0"></p>
+        </div>
+      </div>
+      <div class="grid grid-4" id="invite-form" style="align-items:end;margin-top:16px">
+        <div class="field">
+          <label for="inv-name">이름 <span class="small">(선택)</span></label>
+          <input id="inv-name" type="text" maxlength="12" placeholder="서준" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="inv-y">태어난 해 (양력)</label>
+          <input id="inv-y" type="number" inputmode="numeric" placeholder="1996" min="1900" max="2100">
+        </div>
+        <div class="field">
+          <label for="inv-m">월</label>
+          <input id="inv-m" type="number" inputmode="numeric" placeholder="3" min="1" max="12">
+        </div>
+        <div class="field">
+          <label for="inv-d">일</label>
+          <input id="inv-d" type="number" inputmode="numeric" placeholder="21" min="1" max="31">
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-primary" type="button" id="inv-go">내 일주로 반지 골라 주기</button>
+        <button class="btn" type="button" id="inv-skip">그냥 내가 직접 고를게요</button>
+      </div>
+      <p class="small" id="inv-result" style="margin:10px 0 0"></p>
+    </div>
 
     <!-- 커플링일 때만 뜨는 단계 안내 -->
     <div class="card couple-step is-hidden" id="couple-step" style="margin-bottom:20px">
@@ -354,8 +390,29 @@
 
         <div class="btn-row">
           <a class="btn btn-primary" id="to-order" href="order.html">이 사양으로 주문 상담</a>
+          <button class="btn" id="make-invite" type="button">짝 맞추기 초대장</button>
           <a class="btn is-hidden" id="back-step" href="#">앞 단계로</a>
           <button class="btn" id="copy-spec" type="button">사양 복사</button>
+        </div>
+
+        <div class="card is-hidden" id="invite-make" style="margin-top:14px">
+          <p class="eyebrow" style="margin-bottom:4px">짝 맞추기 초대장</p>
+          <p class="small" style="margin:0 0 12px">
+            지금 맞춘 반지를 링크에 담아 보냅니다. 받은 사람이 생일을 넣으면
+            그 사람 일주에 맞는 짝 반지가 옆에 놓이고, 둘이 한 쌍으로 주문서까지 이어집니다.
+          </p>
+          <div class="field">
+            <label for="inv-me">내 이름 <span class="small">(선택 — 받는 사람에게 보입니다)</span></label>
+            <input id="inv-me" type="text" maxlength="12" placeholder="지민" autocomplete="off">
+          </div>
+          <div class="btn-row" style="margin-top:12px">
+            <button class="btn btn-primary" type="button" id="inv-share">초대 링크 보내기</button>
+            <button class="btn" type="button" id="inv-copy">링크 복사</button>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label for="inv-url" class="small">초대 링크</label>
+            <input id="inv-url" readonly onclick="this.select()">
+          </div>
         </div>
       </aside>
     </div>
@@ -375,6 +432,8 @@
 <script src="assets/js/zodiac.js"></script>
 <script src="assets/js/stones.js"></script>
 <script src="assets/js/rings.js"></script>
+<script src="assets/js/saju.js"></script>
+<script src="assets/js/share.js"></script>
 <script src="assets/js/studio-ui.js"></script>
 <script type="module" src="assets/js/studio-3d.js"></script>
 </body>
