@@ -143,7 +143,11 @@
    * @param {Object} b ONMYEONG.ILJU 레코드
    * @returns {Object} { score, grade, headline, good[], care[], stemLine, branchLine, elementLine, bridge }
    */
-  function compare(a, b) {
+  function compare(a, b, names) {
+    names = names || {};
+    /* 이름을 적어 주셨으면 "지민 님", 아니면 "계묘 일주"로 부릅니다 */
+    var A = names.a ? names.a + ' 님' : a.id + ' 일주';
+    var B = names.b ? names.b + ' 님' : b.id + ' 일주';
     var s1 = a.stem, s2 = b.stem, b1 = a.branch, b2 = b.branch;
     var e1 = a.stemInfo.elem, e2 = b.stemInfo.elem;
     var score = 55;
@@ -173,19 +177,19 @@
       score += 16; axis.stem = 84;
       bridge = e2;
       stemLine = i(e1) + ' ' + eul(e2) + ' 낳아 주는 사이입니다. ' + i(s1) + ' 내주고 ' + i(s2) + ' 받아 자랍니다.';
-      good.push(a.id + ' 쪽이 먼저 내주고 ' + b.id + ' 쪽이 그 힘으로 뻗어 나가는 구조입니다.');
+      good.push(i(A) + ' 먼저 내주고 ' + i(B) + ' 그 힘으로 뻗어 나가는 구조입니다.');
     } else if (SAENG[e2] === e1) {
       score += 16; axis.stem = 84;
       bridge = e1;
       stemLine = i(e2) + ' ' + eul(e1) + ' 낳아 주는 사이입니다. ' + i(s2) + ' 내주고 ' + i(s1) + ' 받아 자랍니다.';
-      good.push(b.id + ' 쪽이 먼저 내주고 ' + a.id + ' 쪽이 그 힘으로 뻗어 나가는 구조입니다.');
+      good.push(i(B) + ' 먼저 내주고 ' + i(A) + ' 그 힘으로 뻗어 나가는 구조입니다.');
     } else if (GEUK[e1] === e2 || GEUK[e2] === e1) {
       score -= 10; axis.stem = 52;
       var strong = GEUK[e1] === e2 ? a : b;
       var soft = GEUK[e1] === e2 ? b : a;
       stemLine = gwa(e1) + ' ' + eun(e2) + ' 한쪽이 다른 쪽을 누르는 사이입니다. ' +
         i(strong.stem) + ' ' + eul(soft.stem) + ' 다잡습니다.';
-      care.push(strong.id + ' 쪽의 말이 세게 닿을 수 있습니다. 다잡으려는 마음이 잔소리로 들리지 않게 말의 온도를 낮춰 보세요.');
+      care.push((strong === a ? A : B) + '의 말이 세게 닿을 수 있습니다. 다잡으려는 마음이 잔소리로 들리지 않게 말의 온도를 낮춰 보세요.');
     } else {
       axis.stem = 62;
       stemLine = gwa(s1) + ' ' + eun(s2) + ' 서로를 크게 밀지도 당기지도 않습니다. 부딪힐 일도 적지만, 먼저 다가서는 쪽이 필요합니다.';
@@ -247,7 +251,7 @@
 
     /* ── 두 사람을 잇는 오행 ── */
     if (!bridge) bridge = SAENG[e1] === e2 ? e2 : (SAENG[e2] === e1 ? e1 : e1);
-    elementLine = eun(a.id) + ' ' + e1 + ', ' + eun(b.id) + ' ' + e2 + '. 둘 사이를 이어 주는 기운은 ' + bridge + '입니다.';
+    elementLine = eun(A) + ' ' + e1 + ', ' + eun(B) + ' ' + e2 + '. 둘 사이를 이어 주는 기운은 ' + bridge + '입니다.';
 
     if (good.length === 0) {
       good.push('서로를 크게 흔들지 않아, 각자의 속도를 지키며 오래 갈 수 있는 조합입니다.');
@@ -342,6 +346,8 @@
 
       // 더 자세히 보기
       nickname: ONM.iljuPhrase(a) + ' × ' + ONM.iljuPhrase(b),
+      labelA: A,
+      labelB: B,
       axes: [
         { key: 'stem', name: '첫인상 · 드러나는 성격', score: axis.stem, note: '일주의 윗글자(천간)로 봅니다' },
         { key: 'branch', name: '생활 · 속마음', score: axis.branch, note: '일주의 아랫글자(지지)로 봅니다' },

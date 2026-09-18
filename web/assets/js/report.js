@@ -93,6 +93,7 @@
 
   function readPerson(suffix) {
     return {
+      name: $('name' + suffix).value,
       year: $('y' + suffix).value,
       month: $('m' + suffix).value,
       day: $('d' + suffix).value,
@@ -101,17 +102,36 @@
   }
 
   function fillPerson(suffix, p) {
+    $('name' + suffix).value = p.name || '';
     $('y' + suffix).value = p.year;
     $('m' + suffix).value = p.month;
     $('d' + suffix).value = p.day;
     $('h' + suffix).value = p.hour === undefined || p.hour === null ? '' : p.hour;
   }
 
+  /* ───────────── 이름 ─────────────
+   * 적어 주신 이름에서 성을 떼고 부릅니다. 김지민 → 지민, 남궁민수 → 민수.
+   * 두 글자로 적어 주시면 이미 이름만 적으신 것으로 보고 그대로 씁니다. */
+  var DOUBLE_SURNAME = ['남궁', '황보', '제갈', '사공', '선우', '서문', '독고', '동방', '현담', '망절'];
+
+  function givenName(raw) {
+    var v = String(raw || '').trim().replace(/\s+/g, ' ');
+    if (!v) return '';
+    // "최 유진"처럼 띄어 쓰셨어도 한 덩어리로 봅니다
+    if (/^[가-힣 ]+$/.test(v)) v = v.replace(/ /g, '');
+    if (!/^[가-힣]+$/.test(v)) return v.slice(0, 12);      // 한글 이름이 아니면 적어 주신 그대로
+    if (v.length <= 2) return v;                            // 두 글자면 이름만 적으신 것으로 봅니다
+    for (var k = 0; k < DOUBLE_SURNAME.length; k++) {
+      if (v.indexOf(DOUBLE_SURNAME[k]) === 0 && v.length >= 4) return v.slice(2);
+    }
+    return v.slice(1);
+  }
+
   $('sample-btn').addEventListener('click', function () {
-    var a = { year: 1995, month: 7, day: 21, hour: 9 };
+    var a = { name: '지민', year: 1995, month: 7, day: 21, hour: 9 };
     fillPerson('', a);
     if (state.mode === 'couple') {
-      var b = { year: 1994, month: 3, day: 9, hour: 21 };
+      var b = { name: '서준', year: 1994, month: 3, day: 9, hour: 21 };
       fillPerson('2', b);
       runCouple(a, b);
     } else {
@@ -143,6 +163,8 @@
     state.result = res;
     state.resultB = null;
     state.compat = null;
+    state.nameA = givenName(input.name);
+    state.nameB = '';
     state.seed = Math.floor(Math.random() * 100000) + 1;
 
     renderReport(res);
@@ -164,8 +186,11 @@
 
     state.result = a;
     state.resultB = b;
+    state.nameA = givenName(inputA.name);
+    state.nameB = givenName(inputB.name);
     state.seed = Math.floor(Math.random() * 100000) + 1;
-    state.compat = ONM.compat.compare(a.record, b.record);
+    state.compat = ONM.compat.compare(a.record, b.record,
+      { a: state.nameA, b: state.nameB });
 
     renderCouple(a, b, state.compat);
     $('report').classList.add('is-hidden');
@@ -185,6 +210,7 @@
     if (idB && ONM.ILJU[idB]) {
       var resB = { record: ONM.ILJU[idB], id: idB, hanja: ONM.ILJU[idB].hanja, notes: [] };
       state.result = resA; state.resultB = resB;
+      state.nameA = ''; state.nameB = '';
       state.seed = Math.floor(Math.random() * 100000) + 1;
       state.compat = ONM.compat.compare(recA, resB.record);
       renderCouple(resA, resB, state.compat);
@@ -196,6 +222,7 @@
     }
 
     state.result = resA; state.resultB = null; state.compat = null;
+    state.nameA = ''; state.nameB = '';
     state.seed = Math.floor(Math.random() * 100000) + 1;
     renderReport(resA);
     renderRings();
@@ -211,9 +238,11 @@
     if (o.mode === 'couple') q.push('mode=couple');
     q.push('y=' + o.a.year, 'm=' + o.a.month, 'd=' + o.a.day);
     if (o.a.hour !== '' && o.a.hour !== null && o.a.hour !== undefined) q.push('h=' + o.a.hour);
+    if (o.a.name) q.push('n=' + encodeURIComponent(o.a.name));
     if (o.b) {
       q.push('y2=' + o.b.year, 'm2=' + o.b.month, 'd2=' + o.b.day);
       if (o.b.hour !== '' && o.b.hour !== null && o.b.hour !== undefined) q.push('h2=' + o.b.hour);
+      if (o.b.name) q.push('n2=' + encodeURIComponent(o.b.name));
     }
     history.replaceState(null, '', location.pathname + '?' + q.join('&'));
   }
@@ -232,6 +261,11 @@
     $('r-seal').innerHTML = ONM.zodiacSvg(rec.branch, {
       label: rec.branchInfo.animal + ' — ' + rec.id + ' 일주'
     });
+    // 이름을 적어 주셨으면 "지민 님의 일주"로 먼저 불러 드립니다
+    var person = $('r-person');
+    person.textContent = state.nameA ? state.nameA + ' 님의 일주' : '';
+    person.classList.toggle('is-hidden', !state.nameA);
+
     $('r-name').textContent = rec.id + ' (' + rec.hanja + ')';
     $('r-animal').textContent = ONM.iljuPhrase(rec);
     $('r-tagline').textContent = rec.tagline;
@@ -455,10 +489,11 @@
     $('c-seal-a').innerHTML = ONM.zodiacSvg(a.branch, { label: a.id + ' 일주' });
     $('c-seal-b').innerHTML = ONM.zodiacSvg(b.branch, { label: b.id + ' 일주' });
     $('c-seal-b').style.background = cb.solid;
-    $('c-name-a').textContent = a.id + ' (' + a.hanja + ')';
-    $('c-name-b').textContent = b.id + ' (' + b.hanja + ')';
-    $('c-phrase-a').textContent = ONM.iljuPhrase(a);
-    $('c-phrase-b').textContent = ONM.iljuPhrase(b);
+    // 이름을 적어 주셨으면 이름을 먼저, 일주는 그 아래 한 줄로
+    $('c-name-a').textContent = state.nameA ? state.nameA + ' 님' : a.id + ' (' + a.hanja + ')';
+    $('c-name-b').textContent = state.nameB ? state.nameB + ' 님' : b.id + ' (' + b.hanja + ')';
+    $('c-phrase-a').textContent = (state.nameA ? a.id + ' · ' : '') + ONM.iljuPhrase(a);
+    $('c-phrase-b').textContent = (state.nameB ? b.id + ' · ' : '') + ONM.iljuPhrase(b);
 
     $('c-score').textContent = cp.score;
     $('c-ring').style.setProperty('--v', cp.score);
@@ -512,7 +547,8 @@
 
     renderPairs(a, b, cp);
 
-    $('c-each').innerHTML = [eachCard(a, ca, ''), eachCard(b, cb, '2')].join('');
+    $('c-each').innerHTML = [eachCard(a, ca, '', state.nameA),
+      eachCard(b, cb, '2', state.nameB)].join('');
 
     renderCoupleDeep(a, b, cp);
 
@@ -542,7 +578,8 @@
     };
     var da = deep.eachA, db = deep.eachB;
     $('c-summary-table').innerHTML =
-      row('', a.id + ' (' + a.hanja + ')', b.id + ' (' + b.hanja + ')') +
+      row('', (state.nameA ? state.nameA + ' 님 · ' : '') + a.id + ' (' + a.hanja + ')',
+        (state.nameB ? state.nameB + ' 님 · ' : '') + b.id + ' (' + b.hanja + ')') +
       row('일간', a.stem + ' · ' + a.stemInfo.elem, b.stem + ' · ' + b.stemInfo.elem) +
       row('일지', a.branch + ' · ' + a.branchInfo.elem, b.branch + ' · ' + b.branchInfo.elem) +
       row('일지에 앉은 자리', da.sipsin.name, db.sipsin.name) +
@@ -553,7 +590,7 @@
     var same = a.id === b.id;
     var wordBlock = function (list) {
       return (same ? list.slice(0, 1) : list).map(function (w) {
-        return '<p style="margin:0 0 12px"><b>' + esc(same ? '두 분 모두' : w.who + ' 님에게') + '</b><br>' +
+        return '<p style="margin:0 0 12px"><b>' + esc(same ? '두 분 모두' : w.who + '에게') + '</b><br>' +
           '<span class="quote-line">' + esc(w.text) + '</span><br>' +
           '<span class="small">' + esc(same ? '같은 일주라 서로에게 같은 자리입니다.' : w.note) + '</span></p>';
       }).join('');
@@ -566,7 +603,8 @@
       var rec = p[0], d = p[1];
       if (!d) return '';
       return '<div class="card">' +
-        '<p class="eyebrow">' + esc(rec.id) + ' · 일지에 앉은 자리</p>' +
+        '<p class="eyebrow">' + esc((rec === a && state.nameA ? state.nameA + ' 님 · ' :
+          rec === b && state.nameB ? state.nameB + ' 님 · ' : '') + rec.id) + ' · 일지에 앉은 자리</p>' +
         '<h3 style="margin-bottom:6px">' + esc(d.sipsin.name) + ' — ' + esc(d.sipsin.title) + '</h3>' +
         '<p style="margin:0 0 10px">' + esc(d.sipsin.spouse) + '</p>' +
         (d.stage ? '<p class="small" style="margin:0 0 10px"><b>' + esc(d.stage.name) + '</b> · ' +
@@ -587,10 +625,12 @@
       '<p>' + esc(sip.text) + '</p></div>';
   }
 
-  function eachCard(rec, color, suffix) {
+  function eachCard(rec, color, suffix, name) {
     var q = 'y=' + $('y' + suffix).value + '&m=' + $('m' + suffix).value + '&d=' + $('d' + suffix).value +
-      ($('h' + suffix).value === '' ? '' : '&h=' + $('h' + suffix).value);
+      ($('h' + suffix).value === '' ? '' : '&h=' + $('h' + suffix).value) +
+      (name ? '&n=' + encodeURIComponent(name) : '');
     return '<div class="card">' +
+      (name ? '<p class="eyebrow" style="margin-bottom:8px">' + esc(name) + ' 님</p>' : '') +
       '<div class="seal-line">' +
         '<span class="seal-mini" style="background:' + color.solid + '">' +
           ONM.zodiacSvg(rec.branch, { label: rec.id + ' 일주' }) + '</span>' +
@@ -773,11 +813,11 @@
     setMode(couple ? 'couple' : 'solo', { clear: false });
 
     if (!p.get('y') || !p.get('m') || !p.get('d')) return;
-    var a = { year: p.get('y'), month: p.get('m'), day: p.get('d'), hour: p.get('h') || '' };
+    var a = { name: p.get('n') || '', year: p.get('y'), month: p.get('m'), day: p.get('d'), hour: p.get('h') || '' };
     fillPerson('', a);
 
     if (couple) {
-      var b = { year: p.get('y2'), month: p.get('m2'), day: p.get('d2'), hour: p.get('h2') || '' };
+      var b = { name: p.get('n2') || '', year: p.get('y2'), month: p.get('m2'), day: p.get('d2'), hour: p.get('h2') || '' };
       fillPerson('2', b);
       runCouple(a, b);
     } else {

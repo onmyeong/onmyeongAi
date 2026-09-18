@@ -401,23 +401,23 @@
     정인: ['"고생했어, 이리 와."', '"언제까지 그러고 있을 거야?"']
   };
 
-  function words(a, b, cp) {
+  function words(a, b, cp, A, B) {
     var wa = WORDS[cp.sipsinB.name];   // b 가 a 를 보는 자리 → a 에게 잘 듣는 말
     var wb = WORDS[cp.sipsinA.name];
     return {
       good: [
-        { who: a.id, text: wa[0], note: b.id + ' 님이 이렇게 말해 주면 ' + a.id + ' 님의 긴장이 풀립니다.' },
-        { who: b.id, text: wb[0], note: a.id + ' 님이 이렇게 말해 주면 ' + b.id + ' 님이 마음을 엽니다.' }
+        { who: A, text: wa[0], note: i(B) + ' 이렇게 말해 주면 ' + A + '의 긴장이 풀립니다.' },
+        { who: B, text: wb[0], note: i(A) + ' 이렇게 말해 주면 ' + i(B) + ' 마음을 엽니다.' }
       ],
       avoid: [
-        { who: a.id, text: wa[1], note: a.id + ' 님에게 특히 오래 남는 말입니다.' },
-        { who: b.id, text: wb[1], note: b.id + ' 님에게 특히 오래 남는 말입니다.' }
+        { who: A, text: wa[1], note: A + '에게 특히 오래 남는 말입니다.' },
+        { who: B, text: wb[1], note: B + '에게 특히 오래 남는 말입니다.' }
       ]
     };
   }
 
   /* ───────────────── 궁합 — 역할 나누기 ───────────────── */
-  function roles(a, b, cp) {
+  function roles(a, b, cp, A, B) {
     var e1 = a.stemInfo.elem, e2 = b.stemInfo.elem;
     var title, text;
     if (e1 === e2) {
@@ -425,21 +425,21 @@
       text = '둘 다 같은 자리에서 잘하고 같은 자리에서 지칩니다. 잘하는 일을 겹쳐 맡지 말고, ' +
         '한 사람은 벌이는 쪽 · 한 사람은 지키는 쪽으로 미리 갈라 두세요. 겹치면 부딪치고, 나누면 배가 됩니다.';
     } else if (SAENG[e1] === e2) {
-      title = a.id + ' 님이 밀고 ' + b.id + ' 님이 자랍니다';
-      text = i(e1) + ' ' + eul(e2) + ' 낳아 주는 흐름입니다. ' + a.id + ' 님이 판을 열고 힘을 대면 ' +
-        b.id + ' 님이 그 위에서 결과를 냅니다. 대신 내주는 쪽이 먼저 소진되니, ' +
-        b.id + ' 님이 고맙다는 말을 자주 소리 내어 주는 것이 이 조합의 연료입니다.';
+      title = i(A) + ' 밀고 ' + i(B) + ' 자랍니다';
+      text = i(e1) + ' ' + eul(e2) + ' 낳아 주는 흐름입니다. ' + i(A) + ' 판을 열고 힘을 대면 ' +
+        i(B) + ' 그 위에서 결과를 냅니다. 대신 내주는 쪽이 먼저 소진되니, ' +
+        i(B) + ' 고맙다는 말을 자주 소리 내어 주는 것이 이 조합의 연료입니다.';
     } else if (SAENG[e2] === e1) {
-      title = b.id + ' 님이 밀고 ' + a.id + ' 님이 자랍니다';
-      text = i(e2) + ' ' + eul(e1) + ' 낳아 주는 흐름입니다. ' + b.id + ' 님이 뒤를 받치면 ' +
-        a.id + ' 님이 앞에서 결과를 만듭니다. 받치는 쪽이 보이지 않게 지칩니다. ' +
+      title = i(B) + ' 밀고 ' + i(A) + ' 자랍니다';
+      text = i(e2) + ' ' + eul(e1) + ' 낳아 주는 흐름입니다. ' + i(B) + ' 뒤를 받치면 ' +
+        i(A) + ' 앞에서 결과를 만듭니다. 받치는 쪽이 보이지 않게 지칩니다. ' +
         '결과가 나올 때마다 두 사람의 몫으로 함께 세어 주세요.';
     } else if (GEUK[e1] === e2 || GEUK[e2] === e1) {
-      var strong = GEUK[e1] === e2 ? a : b;
-      var soft = GEUK[e1] === e2 ? b : a;
-      title = strong.id + ' 님이 기준을 쥐는 구성입니다';
-      text = '한쪽이 다른 쪽을 다잡는 흐름이라, 규칙과 결정은 ' + strong.id + ' 님 쪽으로 기울기 쉽습니다. ' +
-        '그래서 ' + soft.id + ' 님이 정하는 영역을 처음부터 따로 만들어 두어야 합니다. ' +
+      var strong = GEUK[e1] === e2 ? A : B;
+      var soft = GEUK[e1] === e2 ? B : A;
+      title = i(strong) + ' 기준을 쥐는 구성입니다';
+      text = '한쪽이 다른 쪽을 다잡는 흐름이라, 규칙과 결정은 ' + strong + ' 쪽으로 기울기 쉽습니다. ' +
+        '그래서 ' + i(soft) + ' 정하는 영역을 처음부터 따로 만들어 두어야 합니다. ' +
         '무엇을 먹을지, 어디로 갈지 같은 작은 결정부터 넘겨 보세요.';
     } else {
       title = '서로를 밀지도 누르지도 않습니다';
@@ -470,7 +470,7 @@
     수: { word: '오래 헤아리는', line: '여러 갈래를 다 굴려 본 뒤에 답합니다' }
   };
 
-  function tempo(a, b) {
+  function tempo(a, b, A, B) {
     var t1 = TEMPO[a.stemInfo.elem], t2 = TEMPO[b.stemInfo.elem];
     var fast = { 화: 4, 목: 3, 토: 2, 금: 1, 수: 0 };
     var gap = Math.abs(fast[a.stemInfo.elem] - fast[b.stemInfo.elem]);
@@ -479,10 +479,10 @@
       text = '둘 다 ' + t1.word + ' 쪽입니다. ' + t1.line + '. 속도가 같아 답답할 일이 없는 대신, ' +
         '둘 다 놓치는 자리도 같습니다. 결정 전에 한 번 더 확인해 줄 사람을 밖에 두세요.';
     } else if (gap <= 2) {
-      text = a.id + ' 님은 ' + t1.word + ' 쪽, ' + b.id + ' 님은 ' + t2.word + ' 쪽입니다. ' +
+      text = eun(A) + ' ' + t1.word + ' 쪽, ' + eun(B) + ' ' + t2.word + ' 쪽입니다. ' +
         '크게 어긋나지 않아 조금씩 맞추면 금방 리듬이 생깁니다.';
     } else {
-      text = a.id + ' 님은 ' + t1.word + ' 쪽이고, ' + b.id + ' 님은 ' + t2.word + ' 쪽입니다. ' +
+      text = eun(A) + ' ' + t1.word + ' 쪽이고, ' + eun(B) + ' ' + t2.word + ' 쪽입니다. ' +
         '이 차이는 약속 시간과 결정 앞에서 가장 자주 드러납니다. 서두르는 쪽이 "언제까지"를 정해 주고, ' +
         '재는 쪽이 "지금 어디까지 봤는지"를 말해 주면 싸울 일이 절반으로 줄어듭니다.';
     }
@@ -491,11 +491,15 @@
 
   function couple(a, b, cp) {
     if (!a || !b || !cp) return null;
+    // 이름을 적어 주셨으면 "지민 님", 아니면 "계묘 일주"로 부릅니다 (compat 에서 만들어 옵니다)
+    var A = cp.labelA || (a.id + ' 일주');
+    var B = cp.labelB || (b.id + ' 일주');
     return {
+      labelA: A, labelB: B,
       stages: stages(a, b, cp),
-      words: words(a, b, cp),
-      roles: roles(a, b, cp),
-      tempo: tempo(a, b),
+      words: words(a, b, cp, A, B),
+      roles: roles(a, b, cp, A, B),
+      tempo: tempo(a, b, A, B),
       longRun: longRun(a, b, cp),
       eachA: solo(a),
       eachB: solo(b)
