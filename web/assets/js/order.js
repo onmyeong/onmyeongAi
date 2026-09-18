@@ -98,6 +98,18 @@
   })();
 
   /* ───────────── 입력 반영 ───────────── */
+  (function reviewEvent() {
+    var ev = CONFIG.price.engravingEvent || {};
+    $('o-review-label').textContent = ev.label || '리뷰 이벤트 — 각인 무료';
+    $('o-review-note').textContent = ev.note || '';
+    $('o-review').checked = !!spec.reviewEvent;
+    $('o-review').addEventListener('change', function () {
+      spec.reviewEvent = this.checked;
+      if (specB) specB.reviewEvent = this.checked;
+      sync();
+    });
+  })();
+
   $('o-size').addEventListener('change', function () { spec.size = parseInt(this.value, 10); sync(); });
   $('o-size2').addEventListener('change', function () {
     size2 = parseInt(this.value, 10);
@@ -165,7 +177,8 @@
       '굴곡       : ' + organicWord(sp.organic) + handNote(sp),
       '돌 높이    : ' + ((sp.stoneType && sp.stoneType !== 'none')
         ? (Number(sp.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),
-      '각인       : ' + (sp.engraving || '없음'),
+      '각인       : ' + (sp.engraving || '없음') +
+        (sp.engraving && sp.reviewEvent ? ' · 리뷰 이벤트로 무료' : ''),
       '호수       : ' + size + '호'
     );
     return out;
@@ -230,7 +243,8 @@
       '굴곡       : ' + organicWord(spec.organic) + handNote(spec),
       '돌 높이    : ' + ((spec.stoneType && spec.stoneType !== 'none')
         ? (Number(spec.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),
-      '각인       : ' + (spec.engraving || '없음'),
+      '각인       : ' + (spec.engraving || '없음') +
+        (spec.engraving && spec.reviewEvent ? ' · 리뷰 이벤트로 무료' : ''),
       '호수       : ' + spec.size + '호' + (qty >= 2 ? ' / ' + size2 + '호' : ''),
       '수량       : ' + qty + '개',
       '',

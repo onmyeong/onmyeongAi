@@ -113,6 +113,10 @@
     $('oxidize-label').textContent = CONFIG.oxidize.label +
       ' (+' + CONFIG.oxidize.price.toLocaleString('ko-KR') + '원)';
     $('oxidize-note').textContent = CONFIG.oxidize.note;
+    var ev = CONFIG.price.engravingEvent || {};
+    $('review-label').textContent = ev.label || '리뷰 이벤트 — 각인 무료';
+    $('review-note').textContent = ev.note || '';
+    $('c-review').checked = !!spec.reviewEvent;
 
     fillSelect($('c-epoxy'), Object.keys(CONFIG.epoxy.colors).map(function (k) {
       var v = CONFIG.epoxy.colors[k];
@@ -374,6 +378,11 @@
   $('c-stonecount').addEventListener('change', function () {
     spec.stoneCount = parseInt(this.value, 10) || 1;
     spec.stoneAt = '';
+    studio.changed();
+  });
+
+  $('c-review').addEventListener('change', function () {
+    spec.reviewEvent = this.checked;
     studio.changed();
   });
 
@@ -727,7 +736,8 @@
       ['굴곡', $('o-organic').textContent + sculptNote()],
       ['색 채움', (CONFIG.epoxy.colors[spec.epoxy || ''] || {}).label +
         (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : '')],
-      ['각인', spec.engraving || '없음']
+      ['각인', (spec.engraving || '없음') +
+        (spec.engraving && spec.reviewEvent ? ' · 리뷰 이벤트로 무료' : '')]
     );
     $('spec-body').innerHTML = rows.map(function (r) {
       return '<tr><th>' + R.esc(r[0]) + '</th><td>' + R.esc(r[1]) + '</td></tr>';
