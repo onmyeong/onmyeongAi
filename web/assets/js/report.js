@@ -526,11 +526,13 @@
       '</div>';
     }).join('');
 
-    // 십신 — 서로가 서로를 어떤 자리로 보는가
+    // 십신 — 서로가 서로를 어떤 자리로 보는가 (이름을 적어 주셨으면 이름으로)
     var josa = ONM.compat.josa;
+    var nmA = state.nameA ? state.nameA + ' 님' : a.id;
+    var nmB = state.nameB ? state.nameB + ' 님' : b.id;
     $('c-sipsin').innerHTML =
-      sipsinRow(a.id + '에게 ' + josa.eun(b.id), cp.sipsinA) +
-      sipsinRow(b.id + '에게 ' + josa.eun(a.id), cp.sipsinB);
+      sipsinRow(nmA + '에게 ' + josa.eun(nmB), cp.sipsinA) +
+      sipsinRow(nmB + '에게 ' + josa.eun(nmA), cp.sipsinB);
 
     $('c-yy-label').textContent = cp.yinYang.label;
     $('c-yy-text').textContent = cp.yinYang.text;
@@ -572,19 +574,38 @@
     $('c-long-title').textContent = deep.longRun.title;
     $('c-long-text').textContent = deep.longRun.text;
 
-    // 두 사람 한눈에 보기
-    var row = function (label, x, y) {
-      return '<tr><th>' + esc(label) + '</th><td>' + esc(x) + '</td><td>' + esc(y) + '</td></tr>';
+    /* 두 사람 한눈에 보기 — 용어만 늘어놓으면 읽히지 않으므로,
+     * 왼쪽에는 쉬운 말과 원래 용어를 같이 두고, 칸 안에는 뜻까지 붙여 줍니다. */
+    var row = function (label, hint, x, y) {
+      return '<tr><th>' + esc(label) +
+        (hint ? '<br><span class="small">' + esc(hint) + '</span>' : '') +
+        '</th><td>' + esc(x) + '</td><td>' + esc(y) + '</td></tr>';
     };
     var da = deep.eachA, db = deep.eachB;
+    var nameA = state.nameA ? state.nameA + ' 님' : a.id + ' 일주';
+    var nameB = state.nameB ? state.nameB + ' 님' : b.id + ' 일주';
+    var pillar = function (rec) {
+      return rec.stem + '(' + rec.stemInfo.hanja + ') · ' + rec.stemInfo.elem +
+        ' — ' + rec.stemInfo.title;
+    };
+    var seat = function (rec) {
+      return rec.branch + '(' + rec.branchInfo.hanja + ') · ' + rec.branchInfo.elem +
+        ' — ' + rec.branchInfo.title;
+    };
+    var stageCell = function (d) {
+      return d.stage ? d.stage.name + ' — ' + d.stage.title + ' (12단계 중 ' + d.stage.order + '번째)' : '-';
+    };
     $('c-summary-table').innerHTML =
-      row('', (state.nameA ? state.nameA + ' 님 · ' : '') + a.id + ' (' + a.hanja + ')',
-        (state.nameB ? state.nameB + ' 님 · ' : '') + b.id + ' (' + b.hanja + ')') +
-      row('일간', a.stem + ' · ' + a.stemInfo.elem, b.stem + ' · ' + b.stemInfo.elem) +
-      row('일지', a.branch + ' · ' + a.branchInfo.elem, b.branch + ' · ' + b.branchInfo.elem) +
-      row('일지에 앉은 자리', da.sipsin.name, db.sipsin.name) +
-      row('기운의 단계', da.stage ? da.stage.name : '-', db.stage ? db.stage.name : '-') +
-      row('상대가 내게 되는 자리', cp.sipsinA.name, cp.sipsinB.name);
+      row('', '', nameA + ' · ' + a.id + '(' + a.hanja + ')', nameB + ' · ' + b.id + '(' + b.hanja + ')') +
+      row('겉으로 드러나는 나', '일주의 윗글자 · 일간(日干)', pillar(a), pillar(b)) +
+      row('아래에서 받치는 자리', '일주의 아랫글자 · 일지(日支)', seat(a), seat(b)) +
+      row('그 자리를 부르는 이름', '일간이 일지를 보는 자리 · 십신(十神)',
+        da.sipsin.name + ' — ' + da.sipsin.short, db.sipsin.name + ' — ' + db.sipsin.short) +
+      row('지금 기운의 단계', '태어나 자라고 저무는 열두 단계 · 십이운성',
+        stageCell(da), stageCell(db)) +
+      row('상대는 나에게', '내 일간이 상대를 보는 자리 · 십신(十神)',
+        ONM.compat.josa.eun(nameB) + ' ' + cp.sipsinA.name + ' — ' + cp.sipsinA.title,
+        ONM.compat.josa.eun(nameA) + ' ' + cp.sipsinB.name + ' — ' + cp.sipsinB.title);
 
     // 같은 일주끼리면 같은 말이 두 번 나오므로 한 번만 보여 줍니다
     var same = a.id === b.id;
