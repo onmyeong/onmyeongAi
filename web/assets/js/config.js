@@ -62,11 +62,11 @@
        *   호수    : 손가락이 굵으면 은이 더 들어가므로 큰 호수부터 한 번 더
        * 표면 텍스처와 디자인 자체에는 추가금을 받지 않습니다.
        * 옵션을 모두 빼고 치수를 줄이면 값은 어떤 디자인이든 기본가까지 내려갑니다. */
-      base: 90000,          // 기본가
-      baseWidth: 2.0,       // 기본가에 포함된 폭
-      baseThickness: 1.2,   // 기본가에 포함된 두께
-      perWidthMm: 5000,     // 폭 1mm 늘 때마다
-      perThicknessMm: 12000,// 두께 1mm 늘 때마다
+      base: 90000,          // 기본가 — 지금 실제로 받고 계신 기본링 값
+      baseWidth: 3.5,       // 기본가에 포함된 폭 (여기보다 가늘어도 값은 그대로)
+      baseThickness: 1.6,   // 기본가에 포함된 두께
+      perWidthMm: 6000,     // 폭 1mm 늘 때마다
+      perThicknessMm: 17000,// 두께 1mm 늘 때마다
       bigSize: { from: 20, price: 10000 },   // 20호 이상이면 은이 더 들어갑니다
 
       /* 이 치수를 넘어서면 값을 매기지 않고 상담으로 넘깁니다.
@@ -78,6 +78,12 @@
       setting: { none: 0, bezel: 0, prong: 0, flush: 0 },
 
       engraving: 15000,
+      /* 리뷰를 남겨 주시기로 하면 각인을 무료로 넣어 드립니다.
+       * label 만 고치면 화면 문구가 그대로 바뀝니다. */
+      engravingEvent: {
+        label: '리뷰 이벤트 — 각인 무료',
+        note: '받아 보시고 리뷰를 남겨 주시기로 하면 각인 값을 받지 않습니다. 주문서에 함께 적어 드립니다.'
+      },
       couplePairDiscount: 0.05, // 커플 2개 주문 시 5% 할인
       currency: 'KRW'
     },
@@ -98,7 +104,7 @@
         color: '#eef2f7',
         sizes: [
           { mm: 1.5, label: '1.5mm', price: 10000, hint: '작게 포인트로' },
-          { mm: 2.0, label: '2.0mm', price: 15000, hint: '은은한 한 알' },
+          { mm: 2.0, label: '2.0mm', price: 10000, hint: '은은한 한 알' },
           { mm: 3.0, label: '3.0mm', price: 20000, hint: '가운데 주인공' }
         ],
         settings: ['flush']          // 베젤은 안 됩니다 — 매립(우물)만

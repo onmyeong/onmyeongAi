@@ -429,6 +429,7 @@
       stoneSize: stoneType === 'none' ? 0 : CONFIG.stones[stoneType].sizes[1].mm,
       stoneShape: 'round',
       engraving: '',
+      reviewEvent: false,     // 리뷰 이벤트 — 각인을 무료로
       ilju: record ? record.id : null
     };
 
@@ -514,7 +515,8 @@
     var plating = (CONFIG.plating[spec.plating || 'none'] || {}).price || 0;
     var oxidize = spec.oxidize ? CONFIG.oxidize.price : 0;
     var epoxy = spec.epoxy ? epoxyPrice(spec) : 0;
-    var engrave = spec.engraving ? P.engraving : 0;
+    // 리뷰를 남겨 주시기로 하면 각인 값을 받지 않습니다
+    var engrave = spec.engraving ? (spec.reviewEvent ? 0 : P.engraving) : 0;
 
     var body = (base + extraW + extraT + big) * metal.mult;   // 반지 자체
     var options = stoneCost + setting + plating + oxidize + epoxy + engrave;
@@ -538,7 +540,8 @@
         plating: plating,
         oxidize: oxidize,
         epoxy: epoxy,
-        engraving: engrave
+        engraving: engrave,
+        engravingFree: !!(spec.engraving && spec.reviewEvent)
       }
     };
   }
@@ -547,7 +550,8 @@
   function priceBreakdown(price) {
     if (!price || !price.parts || price.consult) return [];
     var q = price.parts;
-    var rows = [['기본 (가장 가는 민자 반지)', q.base]];
+    var P = CONFIG.price;
+    var rows = [['기본 (폭 ' + P.baseWidth + 'mm · 두께 ' + P.baseThickness + 'mm 민자)', q.base]];
     if (q.size) rows.push(['치수 — 두껍고 넓어진 만큼', q.size]);
     if (q.big) rows.push(['호수 — ' + CONFIG.price.bigSize.from + '호 이상', q.big]);
     if (q.stone) rows.push(['원석', q.stone]);
@@ -555,6 +559,7 @@
     if (q.oxidize) rows.push(['유화', q.oxidize]);
     if (q.epoxy) rows.push(['색 채움', q.epoxy]);
     if (q.engraving) rows.push(['각인', q.engraving]);
+    else if (q.engravingFree) rows.push(['각인 — 리뷰 이벤트로 무료', 0]);
     return rows;
   }
 
@@ -892,7 +897,9 @@
     if (spec.plating && spec.plating !== 'none') bits.push((CONFIG.plating[spec.plating] || {}).label);
     if (spec.oxidize) bits.push(CONFIG.oxidize.label);
     if (spec.epoxy) bits.push('색 채움 ' + ((CONFIG.epoxy.colors[spec.epoxy] || {}).label || spec.epoxy));
-    if (spec.engraving) bits.push('각인 "' + spec.engraving + '"');
+    if (spec.engraving) {
+      bits.push('각인 "' + spec.engraving + '"' + (spec.reviewEvent ? ' (리뷰 이벤트)' : ''));
+    }
     return bits.join(' / ');
   }
 
@@ -1057,7 +1064,7 @@
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
     'plateSize', 'backThickness', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt', 'stars', 'draw',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
-    'engraving', 'ilju', 'qty'];
+    'engraving', 'reviewEvent', 'ilju', 'qty'];
 
   /** 사양 → URL 쿼리 문자열 (리포트 → 스튜디오 → 주문으로 넘길 때 사용) */
   function specToQuery(spec, extra) {
@@ -1113,6 +1120,7 @@
     if (p.get('setting')) spec.setting = p.get('setting');
     if (p.has('stone')) spec.stone = p.get('stone') || null;
     if (p.get('engraving')) spec.engraving = p.get('engraving');
+    if (p.has('reviewEvent')) spec.reviewEvent = p.get('reviewEvent') === 'true';
     if (p.get('ilju')) spec.ilju = p.get('ilju');
     spec.quantity = Math.max(1, parseInt(p.get('qty'), 10) || 1);
     return normalizeFinish(spec);
