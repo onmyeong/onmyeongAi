@@ -34,6 +34,15 @@ function outerAt(profile, v, t, w) {
     case 'facet':  return t * (1 - 0.3 * k * k);
     // 인장(시그넷) — 윗면이 평평한 판. 가장자리만 살짝 떨어뜨려 각을 죽입니다.
     case 'signet': return t * (k > 0.86 ? 1 - (k - 0.86) * 2.6 : 1);
+    /* 두 줄 — 가운데를 깊게 파 두 가닥이 나란히 가는 것처럼 보이게 합니다.
+     * 실제로 구멍을 뚫는 게 아니라 바닥을 얇게 남겨 두는 방식이라,
+     * 반지가 통으로 이어져 힘을 받습니다. */
+    case 'twin': {
+      const g = 0.3;                                   // 가운데 골의 반폭 (폭 대비)
+      const dip = k < g ? 1 - (k / g) * (k / g) : 0;
+      const edge = k > 0.9 ? 1 - (k - 0.9) * 1.6 : 1;
+      return t * (1 - 0.78 * dip) * edge;
+    }
     default:       return t;
   }
 }
@@ -348,8 +357,19 @@ function buildBand(s, model) {
 
     /* 물길 — 밴드가 옆으로 굽이치며 돌아갑니다.
      * 폭을 늘였다 줄이는 게 아니라 단면을 통째로 옆으로 밀어야 띠가 뱀처럼 흐릅니다. */
-    const vOff = bandKind === 'wavy'
-      ? 0.26 * bandAmt * s.width * Math.sin(rippleN * th) : 0;
+    let vOff = 0;
+    if (bandKind === 'wavy') {
+      vOff = 0.26 * bandAmt * s.width * Math.sin(rippleN * th);
+    } else if (bandKind === 'chevron') {
+      /* V자 — 손등 쪽으로 오면서 띠가 한쪽으로 비껴 나가 앞에서 한 점으로 꺾입니다.
+       * 곡선이 아니라 직선으로 밀어야 꼭짓점이 또렷하게 섭니다. */
+      let d = th - Math.PI / 2;
+      if (d > Math.PI) d -= Math.PI * 2;
+      else if (d < -Math.PI) d += Math.PI * 2;
+      const reach = Math.PI * 0.45;
+      const k2 = Math.max(0, 1 - Math.abs(d) / reach);
+      vOff = -0.5 * bandAmt * s.width * k2;
+    }
     for (let j = 0; j < P; j++) {
       const p = profile[j];
       rot[j] = { u: p.u, v: p.v * wScale + vOff, outer: p.outer };
@@ -584,13 +604,18 @@ function paintOxidize(geo, spec) {
   const colors = new Float32Array(depth.length * 3);
   const smooth = function (x) { return x * x * (3 - 2 * x); };
 
+  /* 골이 얼마나 깊게 파였느냐에 따라 유화가 앉는 모습이 다릅니다.
+   * 깊게 판 자리는 솟은 면만 다시 갈아 내므로 검은 골과 은색 마루가 또렷이 갈리고,
+   * 겉면을 살짝 눌러 둔 정도(무광·사포)는 골이 머리카락 굵기라 갈릴 것이 없어
+   * 표면 전체가 고르게 가라앉습니다. 이 둘을 섞지 않으면 얕은 텍스처가
+   * 흑백 얼룩처럼 튀어 보입니다. */
+  const deep = Math.min(1, maxCarve / 0.35);   // 0.35mm 넘게 파였을 때부터 또렷이 갈립니다
   for (let i = 0; i < depth.length; i++) {
-    /* 솟은 면만 다시 갈아 내므로, 위쪽 3할 정도만 은색으로 남고
-     * 그 아래는 빠르게 검어집니다. 매끈한 디자인은 전체가 은은하게 가라앉습니다. */
     const t = maxCarve > 0.01
       ? Math.min(1, Math.max(0, depth[i] / maxCarve))
       : 0.7;
-    const k = smooth(Math.min(1, Math.max(0, (t - 0.28) / 0.42))) * 0.95;
+    let k = smooth(Math.min(1, Math.max(0, (t - 0.28) / 0.42))) * 0.95;
+    k = k * deep + 0.58 * (1 - deep);
     colors[i * 3]     = 1 - k + dark.r * k;
     colors[i * 3 + 1] = 1 - k + dark.g * k;
     colors[i * 3 + 2] = 1 - k + dark.b * k;

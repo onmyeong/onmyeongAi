@@ -172,7 +172,7 @@
       desc: '겉면을 불규칙하게 깎아 낸 뒤 유화로 골을 까맣게 눌렀습니다. 솟은 자리만 빛을 받아 ' +
         '산등성이처럼 능선이 드러납니다. 둘이 나란히 끼면 같은 산의 앞뒤가 됩니다.' },
 
-    { id: 'onm-comb', name: '빗살', family: 'minimal', profile: 'round', texture: 'sandbar', setting: 'flush',
+    { id: 'onm-comb', name: '가', family: 'minimal', profile: 'round', texture: 'sandbar', setting: 'flush',
       width: [2, 3, 4.5], thickness: [1.2, 1.6, 2.4], wave: 0, twist: 0, taper: 0, facets: 0,
       elements: ['금', '수'], moods: ['데일리', '커플'],
       tags: ['정제', '정돈', '단정', '섬세', '차분', '꾸준함'],
@@ -188,7 +188,7 @@
       desc: '녹아 흐르다 굳은 듯한 밴드가 원석을 넝쿨처럼 감아 옵니다. 길쭉한 오벌 캐보션을 ' +
         '자리를 파고 심어 넣어, 돌이 금속 안에 잠긴 것처럼 앉습니다.' },
 
-    { id: 'onm-sweep', name: '물비늘', family: 'rugged', profile: 'flat', texture: 'polish', setting: 'none',
+    { id: 'onm-sweep', name: '너울', family: 'rugged', profile: 'flat', texture: 'polish', setting: 'none',
       width: [3, 5, 9], thickness: [1.6, 2.4, 4.0], wave: 0.1, twist: 0, taper: 0, facets: 0, sweep: 1,
       elements: ['수', '금'], moods: ['시그니처', '데일리'],
       tags: ['자연스러운 질감', '유연', '변화', '흐름', '개척', '단단함'],
@@ -206,33 +206,26 @@
     /* ── 레퍼런스를 보고 새로 옮긴 디자인 ───────────────────────────
      * band 는 그 디자인만 가지는 겉면 무늬입니다. 손님이 고르는 값이 아니라
      * "이 디자인은 원래 이렇게 생겼다"에 해당하는 값이라 모델에만 둡니다. */
-    { id: 'onm-bark', name: '나이테', family: 'rugged', profile: 'dshape', texture: 'fine', setting: 'none',
+    { id: 'onm-bark', name: '솔', family: 'rugged', profile: 'dshape', texture: 'fine', setting: 'none',
       width: [3, 5.5, 9], thickness: [1.6, 2.4, 3.6], wave: 0, twist: 0, taper: 0, facets: 0, band: 'bark',
       elements: ['목', '토'], moods: ['커플', '시그니처'],
       tags: ['인내', '꾸준함', '우직', '자연에서 영감', '단단함', '성실'],
       desc: '겉면 전체에 세로 결을 촘촘히 쳐 냈습니다. 골마다 깊이가 조금씩 달라 나무껍질처럼 ' +
         '손맛이 남고, 빛을 받으면 결을 따라 가는 선들이 한꺼번에 일어섭니다.' },
 
-    { id: 'onm-rope', name: '꼰줄', family: 'organic', profile: 'round', texture: 'polish', setting: 'none',
+    { id: 'onm-rope', name: '우바', family: 'organic', profile: 'round', texture: 'polish', setting: 'none',
       width: [2.5, 4, 6.5], thickness: [1.8, 2.6, 3.6], wave: 0, twist: 0, taper: 0, facets: 0, band: 'rope',
       elements: ['목', '화'], moods: ['커플', '데일리'],
       tags: ['인연', '유연', '조화', '엮임', '따뜻함', '포용'],
       desc: '두 가닥을 비스듬히 꼬아 감아 올린 밴드입니다. 가닥 사이 골이 깊어 손가락에 걸리는 ' +
         '느낌이 또렷하고, 둘이 같이 끼면 같은 방향으로 감긴 한 쌍이 됩니다.' },
 
-    { id: 'onm-bead', name: '구슬', family: 'organic', profile: 'round', texture: 'polish', setting: 'none',
+    { id: 'onm-bead', name: '돌코롬', family: 'organic', profile: 'round', texture: 'polish', setting: 'none',
       width: [2.5, 3.6, 5], thickness: [1.8, 2.6, 3.4], wave: 0, twist: 0, taper: 0, facets: 0, band: 'bead',
       elements: ['수', '토'], moods: ['데일리', '선물'],
       tags: ['다정', '동글동글', '편안', '감성', '부드러움', '일상'],
       desc: '동글동글한 알을 줄줄이 이어 붙인 밴드입니다. 알과 알 사이가 잘록해 빛이 알마다 ' +
         '따로 맺히고, 가늘게 만들어도 존재감이 남습니다.' },
-
-    { id: 'onm-wall', name: '돌담', family: 'rugged', profile: 'flat', texture: 'fine', setting: 'none',
-      width: [3.5, 5, 9], thickness: [1.8, 2.6, 4.0], wave: 0, twist: 0, taper: 0, facets: 0, band: 'block',
-      elements: ['토', '금'], moods: ['시그니처', '커플'],
-      tags: ['신념', '확고함', '담담함', '중심', '단단함', '우직'],
-      desc: '망치로 두드려 면을 툭툭 끊어 냈습니다. 덩이마다 기울기가 달라 손을 움직일 때마다 ' +
-        '빛을 받는 자리가 옮겨 다니고, 유화를 하면 골이 어두워져 돌담처럼 층이 드러납니다.' },
 
     { id: 'onm-ripple', name: '물길', family: 'organic', profile: 'dshape', texture: 'polish', setting: 'none',
       width: [2, 3, 4.5], thickness: [1.4, 2.0, 2.8], wave: 0, twist: 0, taper: 0, facets: 0, band: 'wavy',
@@ -248,7 +241,197 @@
       preset: { stoneType: 'moissanite', stone: null, stoneSize: 2.0, stoneCount: 8, stoneHeight: -0.15 },
       desc: '둘레를 따라 알을 고르게 묻어 한 바퀴를 채웠습니다. 표면과 같은 높이로 앉히는 매립 ' +
         '세팅이라 걸리는 데가 없고, 어느 각도로 돌려도 빛나는 자리가 끊기지 않습니다. ' +
-        '알 개수는 스튜디오에서 줄이고 늘릴 수 있습니다.' }
+        '알 개수는 스튜디오에서 줄이고 늘릴 수 있습니다.' },
+
+    /* ── 추천이 매번 달라지도록 넓혀 둔 갈래 ─────────────────────
+     * 레퍼런스에서 자주 보이던 형태들을, 공방에서 실제로 만들 수 있는
+     * 방식(깎기 · 두드리기 · 홈 파기 · 알 묻기)만 써서 옮긴 것들입니다. */
+
+    // ── 거친 · 강인한 ──
+    { id: 'onm-frost', name: '서리', family: 'rugged', profile: 'flat', texture: 'diamond', setting: 'none',
+      width: [3, 5.5, 9], thickness: [1.6, 2.4, 3.8], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '수'], moods: ['시그니처', '데일리'],
+      tags: ['정제', '차분', '단단함', '담담함', '섬세', '빛'],
+      preset: { oxidize: true },
+      desc: '겉면을 아주 잘게 깎아 낸 뒤 유화로 눌렀습니다. 솟은 자리만 남아 서리가 앉은 것처럼 ' +
+        '잘게 반짝이고, 가라앉은 자리는 차분하게 어둡습니다.' },
+
+    { id: 'onm-furrow', name: '고랑', family: 'rugged', profile: 'step', texture: 'fine', setting: 'none',
+      width: [3, 5, 8], thickness: [1.8, 2.6, 4.0], wave: 0, twist: 0, taper: 0, facets: 0, band: 'bark',
+      elements: ['토', '목'], moods: ['시그니처', '커플'],
+      tags: ['인내', '꾸준함', '성실', '우직', '자연에서 영감', '중심'],
+      desc: '한 단 낮춘 면 위에 세로 결을 그어 밭고랑처럼 줄을 세웠습니다. ' +
+        '층과 결이 겹쳐 두께가 있어도 무겁게 보이지 않습니다.' },
+
+    { id: 'onm-gravel', name: '자갈', family: 'rugged', profile: 'dshape', texture: 'fine', setting: 'none',
+      width: [3.5, 5, 9], thickness: [1.8, 2.6, 4.0], wave: 0, twist: 0, taper: 0, facets: 0, band: 'block',
+      elements: ['토', '금'], moods: ['시그니처'],
+      tags: ['신념', '확고함', '담담함', '단단함', '우직', '중심'],
+      desc: '망치로 두드려 면을 툭툭 끊어 냈습니다. 덩이마다 기울기가 달라 ' +
+        '손을 움직일 때마다 빛을 받는 자리가 옮겨 다닙니다.' },
+
+    { id: 'onm-anvil', name: '무쇠', family: 'rugged', profile: 'flat', texture: 'sandbar', setting: 'none',
+      width: [4, 6, 10], thickness: [2, 3, 4.2], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '토'], moods: ['시그니처'],
+      tags: ['결단', '강인', '책임', '단단함', '중심', '묵직함'],
+      preset: { grain: 'horizontal', oxidize: true },
+      desc: '두껍고 넓은 면을 가로로 쓸어 갈고 유화로 눌렀습니다. 손에 올렸을 때 ' +
+        '무게가 먼저 오는 반지입니다.' },
+
+    { id: 'onm-spine', name: '등뼈', family: 'rugged', profile: 'knife', texture: 'fine', setting: 'none',
+      width: [3, 4.5, 8], thickness: [1.8, 2.8, 4.0], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'bark', bandAmt: 0.7,
+      elements: ['금', '목'], moods: ['시그니처', '데일리'],
+      tags: ['개척', '추진력', '중심', '강인', '꾸준함', '정제'],
+      desc: '가운데가 솟은 면을 따라 결을 그어 등줄기처럼 한 줄이 섭니다. ' +
+        '옆에서 보면 날이 서 있고, 위에서 보면 결이 가지런합니다.' },
+
+    { id: 'onm-hex', name: '각돌', family: 'rugged', profile: 'facet', texture: 'diamond', setting: 'none',
+      width: [3, 5, 8], thickness: [1.8, 2.6, 3.8], wave: 0, twist: 0, taper: 0, facets: 6,
+      elements: ['금', '토'], moods: ['시그니처'],
+      tags: ['결단', '확고함', '품격', '정제', '단단함', '특별함'],
+      desc: '둘레를 여섯 면으로 깎아 모서리를 살렸습니다. 원이 아니라 각이라 ' +
+        '손가락에서 방향이 잡히고, 빛도 여섯 자리에서 따로 옵니다.' },
+
+    // ── 유기적 · 유연한 ──
+    { id: 'onm-eddy', name: '여울', family: 'organic', profile: 'round', texture: 'polish', setting: 'none',
+      width: [2.5, 4, 7], thickness: [1.6, 2.4, 3.4], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'wavy', bandAmt: 0.7,
+      elements: ['수', '목'], moods: ['데일리', '커플'],
+      tags: ['유연', '흐름', '변화', '차분', '섬세', '조화'],
+      desc: '띠가 얕게 굽이치며 돌아갑니다. 물길보다 굽이가 작아 다른 반지와 겹쳐 껴도 ' +
+        '선이 부딪치지 않습니다.' },
+
+    { id: 'onm-leaf', name: '잎새', family: 'organic', profile: 'wave', texture: 'soft', setting: 'bezel',
+      width: [3, 4.5, 7], thickness: [1.6, 2.2, 3.2], wave: 0.25, twist: 0, taper: 0.05, facets: 0,
+      elements: ['목', '수'], moods: ['선물', '데일리'],
+      tags: ['자연에서 영감', '섬세', '포용', '감성', '부드러움', '성장'],
+      preset: { organic: 0.4, stoneShape: 'ovalH', stoneSize: 6.0, stoneHeight: -0.25 },
+      desc: '잎사귀가 누운 것처럼 밴드가 가로로 퍼지고, 그 가운데에 오벌 원석을 ' +
+        '눕혀 앉혔습니다. 손등 위에 가로로 길게 눕는 모양입니다.' },
+
+    { id: 'onm-furrow2', name: '이랑', family: 'organic', profile: 'round', texture: 'fine', setting: 'none',
+      width: [3, 4.5, 7], thickness: [1.6, 2.4, 3.4], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'bark', bandAmt: 0.6,
+      elements: ['목', '토'], moods: ['데일리', '커플'],
+      tags: ['꾸준함', '성실', '자연에서 영감', '편안', '일상', '차분'],
+      desc: '둥근 면에 결을 얕게 그었습니다. 솔보다 골이 얕아 매일 껴도 때가 덜 타고 ' +
+        '빛을 받으면 결이 은근하게 살아납니다.' },
+
+    { id: 'onm-coil', name: '감김', family: 'organic', profile: 'round', texture: 'polish', setting: 'none',
+      width: [2.5, 4, 6.5], thickness: [1.8, 2.6, 3.6], wave: 0, twist: 0, taper: 0, facets: 0, band: 'rope',
+      elements: ['목', '화'], moods: ['커플', '시그니처'],
+      tags: ['인연', '엮임', '따뜻함', '포용', '유연', '조화'],
+      preset: { oxidize: true },
+      desc: '우바와 같은 방식으로 꼬되, 유화로 골을 눌러 가닥이 더 또렷하게 갈립니다. ' +
+        '빛이 가닥 위에만 얹혀 선이 살아납니다.' },
+
+    { id: 'onm-spring', name: '봄물', family: 'organic', profile: 'wave', texture: 'polish', setting: 'none',
+      width: [2.5, 3.6, 5.5], thickness: [1.6, 2.4, 3.2], wave: 0.2, twist: 0, taper: 0, facets: 0,
+      band: 'bead', bandAmt: 0.8,
+      elements: ['수', '목'], moods: ['데일리', '선물'],
+      tags: ['다정', '동글동글', '편안', '감성', '부드러움', '일상'],
+      desc: '물방울이 줄줄이 맺힌 것처럼 알이 이어집니다. 돌코롬보다 알이 얕아 ' +
+        '가늘게 만들어도 도드라지지 않습니다.' },
+
+    { id: 'onm-swirl', name: '휘돌', family: 'organic', profile: 'dshape', texture: 'polish', setting: 'none',
+      width: [3, 4.5, 7], thickness: [1.6, 2.4, 3.4], wave: 0, twist: 0.6, taper: 0, facets: 0,
+      elements: ['수', '화'], moods: ['시그니처', '커플'],
+      tags: ['변화', '흐름', '유연', '개척', '감성', '특별함'],
+      desc: '겉면을 따라 나선 홈이 비스듬히 감겨 올라갑니다. 꼬아 만든 것이 아니라 ' +
+        '통으로 깎아 낸 홈이라 안쪽은 매끈합니다.' },
+
+    // ── 심플 ──
+    { id: 'onm-plain', name: '백지', family: 'minimal', profile: 'flat', texture: 'fine', setting: 'none',
+      width: [1.8, 2.6, 4], thickness: [1.0, 1.4, 2.2], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '토'], moods: ['데일리', '커플'],
+      tags: ['정제', '단정', '담담함', '차분', '일상', '편안'],
+      desc: '아무것도 얹지 않은 가는 민자 밴드입니다. 처음 끼는 반지로도, ' +
+        '다른 반지 옆에 겹쳐 끼는 반지로도 무난합니다.' },
+
+    { id: 'onm-oneline', name: '한 줄', family: 'minimal', profile: 'flat', texture: 'polish', setting: 'none',
+      width: [2.5, 3.5, 5], thickness: [1.4, 1.8, 2.6], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['화', '수'], moods: ['커플', '선물'],
+      tags: ['약속', '기념', '단정', '정제', '중심', '특별함'],
+      preset: { epoxy: '홍', epoxyCoverage: 'full', epoxyLines: 1 },
+      desc: '가는 홈을 한 바퀴 파고 그 안에 색을 채워 굳혔습니다. 표면과 같은 높이로 ' +
+        '깎아 내 단차가 없고, 색은 상담에서 바꾸실 수 있습니다.' },
+
+    { id: 'onm-parting', name: '가름', family: 'minimal', profile: 'twin', texture: 'polish', setting: 'none',
+      width: [3.5, 5, 8], thickness: [1.8, 2.6, 3.6], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '수'], moods: ['데일리', '커플'],
+      tags: ['정돈', '단정', '균형', '정제', '차분', '중심'],
+      desc: '가운데를 깊게 파 두 가닥이 나란히 가는 것처럼 보입니다. 바닥을 얇게 남겨 ' +
+        '통으로 이어 두었기 때문에 눌려도 벌어지지 않습니다.' },
+
+    { id: 'onm-calm', name: '고요', family: 'minimal', profile: 'dshape', texture: 'soft', setting: 'none',
+      width: [2, 3, 4.5], thickness: [1.4, 1.9, 2.6], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['수', '토'], moods: ['데일리'],
+      tags: ['차분', '담담함', '편안', '단정', '일상', '정제'],
+      desc: '안쪽은 평평하고 바깥은 둥근 면에 빛을 아주 낮게 눌렀습니다. ' +
+        '반사가 적어 손이 조용해 보입니다.' },
+
+    { id: 'onm-flatline', name: '반듯', family: 'minimal', profile: 'flat', texture: 'polish', setting: 'none',
+      width: [3, 5, 9], thickness: [1.4, 2.0, 3.0], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '토'], moods: ['시그니처', '커플'],
+      tags: ['정돈', '단정', '품격', '중심', '확고함', '균형'],
+      desc: '넓은 면을 그대로 거울처럼 올렸습니다. 아무 무늬가 없어서 오히려 ' +
+        '손등 위에서 한 줄 광이 길게 지나갑니다.' },
+
+    { id: 'onm-ticks', name: '눈금', family: 'minimal', profile: 'flat', texture: 'fine', setting: 'none',
+      width: [2, 3, 4.5], thickness: [1.4, 1.8, 2.6], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'bark', bandAmt: 0.5,
+      elements: ['금', '목'], moods: ['데일리', '커플'],
+      tags: ['정제', '정돈', '섬세', '꾸준함', '단정', '일상'],
+      desc: '가는 면에 아주 얕은 눈금을 촘촘히 새겼습니다. 멀리서는 무광처럼 보이고 ' +
+        '가까이서 보면 줄이 세어집니다.' },
+
+    // ── 개성있는 ──
+    { id: 'onm-facet12', name: '열두 결', family: 'signature', profile: 'facet', texture: 'polish', setting: 'none',
+      width: [2.5, 4, 6.5], thickness: [1.6, 2.4, 3.4], wave: 0, twist: 0, taper: 0, facets: 12,
+      elements: ['금', '화'], moods: ['시그니처', '선물'],
+      tags: ['화려', '빛', '품격', '정제', '특별함', '섬세'],
+      desc: '둘레를 열두 면으로 잘게 깎았습니다. 각이 촘촘해 돌릴 때마다 ' +
+        '빛나는 자리가 이어 달리듯 옮겨 갑니다.' },
+
+    { id: 'onm-vee', name: '이음', family: 'signature', profile: 'dshape', texture: 'polish', setting: 'none',
+      width: [2.5, 4, 6], thickness: [1.6, 2.2, 3.0], wave: 0, twist: 0, taper: 0, facets: 0, band: 'chevron',
+      elements: ['화', '목'], moods: ['커플', '선물'],
+      tags: ['인연', '약속', '기념', '특별함', '다정', '중심'],
+      desc: '손등 쪽에서 띠가 한 점으로 꺾여 V자가 됩니다. 꺾인 자리에 다른 반지를 ' +
+        '맞물려 끼면 두 개가 한 줄로 이어집니다.' },
+
+    { id: 'onm-meet', name: '맞댐', family: 'signature', profile: 'flat', texture: 'fine', setting: 'none',
+      width: [3, 4.5, 7], thickness: [1.8, 2.4, 3.2], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'chevron', bandAmt: 0.7,
+      elements: ['토', '화'], moods: ['커플'],
+      tags: ['인연', '약속', '엮임', '따뜻함', '기념', '조화'],
+      desc: '이음보다 완만하게 꺾이는 넓은 면입니다. 둘이 반대 방향으로 끼면 ' +
+        '꺾인 선이 서로를 향합니다.' },
+
+    { id: 'onm-seed', name: '씨앗', family: 'signature', profile: 'round', texture: 'polish', setting: 'bezel',
+      width: [2.5, 3.6, 5], thickness: [1.8, 2.6, 3.4], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['목', '토'], moods: ['선물', '시그니처'],
+      tags: ['성장', '감성', '섬세', '특별함', '다정', '기념'],
+      preset: { stoneShape: 'oval', stoneSize: 6.0, stoneHeight: -0.2 },
+      desc: '가는 밴드 위에 오벌 원석 하나를 세로로 세워 테두리로 감쌌습니다. ' +
+        '손가락을 따라 길쭉하게 앉아 손이 가늘어 보입니다.' },
+
+    { id: 'onm-three', name: '세 알', family: 'signature', profile: 'round', texture: 'polish', setting: 'flush',
+      width: [2.5, 3.5, 5], thickness: [1.6, 2.2, 3.0], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '수'], moods: ['선물', '데일리'],
+      tags: ['빛', '기념', '섬세', '특별함', '다정', '정제'],
+      preset: { stoneType: 'moissanite', stone: null, stoneSize: 1.5, stoneCount: 3, stoneHeight: -0.1 },
+      desc: '작은 알 셋을 표면과 같은 높이로 묻었습니다. 별무리보다 알이 적어 ' +
+        '값도 가볍고, 어디에 껴도 과하지 않습니다.' },
+
+    { id: 'onm-twinrail', name: '쌍줄', family: 'signature', profile: 'twin', texture: 'fine', setting: 'none',
+      width: [4, 6, 9], thickness: [2.0, 2.8, 3.8], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['금', '토'], moods: ['시그니처', '커플'],
+      tags: ['균형', '중심', '확고함', '품격', '특별함', '정돈'],
+      preset: { oxidize: true },
+      desc: '두 가닥 사이 골을 유화로 눌러 까맣게 남겼습니다. 은색 두 줄이 ' +
+        '검은 선을 사이에 두고 나란히 갑니다.' }
   ];
 
   /* ────────────────────── 캔바 원문 → 스타일 해석 ────────────────────── */
@@ -636,7 +819,8 @@
     wave:   '물결치는 (웨이브)',
     facet:  '각이 진 (패싯)',
     step:   '층이 진 (스텝)',
-    signet: '손등 쪽만 부푼 판 (인장)'
+    signet: '손등 쪽만 부푼 판 (인장)',
+    twin:   '가운데가 갈린 두 줄 (트윈)'
   };
   /* 겉면 마감은 실제로 만들 수 있는 다섯 가지만 둡니다. */
   var TEXTURE_LABEL = {
