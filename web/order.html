@@ -21,6 +21,7 @@
       <a href="studio.html">반지 스튜디오</a>
       <a href="order.html" aria-current="page">커스텀 주문</a>
       <a href="map.html">일주 지도</a>
+      <a href="about.html">공방 소개</a>
     </nav>
   </div>
 </header>
@@ -51,6 +52,10 @@
             <div class="field">
               <label for="o-size">호수</label>
               <select id="o-size"></select>
+              <p class="small" style="margin:2px 0 0">
+                호수를 모르시면 <a href="about.html#sizing">재는 법과 호수표</a>를 보세요.
+                받아 보시고 안 맞으면 <a href="about.html#as">한 달 이내 무료로 조정</a>해 드립니다.
+              </p>
             </div>
             <div class="field">
               <label for="o-qty">수량</label>
@@ -103,9 +108,20 @@
             </div>
           </div>
 
-          <div class="field">
-            <label for="o-when">희망 수령 시기</label>
-            <input id="o-when" type="date">
+          <div class="grid grid-2" style="gap:12px">
+            <div class="field">
+              <label for="o-pickup">받는 방법</label>
+              <select id="o-pickup">
+                <option value="ship">택배로 받기 (배송비 무료)</option>
+                <option value="visit">공방 방문 수령</option>
+              </select>
+              <p class="small" id="pickup-note" style="margin:2px 0 0"></p>
+            </div>
+            <div class="field">
+              <label for="o-when">희망 수령일</label>
+              <input id="o-when" type="date">
+              <p class="small" id="when-note" style="margin:2px 0 0"></p>
+            </div>
           </div>
 
           <div class="field">
