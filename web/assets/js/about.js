@@ -44,7 +44,7 @@
   }).join('');
 
   var actions = [];
-  if (S.mapUrl) actions.push('<a class="btn" href="' + esc(S.mapUrl) + '" target="_blank" rel="noopener">네이버 플레이스 · 예약 · 문의</a>');
+  if (S.mapUrl) actions.push('<a class="btn" href="' + esc(S.mapUrl) + '" target="_blank" rel="noopener">네이버 플레이스 · 문의</a>');
   actions.push('<a class="btn btn-primary" href="order.html">주문 · 방문 상담</a>');
   $('visit-actions').innerHTML = actions.join('');
 
@@ -60,7 +60,7 @@
   /* ── 관리법 ── */
   $('care-lead').textContent = care.lead || '';
   $('care-list').innerHTML = (care.items || []).map(function (c) {
-    return '<div class="card trait"><h3>' + esc(c[0]) + '</h3><p>' + esc(c[1]) + '</p></div>';
+    return '<div class="card trait card-fill"><h3>' + esc(c[0]) + '</h3><p>' + esc(c[1]) + '</p></div>';
   }).join('');
   $('care-reshine').textContent = care.reshine || '';
 
@@ -109,8 +109,8 @@
   /* ── 호수 재는 법 ── */
   $('sizing-lead').textContent = sizing.lead || '';
   $('sizing-ways').innerHTML = (sizing.ways || []).map(function (w, i) {
-    return '<div class="card"><p class="eyebrow">방법 ' + (i + 1) + '</p>' +
-      '<h3 style="margin-bottom:8px">' + esc(w[0]) + '</h3><p style="margin:0">' + esc(w[1]) + '</p></div>';
+    return '<div class="card card-fill"><p class="eyebrow">방법 ' + (i + 1) + '</p>' +
+      '<h3>' + esc(w[0]) + '</h3><p>' + esc(w[1]) + '</p></div>';
   }).join('');
   $('sizing-tips').textContent = sizing.tips || '';
 

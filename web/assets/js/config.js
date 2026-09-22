@@ -260,7 +260,7 @@
       title: '온명 반지공방',
       lead: '사주 일주를 읽고, 그 결에 맞는 은반지를 하나씩 손으로 만듭니다.',
       address: '서울시 마포구 서교동 329-9, 3층',
-      addressNote: '방문은 예약제로 운영합니다. 네이버 플레이스로 예약 부탁드립니다.',
+      addressNote: '방문은 예약 없이 네이버 톡톡으로 문의 부탁드립니다.',
       hours: '목~화 13:00 ~ 19:00 (수요일 휴무)',
       mapUrl: 'https://map.naver.com/p/entry/place/2033971599?placePath=%252Fhome%253Fentry%253Dplt&searchType=place&lng=126.9294466&lat=37.5559591&c=15.00,0,0,0,dh',
       story: [
