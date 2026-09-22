@@ -69,6 +69,39 @@
   $('as-lead').textContent = as.lead || '';
   $('as-note').textContent = as.note || '';
   $('as-limits').textContent = as.limits || '';
+  /* ── 사진 띠 넘기기 ──
+   * 한 번에 보이는 만큼씩 옮깁니다. 끝에 닿으면 그쪽 화살표를 감춥니다. */
+  (function () {
+    var strip = doc.getElementById('studio-strip');
+    var box = doc.getElementById('studio-carousel');
+    if (!strip || !box) return;
+    var prev = box.querySelector('.carousel-btn.prev');
+    var next = box.querySelector('.carousel-btn.next');
+
+    function step() {
+      var one = strip.firstElementChild;
+      if (!one) return strip.clientWidth;
+      // 카드 하나 + 사이 간격 만큼을, 보이는 장수만큼
+      var w = one.getBoundingClientRect().width + 16;
+      return Math.max(w, Math.round(strip.clientWidth / w) * w);
+    }
+    function sync() {
+      var max = strip.scrollWidth - strip.clientWidth - 2;
+      prev.disabled = strip.scrollLeft <= 2;
+      next.disabled = strip.scrollLeft >= max;
+    }
+    prev.addEventListener('click', function () { strip.scrollLeft -= step(); });
+    next.addEventListener('click', function () { strip.scrollLeft += step(); });
+    strip.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    // 키보드로도 넘길 수 있게
+    strip.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { strip.scrollLeft += step(); e.preventDefault(); }
+      if (e.key === 'ArrowLeft') { strip.scrollLeft -= step(); e.preventDefault(); }
+    });
+    sync();
+  })();
+
   var asContact = $('as-contact');
   asContact.textContent = as.contact || '';
   asContact.classList.toggle('is-hidden', !as.contact);
