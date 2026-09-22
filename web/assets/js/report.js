@@ -314,6 +314,7 @@
     $('r-source').textContent = sourceLine(rec);
 
     renderDeep(rec);
+    fillGlossary('gloss-solo', SOLO_TERMS);
 
     // 일주 지도로 넘어갈 때 내 일주와 이름을 함께 싣습니다
     var map = $('go-map');
@@ -321,6 +322,15 @@
       map.href = 'map.html?me=' + encodeURIComponent(rec.id) +
         (state.nameA ? '&n=' + encodeURIComponent(state.nameA) : '');
     }
+  }
+
+  /* 용어 풀이 — 리포트마다 필요한 낱말만 모아 아래에 붙입니다 */
+  var SOLO_TERMS = ['일주', '천간', '지지', '일간', '일지', '오행', '음양', '십신', '십이운성', '캐보션', '유화'];
+  var COUPLE_TERMS = ['일주', '일간', '일지', '십신', '십이운성', '오행', '음양', '천간합', '충', '육합', '삼합', '형', '해'];
+
+  function fillGlossary(id, keys) {
+    var box = $(id);
+    if (box && ONM.terms) box.innerHTML = ONM.terms.glossaryHtml(keys);
   }
 
   /* ───────────── 깊이 읽기 (십신 · 십이운성 · 배속 · 생활 · 궁합) ───────────── */
@@ -376,16 +386,17 @@
 
     // 한눈에 보기
     var sum = [
-      ['일간 (윗글자)', rec.stem + '(' + rec.stemInfo.hanja + ') · ' + rec.stemInfo.elem +
+      [termLabel('일간') + ' (윗글자)', rec.stem + '(' + rec.stemInfo.hanja + ') · ' + rec.stemInfo.elem +
         ' · ' + (['갑', '병', '무', '경', '임'].indexOf(rec.stem) !== -1 ? '양' : '음')],
-      ['일지 (아랫글자)', rec.branch + '(' + rec.branchInfo.hanja + ') · ' + rec.branchInfo.elem +
+      [termLabel('일지') + ' (아랫글자)', rec.branch + '(' + rec.branchInfo.hanja + ') · ' + rec.branchInfo.elem +
         ' · ' + rec.branchInfo.animal],
-      ['일지에 앉은 자리', deep.sipsin.name],
-      ['기운의 단계', deep.stage ? deep.stage.name + ' (' + deep.stage.order + '/12)' : '-'],
+      ['일지에 앉은 자리 (' + termLabel('십신') + ')', deep.sipsin.name],
+      ['기운의 단계 (' + termLabel('십이운성') + ')', deep.stage ? deep.stage.name + ' (' + deep.stage.order + '/12)' : '-'],
       ['60갑자', (rec.index + 1) + '번째']
     ];
+    // 줄 이름에는 용어 풀이 버튼이 들어가므로 그대로 두고, 값만 이스케이프합니다
     $('r-summary-table').innerHTML = sum.map(function (r) {
-      return '<tr><th>' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>';
+      return '<tr><th>' + r[0] + '</th><td>' + esc(r[1]) + '</td></tr>';
     }).join('');
 
     // 나와 결이 맞는 일주
@@ -412,9 +423,16 @@
     return src;
   }
 
+  /** 라벨에 용어 풀이를 달아 줍니다 (일간 · 일지처럼 낯선 말) */
+  function termLabel(label) {
+    return ONM.terms && ONM.terms.all[label]
+      ? '<button type="button" class="term" data-term="' + label + '">' + esc(label) + '</button>'
+      : esc(label);
+  }
+
   function badge(text, elem, label) {
     return '<span class="badge ' + (ELEM_CLASS[elem] || '') + '">' +
-      esc(label) + ' ' + esc(text) + ' · ' + esc(elem) + '</span>';
+      termLabel(label) + ' ' + esc(text) + ' · ' + esc(elem) + '</span>';
   }
 
   /** 오행별 색 — 천간 색 지표와 같은 계열로 맞춘다 */
@@ -560,6 +578,7 @@
       eachCard(b, cb, '2', state.nameB)].join('');
 
     renderCoupleDeep(a, b, cp);
+    fillGlossary('gloss-couple', COUPLE_TERMS);
 
     $('c-closing').textContent = '두 사람의 결을 한 쌍의 반지에 담아 드립니다.';
   }
@@ -584,7 +603,7 @@
     /* 두 사람 한눈에 보기 — 용어만 늘어놓으면 읽히지 않으므로,
      * 왼쪽에는 쉬운 말과 원래 용어를 같이 두고, 칸 안에는 뜻까지 붙여 줍니다. */
     var row = function (label, hint, x, y) {
-      return '<tr><th>' + esc(label) +
+      return '<tr><th>' + label +
         (hint ? '<br><span class="small">' + esc(hint) + '</span>' : '') +
         '</th><td>' + esc(x) + '</td><td>' + esc(y) + '</td></tr>';
     };
@@ -606,11 +625,11 @@
       row('', '', nameA + ' · ' + a.id + '(' + a.hanja + ')', nameB + ' · ' + b.id + '(' + b.hanja + ')') +
       row('겉으로 드러나는 나', '일주의 윗글자 · 일간(日干)', pillar(a), pillar(b)) +
       row('아래에서 받치는 자리', '일주의 아랫글자 · 일지(日支)', seat(a), seat(b)) +
-      row('그 자리를 부르는 이름', '일간이 일지를 보는 자리 · 십신(十神)',
+      row('그 자리를 부르는 이름 (' + termLabel('십신') + ')', '일간이 일지를 보는 자리',
         da.sipsin.name + ' — ' + da.sipsin.short, db.sipsin.name + ' — ' + db.sipsin.short) +
-      row('지금 기운의 단계', '태어나 자라고 저무는 열두 단계 · 십이운성',
+      row('지금 기운의 단계 (' + termLabel('십이운성') + ')', '태어나 자라고 저무는 열두 단계',
         stageCell(da), stageCell(db)) +
-      row('상대는 나에게', '내 일간이 상대를 보는 자리 · 십신(十神)',
+      row('상대는 나에게 (' + termLabel('십신') + ')', '내 일간이 상대를 보는 자리',
         ONM.compat.josa.eun(nameB) + ' ' + cp.sipsinA.name + ' — ' + cp.sipsinA.title,
         ONM.compat.josa.eun(nameA) + ' ' + cp.sipsinB.name + ' — ' + cp.sipsinB.title);
 

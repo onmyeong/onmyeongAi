@@ -64,6 +64,34 @@
   }
 
   $('o-engraving').value = spec.engraving || '';
+  /* ───────────── 희망 수령일 · 받는 방법 ─────────────
+   * 평균 제작 기간보다 이른 날짜는 고를 수 없게 막습니다.
+   * 더 급하시면 상담에서 일정을 잡는 쪽이 정확합니다. */
+  (function receiving() {
+    var lead = (CONFIG.order.leadDays || 10);
+    var first = new Date();
+    first.setDate(first.getDate() + lead);
+    var iso = function (d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+        '-' + String(d.getDate()).padStart(2, '0');
+    };
+    var when = $('o-when');
+    when.min = iso(first);
+    when.value = iso(first);
+    $('when-note').textContent = '가장 빠른 날짜는 ' + iso(first) + '입니다 (평균 제작 ' + lead + '일). ' +
+      (CONFIG.order.deliveryNote || '');
+
+    function paintPickup() {
+      var visit = $('o-pickup').value === 'visit';
+      $('pickup-note').textContent = visit
+        ? '공방에서 끼워 보고 호수를 바로 맞춰 드립니다. 방문은 예약제라 상담에서 시간을 잡아 주세요.'
+        : (CONFIG.order.shipFree ? '주문 배송비는 받지 않습니다.' : '배송비는 상담에서 안내드립니다.');
+      sync();
+    }
+    $('o-pickup').addEventListener('change', paintPickup);
+    paintPickup();
+  })();
+
   $('privacy-text').textContent = CONFIG.privacy;
   $('foot-lead').textContent = '제작 기간 · ' + CONFIG.order.leadTime;
 
@@ -268,7 +296,10 @@
     var memo = $('o-memo').value.trim();
     if (memo) lines.push('', '요청사항  : ' + memo);
     var when = $('o-when').value;
-    if (when) lines.push('희망 수령 : ' + when);
+    var visit = $('o-pickup') && $('o-pickup').value === 'visit';
+    lines.push('받는 방법  : ' + (visit ? '공방 방문 수령' : '택배' +
+      (CONFIG.order.shipFree ? ' (배송비 무료)' : '')));
+    if (when) lines.push('희망 수령 : ' + when + ' (평균 제작 ' + (CONFIG.order.leadDays || 10) + '일)');
     lines.push('', '사양 링크 : ' + studioLink());
     lines.push('', '※ 예상 금액은 참고용이며 최종 금액은 상담에서 확정됩니다.');
     return lines.join('\n');
@@ -483,7 +514,8 @@
           name: $('o-name').value.trim(),
           channel: $('o-channel').value,
           value: $('o-contact').value.trim(),
-          preferredDate: $('o-when').value || null
+          preferredDate: $('o-when').value || null,
+          pickup: $('o-pickup') ? $('o-pickup').value : 'ship'
         },
         memo: $('o-memo').value.trim() || null
       };

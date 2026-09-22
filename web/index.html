@@ -26,6 +26,7 @@
       <a href="studio.html">반지 스튜디오</a>
       <a href="order.html">커스텀 주문</a>
       <a href="map.html">일주 지도</a>
+      <a href="about.html">공방 소개</a>
     </nav>
   </div>
 </header>
@@ -198,7 +199,8 @@
       <div class="wrap">
         <div class="section-head">
           <p class="eyebrow">Elements</p>
-          <h2>천간과 지지</h2>
+          <h2><button type="button" class="term" data-term="천간">천간</button>과
+            <button type="button" class="term" data-term="지지">지지</button></h2>
         </div>
         <div class="grid grid-2" id="r-pillars"></div>
 
@@ -221,7 +223,7 @@
       <div class="wrap">
         <div class="section-head">
           <p class="eyebrow">Ten Gods</p>
-          <h2>일지에 앉은 자리 · 십신</h2>
+          <h2>일지에 앉은 자리 · <button type="button" class="term" data-term="십신">십신</button></h2>
           <p class="lead">
             일지(아랫글자)는 사주에서 내가 매일 앉아 있는 자리이자, 배우자의 자리로 봅니다.
             일간이 그 자리를 어떻게 보느냐에 따라 생활에서 나오는 버릇이 달라집니다.
@@ -249,7 +251,7 @@
       <div class="wrap">
         <div class="section-head">
           <p class="eyebrow">Twelve Stages</p>
-          <h2>기운의 단계 · 십이운성</h2>
+          <h2>기운의 단계 · <button type="button" class="term" data-term="십이운성">십이운성</button></h2>
           <p class="lead">
             열두 단계는 기운이 태어나 자라고 저물었다 다시 태어나는 흐름입니다.
             높고 낮음이 좋고 나쁨은 아닙니다. 지금 내 기운이 어느 결에 놓였는지를 봅니다.
@@ -368,6 +370,20 @@
           표시된 금액은 선택한 치수 기준의 <b>예상가</b>입니다. 원석 등급과 세공 난이도에 따라 달라지며,
           최종 금액은 주문 상담에서 확정됩니다.
         </div>
+      </div>
+    </section>
+
+    <section id="glossary" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Glossary</p>
+          <h2>용어 한눈에</h2>
+          <p class="lead">
+            리포트에 나오는 말들을 쉬운 한 줄로 모았습니다. 본문에서 점선이 그어진 낱말을 누르면
+            그 자리에서도 바로 뜻이 뜹니다.
+          </p>
+        </div>
+        <div class="card"><div class="gloss-list" id="gloss-solo"></div></div>
       </div>
     </section>
 
@@ -594,6 +610,17 @@
       </div>
     </section>
 
+    <section id="couple-glossary" style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Glossary</p>
+          <h2>용어 한눈에</h2>
+          <p class="lead">점선이 그어진 낱말은 본문에서 눌러도 바로 뜻이 뜹니다.</p>
+        </div>
+        <div class="card"><div class="gloss-list" id="gloss-couple"></div></div>
+      </div>
+    </section>
+
     <section id="couple-closing" style="padding-top:0">
       <div class="wrap center">
         <div class="card" style="padding-block:38px">
@@ -648,6 +675,7 @@
 <script src="assets/js/rings.js"></script>
 <script src="assets/js/compat.js"></script>
 <script src="assets/js/reading.js"></script>
+<script src="assets/js/terms.js"></script>
 <script src="assets/js/share.js"></script>
 <script src="assets/js/report.js"></script>
 </body>
