@@ -266,8 +266,13 @@ function buildBand(s, model) {
   /* 도안 · 별 조각 · 다이아 텍스쳐는 자국이 아주 잘아서, 면이 성기면 계단처럼 보입니다.
    * 그럴 때만 면을 촘촘하게 잡습니다 (평소에는 가볍게 돌아갑니다). */
   const sparkle = s.texture === 'diamond';
-  const fine = !!s.engrave || !!s.stars || sparkle;
-  const SEG = sparkle ? 720 : fine ? 560 : 320;
+  /* 밴드 무늬 — 디자인마다 정해진 겉면 무늬입니다 (나이테 · 꼰줄 · 구슬 · 돌담 · 물길). */
+  const bandKind = (model && model.band) || '';
+  const bandAmt = model && model.bandAmt != null ? model.bandAmt : 1;
+  // 결이 잔 무늬는 줄이 성기면 계단처럼 끊겨 보입니다
+  const bandDense = bandKind === 'bark' || bandKind === 'block' || bandKind === 'rope';
+  const fine = !!s.engrave || !!s.stars || sparkle || !!bandKind;
+  const SEG = (sparkle || bandDense) ? 720 : fine ? 560 : 320;
   const profile = makeProfile(s, sparkle ? 54 : fine ? 46 : PROFILE_STEPS);
   const P = profile.length;
   const bump = bumpFor(s);
@@ -288,6 +293,16 @@ function buildBand(s, model) {
   const wave = model ? model.wave : 0;
   // 넓은 면을 비스듬히 쓸어 깎은 디자인 (그 디자인만 가집니다)
   const sweep = model ? (model.sweep || 0) : 0;
+  /* 무늬는 한 바퀴에 "정수 개"가 들어가야 이음매에서 어긋나지 않습니다.
+   * 그래서 둘레 길이를 재어 두고 간격으로 나눠 개수를 정합니다. */
+  const CIRC = Math.PI * 2 * (innerR + t);
+  const barkN  = Math.max(16, Math.round(CIRC / 0.8));    // 세로 결 한 줄 간격 0.8mm
+  const ropeN  = Math.max(8,  Math.round(CIRC / 1.9));    // 꼬인 가닥 하나 1.9mm
+  const beadN  = Math.max(6,  Math.round(CIRC / Math.max(2.2, s.width * 0.95)));
+  const BCELL  = 1.4;                                     // 돌담 한 덩이 (mm)
+  const blockN = Math.max(8,  Math.round(CIRC / BCELL));
+  const rippleN = 3;                                      // 물길이 한 바퀴에 굽이치는 횟수
+  const ropeSlant = (Math.PI * 2) / Math.max(1.6, s.width) * 1.15;
   /* 다이아 텍스쳐의 잔 면 — 한 바퀴에 정수 개가 들어가야 이음매에서 무늬가 어긋나지 않습니다 */
   const CELL = 0.5;                                  // 면 하나의 크기 (mm)
   const cellsAround = Math.max(24, Math.round(Math.PI * 2 * (innerR + t) / CELL));
@@ -331,9 +346,13 @@ function buildBand(s, model) {
     // 웨이브는 안쪽으로만 들어가므로 최대 두께는 그대로 유지된다
     const uScale = (1 - wave * 0.3 * (0.5 + 0.5 * Math.sin(3 * th))) * tRatio;
 
+    /* 물길 — 밴드가 옆으로 굽이치며 돌아갑니다.
+     * 폭을 늘였다 줄이는 게 아니라 단면을 통째로 옆으로 밀어야 띠가 뱀처럼 흐릅니다. */
+    const vOff = bandKind === 'wavy'
+      ? 0.26 * bandAmt * s.width * Math.sin(rippleN * th) : 0;
     for (let j = 0; j < P; j++) {
       const p = profile[j];
-      rot[j] = { u: p.u, v: p.v * wScale, outer: p.outer };
+      rot[j] = { u: p.u, v: p.v * wScale + vOff, outer: p.outer };
     }
 
     let facetR = 1;
@@ -407,6 +426,58 @@ function buildBand(s, model) {
           const cut = (saw * 0.74 + jitter * 0.26) * 0.12 * sweep * Math.max(t, 1.2);
           radius -= cut;
           carved += cut;
+        }
+        /* 디자인마다 정해진 겉면 무늬.
+         * 모두 "바깥에서 안쪽으로 깎는" 방식이라 반지는 언제나 온전한 고체로 남고,
+         * 파인 깊이(carved)를 유화·에폭시가 그대로 읽어 골을 어둡게 눌러 줍니다. */
+        if (bandKind && bandKind !== 'wavy') {
+          const pv = profile[j].v;
+          const kv = Math.min(1, Math.abs(2 * pv / Math.max(0.001, s.width)));
+          const depthScale = Math.max(t, 1.2) * bandAmt;
+          let cut = 0;
+          if (bandKind === 'bark') {
+            /* 나이테 — 조각칼로 세로 결을 촘촘히 쳐 낸 자국.
+             * 골마다 깊이를 조금씩 달리 두어 기계로 판 것처럼 보이지 않게 합니다. */
+            const ax = (th / (Math.PI * 2)) * barkN;
+            const ix = Math.floor(ax);
+            const fx = ax - ix;
+            const wx = ((ix % barkN) + barkN) % barkN;
+            const vary = 0.5 + 0.5 * hash(wx * 1.7 + 3, 7);
+            const tri = Math.abs(fx * 2 - 1);            // 0 = 골 한가운데
+            cut = Math.pow(1 - tri, 2.2) * 0.11 * vary * depthScale;
+          } else if (bandKind === 'rope') {
+            /* 꼰줄 — 가닥이 비스듬히 감겨 올라갑니다. 가닥 사이가 깊게 패입니다. */
+            const phase = ropeN * th + ropeSlant * pv;
+            const c = Math.cos(phase);
+            cut = Math.pow(0.5 - 0.5 * c, 1.3) * 0.24 * depthScale;
+          } else if (bandKind === 'bead') {
+            /* 구슬 — 동그란 알을 줄줄이 이어 붙인 밴드.
+             * 알과 알 사이가 잘록해지도록 이음매만 깊게 깎아 냅니다. */
+            const ax = (th / (Math.PI * 2)) * beadN;
+            const fx = ax - Math.floor(ax);
+            const along = Math.sin(Math.PI * fx);        // 0 = 이음매, 1 = 알 한가운데
+            const across = Math.sqrt(Math.max(0, 1 - kv * kv));
+            const swellB = Math.min(1, 0.2 + 0.8 * along) * (0.35 + 0.65 * across);
+            cut = (1 - swellB) * 0.3 * depthScale;
+          } else if (bandKind === 'block') {
+            /* 돌담 — 망치로 두드려 면을 툭툭 끊어 낸 자국.
+             * 덩이마다 기울기와 높이가 달라 모서리가 제각각 빛을 받습니다. */
+            const ay = pv / BCELL;
+            const iy = Math.floor(ay);
+            const fy = ay - iy;
+            const rowOff = hash(iy * 5.1 + 2, 13);
+            const ax = (th / (Math.PI * 2)) * blockN + rowOff;
+            const ix = Math.floor(ax);
+            const fx = ax - ix;
+            const wx = ((ix % blockN) + blockN) % blockN;
+            const gx = (hash(wx * 1.9 + 7, iy * 2.7 + 3) * 2 - 1);
+            const gy = (hash(wx * 3.3 + 13, iy * 1.1 + 23) * 2 - 1);
+            const lift = hash(wx + 29, iy + 11);
+            let nz = 0.5 + 0.55 * (gx * (fx - 0.5) + gy * (fy - 0.5)) + 0.35 * (lift - 0.5);
+            nz = Math.max(0, Math.min(1, nz));
+            cut = nz * 0.2 * depthScale;
+          }
+          if (cut > 0) { radius -= cut; carved += cut; }
         }
         if (bump.amp > 0) {
           let nz;
