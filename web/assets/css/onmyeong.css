@@ -265,7 +265,8 @@ fieldset { border: 0; padding: 0; margin: 0; }
 
 /* ── 스튜디오 ───────────────────────────────────────── */
 .studio { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
-@media (max-width: 900px) { .studio { grid-template-columns: 1fr; } }
+/* 1fr 은 min-width:auto 라서 안쪽 캔버스가 넓으면 칸이 같이 늘어납니다 */
+@media (max-width: 900px) { .studio { grid-template-columns: minmax(0, 1fr); } }
 /* 3D 미리보기 칸 — 스튜디오 안에서만 잡습니다.
  * (다른 페이지에 같은 이름의 구역이 생기면 통째로 눌려 빈칸처럼 보입니다) */
 .studio #stage, .studio #preview-2d {
@@ -697,3 +698,33 @@ button.term:hover, button.term:focus-visible { color: var(--accent-ink); backgro
   .sf-tag  { font-size: 16px; }
   .sf-num  { font-size: 19px; }
 }
+
+/* ── 사진에서 치수 재기 ──────────────────────────────────── */
+.ref-measure-box {
+  position: absolute; inset: 0; z-index: 5;
+  display: grid; grid-template-rows: auto 1fr auto;
+  background: var(--paper); border-radius: inherit; overflow: hidden;
+}
+.ref-measure-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; border-bottom: 1px solid var(--line);
+  background: var(--paper-2); font-size: 14px;
+}
+.ref-measure-head > span:first-child {
+  font-size: 12px; color: var(--green); font-weight: 700;
+  border: 1px solid var(--green-soft); border-radius: 999px; padding: 2px 8px;
+}
+.ref-measure-head b { color: var(--ink); }
+.ref-measure-btns { margin-left: auto; display: flex; gap: 6px; }
+.ref-measure-canvas {
+  position: relative; touch-action: none; cursor: crosshair;
+  background: var(--cream-2); overflow: hidden;
+}
+.ref-measure-tip { margin: 0; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+.rm-line { stroke-width: 2.5; stroke-linecap: round; }
+.rm-hole  { stroke: #2f7bbf; }
+.rm-width { stroke: var(--green); }
+.rm-thick { stroke: var(--clay); }
+.rm-live  { stroke: var(--ink); stroke-dasharray: 5 4; }
+.rm-dot   { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+.stage-wrap { position: relative; min-width: 0; }
