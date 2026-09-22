@@ -44,7 +44,7 @@
   }).join('');
 
   var actions = [];
-  if (S.mapUrl) actions.push('<a class="btn" href="' + esc(S.mapUrl) + '" target="_blank" rel="noopener">네이버 지도 · 문의하기</a>');
+  if (S.mapUrl) actions.push('<a class="btn" href="' + esc(S.mapUrl) + '" target="_blank" rel="noopener">네이버 플레이스 · 예약 · 문의</a>');
   actions.push('<a class="btn btn-primary" href="order.html">주문 · 방문 상담</a>');
   $('visit-actions').innerHTML = actions.join('');
 
