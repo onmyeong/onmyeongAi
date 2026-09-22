@@ -20,7 +20,7 @@
   var sizing = CONFIG.sizing || {};
 
   /* ── 공방 ── */
-  $('about-title').textContent = S.title || '온명 공방';
+  $('about-title').textContent = S.title || '온명 반지공방';
   $('about-lead').textContent = S.lead || '';
   $('about-story').innerHTML = (S.story || []).map(function (s) {
     return '<div class="card trait"><h3>' + esc(s[0]) + '</h3><p>' + esc(s[1]) + '</p></div>';
@@ -44,7 +44,7 @@
   }).join('');
 
   var actions = [];
-  if (S.mapUrl) actions.push('<a class="btn" href="' + esc(S.mapUrl) + '" target="_blank" rel="noopener">지도에서 보기</a>');
+  if (S.mapUrl) actions.push('<a class="btn" href="' + esc(S.mapUrl) + '" target="_blank" rel="noopener">네이버 지도 · 문의하기</a>');
   actions.push('<a class="btn btn-primary" href="order.html">주문 · 방문 상담</a>');
   $('visit-actions').innerHTML = actions.join('');
 
