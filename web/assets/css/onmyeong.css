@@ -665,3 +665,35 @@ button.term:hover, button.term:focus-visible { color: var(--accent-ink); backgro
   border-radius: 10px; border: 1px solid var(--line);
 }
 .warn-text { color: var(--clay); }
+
+/* ── 호수 재는 법 그림 ─────────────────────────────────────
+ * 실제 사진이 생기면 이 <figure> 안을 <img> 로 바꾸기만 하면 됩니다. */
+.sizing-fig { margin: 0 0 20px; }
+.sizing-fig svg {
+  width: 100%; height: auto; display: block;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+  padding: 10px 6px;
+}
+.sizing-fig figcaption { margin-top: 8px; text-align: center; }
+.sf-num {
+  font-size: 15px; font-weight: 700; fill: var(--green);
+}
+.sf-head { font-size: 15px; font-weight: 600; fill: var(--ink); }
+.sf-tag  { font-size: 12px; fill: var(--muted); }
+.sf-skin { fill: var(--clay-tint); stroke: var(--clay); stroke-width: 1.5; }
+.sf-crease { stroke: var(--clay); stroke-width: 1; opacity: .45; fill: none; }
+.sf-strip { fill: var(--green-tint); stroke: var(--green); stroke-width: 1.5; }
+.sf-mark { stroke: var(--green-deep); stroke-width: 2; stroke-dasharray: 4 3; fill: none; }
+.sf-ruler { fill: var(--cream-2); stroke: var(--line); stroke-width: 1.5; }
+.sf-tick { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+.sf-ring { fill: var(--cream-2); stroke: var(--body); stroke-width: 1.5; }
+.sf-hole { fill: var(--paper); stroke: var(--body); stroke-width: 1.5; }
+.sf-dim  { stroke: var(--green-deep); stroke-width: 1.6; fill: none; }
+.sf-split { stroke: var(--line); stroke-width: 1; fill: none; }
+.sf-arrow { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+.sf-lead  { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
+@media (max-width: 640px) {
+  .sf-head { font-size: 19px; }
+  .sf-tag  { font-size: 16px; }
+  .sf-num  { font-size: 19px; }
+}

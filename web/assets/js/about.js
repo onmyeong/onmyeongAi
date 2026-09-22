@@ -69,6 +69,9 @@
   $('as-lead').textContent = as.lead || '';
   $('as-note').textContent = as.note || '';
   $('as-limits').textContent = as.limits || '';
+  var asContact = $('as-contact');
+  asContact.textContent = as.contact || '';
+  asContact.classList.toggle('is-hidden', !as.contact);
 
   /* ── 호수 재는 법 ── */
   $('sizing-lead').textContent = sizing.lead || '';
