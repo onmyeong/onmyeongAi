@@ -240,6 +240,7 @@
       if (memoC) out.push('', '요청사항  : ' + memoC);
       var whenC = $('o-when').value;
       if (whenC) out.push('희망 수령 : ' + whenC);
+      refLine(out);
       out.push('', '사양 링크 : ' + studioLink());
       out.push('', '※ 예상 금액은 참고용이며 최종 금액은 상담에서 확정됩니다.');
       return out.join('\n');
@@ -300,9 +301,17 @@
     lines.push('받는 방법  : ' + (visit ? '공방 방문 수령' : '택배' +
       (CONFIG.order.shipFree ? ' (배송비 무료)' : '')));
     if (when) lines.push('희망 수령 : ' + when + ' (평균 제작 ' + (CONFIG.order.leadDays || 10) + '일)');
+    refLine(lines);
     lines.push('', '사양 링크 : ' + studioLink());
     lines.push('', '※ 예상 금액은 참고용이며 최종 금액은 상담에서 확정됩니다.');
     return lines.join('\n');
+  }
+
+  /* 스튜디오에서 올린 레퍼런스 사진이 있으면 사양서에도 적어 둡니다.
+   * 사진 자체는 사이트가 보내 주지 못하므로 "따로 첨부"라고 분명히 남깁니다. */
+  function refLine(out) {
+    var n = ONM.referenceCount || 0;
+    if (n > 0) out.push('레퍼런스   : 사진 ' + n + '장 — 사양서와 함께 첨부해 주세요');
   }
 
   function studioLink() {
@@ -482,6 +491,12 @@
     box.classList.remove('is-hidden');
     box.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+
+  /* 레퍼런스 사진은 저장소에서 늦게 읽혀 옵니다.
+   * 다 읽히면 사양서에 사진 줄이 들어가도록 한 번 더 그립니다. */
+  document.addEventListener('onm:refs', function () {
+    try { $('sheet').textContent = currentSheet(); } catch (e) {}
+  });
 
   function validate() {
     if (!$('o-name').value.trim()) return '성함 또는 닉네임을 입력해 주세요.';

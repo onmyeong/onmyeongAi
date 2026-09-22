@@ -634,3 +634,34 @@ button.term:hover, button.term:focus-visible { color: var(--accent-ink); backgro
 .gloss-row b { font-family: var(--serif); color: var(--accent-ink); font-size: .95rem; }
 .gloss-row > span { font-size: .88rem; color: var(--body); }
 @media (max-width: 560px) { .gloss-row { grid-template-columns: 1fr; gap: 2px; } }
+
+/* ── 레퍼런스 사진 ──────────────────────────────────────────
+ * 손님이 가져오신 사진을 스튜디오 미리보기 위에 겹쳐 놓고 맞춰 보는 자리입니다. */
+.ref-strip { display: flex; gap: 8px; flex-wrap: wrap; }
+.ref-thumb {
+  position: relative; width: 72px; height: 72px; padding: 0;
+  border: 2px solid var(--line); border-radius: 10px;
+  background-size: cover; background-position: center; background-color: #f3efe7;
+  cursor: pointer;
+}
+.ref-thumb.is-on { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-tint); }
+.ref-x {
+  position: absolute; top: -7px; right: -7px;
+  width: 20px; height: 20px; line-height: 18px; text-align: center;
+  border-radius: 50%; background: var(--paper); color: var(--muted);
+  border: 1px solid var(--line); font-size: 13px; cursor: pointer;
+}
+.ref-x:hover { background: var(--clay-tint); color: var(--clay); }
+#stage { position: relative; }
+.ref-overlay {
+  position: absolute; inset: 0; pointer-events: none;
+  background-size: contain; background-position: center; background-repeat: no-repeat;
+  opacity: 0; transition: opacity .12s linear; border-radius: inherit;
+}
+.ref-order-strip { display: flex; gap: 12px; flex-wrap: wrap; }
+.ref-order-item { display: grid; gap: 6px; justify-items: center; }
+.ref-order-item img {
+  width: 110px; height: 110px; object-fit: cover;
+  border-radius: 10px; border: 1px solid var(--line);
+}
+.warn-text { color: var(--clay); }
