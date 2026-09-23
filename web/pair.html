@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온명 · 궁합 보기</title>
+<meta name="description" content="링크를 보내면 받은 사람이 생일만 넣고, 둘의 궁합 리포트로 바로 이어집니다.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./"><b>ONMYEONG</b><span>온명</span></a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="./">일주 리포트</a>
+      <a href="studio.html">반지 스튜디오</a>
+      <a href="order.html">커스텀 주문</a>
+      <a href="pair.html" aria-current="page">궁합 보기</a>
+      <a href="about.html">공방 소개</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- 초대가 없을 때 — 내 링크 만들기 -->
+<section id="pair-make" class="is-hidden">
+  <div class="wrap">
+    <p class="eyebrow">Compatibility</p>
+    <h1 style="margin-bottom:10px">궁합 링크 만들기</h1>
+    <p class="lead" style="margin-bottom:22px">
+      생일을 넣으면 <b>나만의 궁합 링크</b>가 만들어집니다. 그 링크를 보내면,
+      받은 사람은 자기 생일만 넣고 바로 <b>둘의 궁합 리포트</b>를 봅니다.
+      상대의 생일은 나에게 넘어오지 않습니다.
+    </p>
+
+    <div class="card" style="max-width:520px">
+      <div class="grid grid-2" style="gap:12px">
+        <div class="field">
+          <label for="p-name">이름 <span class="small">(없어도 됩니다)</span></label>
+          <input id="p-name" type="text" autocomplete="name" placeholder="예: 김지민">
+        </div>
+        <div class="field">
+          <label for="p-y">태어난 해</label>
+          <input id="p-y" type="number" inputmode="numeric" min="1900" max="2100" placeholder="1994">
+        </div>
+        <div class="field">
+          <label for="p-m">달</label>
+          <input id="p-m" type="number" inputmode="numeric" min="1" max="12" placeholder="9">
+        </div>
+        <div class="field">
+          <label for="p-d">일</label>
+          <input id="p-d" type="number" inputmode="numeric" min="1" max="31" placeholder="14">
+        </div>
+      </div>
+      <p class="notice warn is-hidden" id="p-error" role="alert" style="margin-top:12px"></p>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-primary" type="button" id="p-make">링크 만들기</button>
+      </div>
+
+      <div class="is-hidden" id="p-link-box" style="margin-top:18px">
+        <p class="eyebrow" style="margin-bottom:6px">내 궁합 링크</p>
+        <p class="small" style="margin:0 0 8px" id="p-mine"></p>
+        <input id="p-link" type="text" readonly>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-primary" type="button" id="p-copy">링크 복사</button>
+          <button class="btn" type="button" id="p-share">공유하기</button>
+        </div>
+        <p class="small" style="margin:10px 0 0">
+          카톡이나 인스타에 그대로 붙여 넣으시면 됩니다.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 초대를 받고 들어왔을 때 -->
+<section id="pair-join" class="is-hidden">
+  <div class="wrap">
+    <div class="invite-head">
+      <p class="eyebrow">Compatibility</p>
+      <h1 style="margin-bottom:10px" id="j-title">궁합 보기</h1>
+      <p class="lead" id="j-lead"></p>
+    </div>
+
+    <div class="card" style="max-width:520px;margin-top:20px">
+      <div class="grid grid-2" style="gap:12px">
+        <div class="field">
+          <label for="j-name">이름 <span class="small">(없어도 됩니다)</span></label>
+          <input id="j-name" type="text" autocomplete="name" placeholder="예: 이서준">
+        </div>
+        <div class="field">
+          <label for="j-y">태어난 해</label>
+          <input id="j-y" type="number" inputmode="numeric" min="1900" max="2100" placeholder="1996">
+        </div>
+        <div class="field">
+          <label for="j-m">달</label>
+          <input id="j-m" type="number" inputmode="numeric" min="1" max="12" placeholder="3">
+        </div>
+        <div class="field">
+          <label for="j-d">일</label>
+          <input id="j-d" type="number" inputmode="numeric" min="1" max="31" placeholder="21">
+        </div>
+      </div>
+      <p class="notice warn is-hidden" id="j-error" role="alert" style="margin-top:12px"></p>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-primary" type="button" id="j-go">궁합 보기</button>
+      </div>
+      <p class="small" style="margin:12px 0 0">
+        넣으신 생일은 이 브라우저에서만 쓰이고 어디에도 저장되지 않습니다.
+      </p>
+    </div>
+
+    <p class="small" style="margin-top:18px">
+      나도 내 링크를 만들고 싶다면 <a href="pair.html">여기</a>에서 만드실 수 있습니다.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>© ONMYEONG · 온명</span>
+    <span>사주 일주로 읽는 나의 결, 그 결에 맞춘 은반지</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/ilju-data.js"></script>
+<script src="assets/js/saju.js"></script>
+<script src="assets/js/compat.js"></script>
+<script src="assets/js/pair.js"></script>
+</body>
+</html>
