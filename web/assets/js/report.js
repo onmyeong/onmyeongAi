@@ -202,15 +202,16 @@
 
   /* ───────────── 일주 이름만으로 보기 ─────────────
    * "나와 결이 맞는 일주" 카드처럼, 생년월일 없이 일주만 알고 있을 때 씁니다. */
-  function showByIlju(idA, idB) {
+  function showByIlju(idA, idB, names) {
     var recA = ONM.ILJU[idA];
     if (!recA) return false;
     var resA = { record: recA, id: recA.id, hanja: recA.hanja, notes: [] };
+    names = names || {};
 
     if (idB && ONM.ILJU[idB]) {
       var resB = { record: ONM.ILJU[idB], id: idB, hanja: ONM.ILJU[idB].hanja, notes: [] };
       state.result = resA; state.resultB = resB;
-      state.nameA = ''; state.nameB = '';
+      state.nameA = givenName(names.a); state.nameB = givenName(names.b);
       state.seed = Math.floor(Math.random() * 100000) + 1;
       state.compat = ONM.compat.compare(recA, resB.record);
       renderCouple(resA, resB, state.compat);
@@ -222,7 +223,7 @@
     }
 
     state.result = resA; state.resultB = null; state.compat = null;
-    state.nameA = ''; state.nameB = '';
+    state.nameA = givenName(names.a); state.nameB = '';
     state.seed = Math.floor(Math.random() * 100000) + 1;
     renderReport(resA);
     renderRings();
@@ -316,10 +317,11 @@
     renderDeep(rec);
     fillGlossary('gloss-solo', SOLO_TERMS);
 
-    // 일주 지도로 넘어갈 때 내 일주와 이름을 함께 싣습니다
-    var map = $('go-map');
-    if (map) {
-      map.href = 'map.html?me=' + encodeURIComponent(rec.id) +
+    /* 궁합 링크 — 내 일주와 이름만 실어 보냅니다.
+     * 링크를 받은 사람이 자기 생일을 넣으면 둘의 궁합 리포트로 바로 이어집니다. */
+    var pair = $('go-pair');
+    if (pair) {
+      pair.href = 'pair.html?me=' + encodeURIComponent(rec.id) +
         (state.nameA ? '&n=' + encodeURIComponent(state.nameA) : '');
     }
   }
@@ -957,7 +959,7 @@
     var iljuB = p.get('b');
     if (iljuA && ONM.ILJU[iljuA]) {
       setMode(iljuB && ONM.ILJU[iljuB] ? 'couple' : 'solo', { clear: false });
-      if (showByIlju(iljuA, iljuB)) return;
+      if (showByIlju(iljuA, iljuB, { a: p.get('n') || '', b: p.get('n2') || '' })) return;
     }
 
     var couple = p.get('mode') === 'couple' && p.get('y2') && p.get('m2') && p.get('d2');
