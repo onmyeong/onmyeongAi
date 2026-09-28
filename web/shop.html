@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>온명 · 매장 상담</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+</head>
+<body class="shop">
+
+<div class="shop-app">
+
+  <!-- 위: 진행 표시 -->
+  <header class="shop-top">
+    <button class="shop-icon" type="button" id="s-home" aria-label="처음으로">온명</button>
+    <ol class="shop-steps" id="s-steps"></ol>
+    <button class="shop-icon" type="button" id="s-send" aria-label="손님 폰으로 보내기">보내기</button>
+  </header>
+
+  <!-- 가운데: 화면 -->
+  <main class="shop-stage" id="s-stage">
+
+    <!-- 0. 시작 -->
+    <section class="shop-screen is-on" data-screen="start">
+      <div class="shop-center">
+        <p class="shop-eyebrow">온명 매장 상담</p>
+        <h1 class="shop-h1">생년월일을 여쭤보세요</h1>
+        <div class="shop-form">
+          <label class="shop-field">
+            <span>이름</span>
+            <input id="s-name" type="text" autocomplete="off" placeholder="김지민">
+          </label>
+          <div class="shop-date">
+            <label class="shop-field"><span>년 (양력)</span>
+              <input id="s-y" type="number" inputmode="numeric" placeholder="1994"></label>
+            <label class="shop-field"><span>월</span>
+              <input id="s-m" type="number" inputmode="numeric" placeholder="9"></label>
+            <label class="shop-field"><span>일</span>
+              <input id="s-d" type="number" inputmode="numeric" placeholder="14"></label>
+          </div>
+          <p class="shop-note">밤 11시 이후 출생이면 다음 날 일주로 봅니다.</p>
+          <p class="shop-error is-hidden" id="s-error" role="alert"></p>
+          <button class="shop-go" type="button" id="s-start">일주 보기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. 일주 -->
+    <section class="shop-screen" data-screen="ilju">
+      <div class="shop-split">
+        <div class="shop-zodiac" id="s-zodiac"></div>
+        <div>
+          <p class="shop-eyebrow" id="s-tagline"></p>
+          <h1 class="shop-h1" id="s-ilju"></h1>
+          <p class="shop-lead" id="s-keywords"></p>
+          <div class="shop-chips" id="s-chips"></div>
+        </div>
+      </div>
+      <p class="shop-body" id="s-summary"></p>
+    </section>
+
+    <!-- 2. 성향 -->
+    <section class="shop-screen" data-screen="traits">
+      <h1 class="shop-h1 shop-h1-sm">이런 결을 가지셨습니다</h1>
+      <div class="shop-cards" id="s-traits"></div>
+    </section>
+
+    <!-- 3. 강점과 조언 -->
+    <section class="shop-screen" data-screen="advice">
+      <div class="shop-two">
+        <div class="shop-panel shop-panel-green">
+          <h2>강점</h2>
+          <p id="s-strength"></p>
+        </div>
+        <div class="shop-panel shop-panel-blue">
+          <h2>한 가지만 더</h2>
+          <p id="s-advice"></p>
+        </div>
+      </div>
+      <div class="shop-lucky" id="s-lucky"></div>
+    </section>
+
+    <!-- 4. 추천 반지 -->
+    <section class="shop-screen" data-screen="rings">
+      <h1 class="shop-h1 shop-h1-sm" id="s-ringhead">이 결에 맞는 반지</h1>
+      <p class="shop-lead" id="s-ringnote"></p>
+      <div class="shop-rings" id="s-rings"></div>
+      <div class="shop-actions">
+        <button class="shop-alt" type="button" id="s-reshuffle">다른 디자인 보기</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 아래: 넘기기 -->
+  <nav class="shop-bottom">
+    <button class="shop-nav" type="button" id="s-prev">← 뒤로</button>
+    <span class="shop-who" id="s-who"></span>
+    <button class="shop-nav shop-nav-main" type="button" id="s-next">다음 →</button>
+  </nav>
+</div>
+
+<!-- 손님 폰으로 보내기 -->
+<div class="shop-sheet is-hidden" id="s-sheet" role="dialog" aria-modal="true" aria-label="손님 폰으로 보내기">
+  <div class="shop-sheet-in">
+    <h2>손님 폰으로 보내기</h2>
+    <p class="small">카메라로 찍으시면 지금 보시던 화면이 그대로 열립니다.</p>
+    <div class="shop-qr" id="s-qr"></div>
+    <input id="s-url" type="text" readonly>
+    <div class="btn-row" style="justify-content:center;margin-top:12px">
+      <button class="btn" type="button" id="s-copy">링크 복사</button>
+      <button class="btn btn-primary" type="button" id="s-close">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/ilju-data.js"></script>
+<script src="assets/js/zodiac.js"></script>
+<script src="assets/js/stones.js"></script>
+<script src="assets/js/rings.js"></script>
+<script src="assets/js/saju.js"></script>
+<script src="assets/js/reading.js"></script>
+<script src="assets/js/qr.js"></script>
+<script src="assets/js/shop.js"></script>
+</body>
+</html>

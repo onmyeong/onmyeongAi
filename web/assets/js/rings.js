@@ -517,7 +517,7 @@
         reasons.push('일간 ' + record.stem + '(' + dayElem + ')의 기운과 바로 맞물리는 형태');
       } else if (m.elements.indexOf(SHENG[dayElem]) !== -1) {
         score += 12;
-        reasons.push('일간 ' + record.stem + '(' + dayElem + ')이 살려주는 ' + SHENG[dayElem] + '의 결');
+        reasons.push(subjJosa('일간 ' + record.stem + '(' + dayElem + ')') + ' 살려주는 ' + SHENG[dayElem] + '의 결');
       }
       if (m.elements.indexOf(branchElem) !== -1) {
         score += 12;
@@ -588,6 +588,48 @@
       if (picked.indexOf(s) === -1) picked.push(s);
     });
 
+  /* 받침에 따라 "이/가"를 고릅니다. 괄호로 끝나는 말은 마지막 한글까지 거슬러 봅니다. */
+  function subjJosa(word) {
+    var t = String(word);
+    for (var k = t.length - 1; k >= 0; k--) {
+      var ch = t.charCodeAt(k);
+      if (ch >= 0xac00 && ch <= 0xd7a3) return t + (((ch - 0xac00) % 28) ? '이' : '가');
+    }
+    return t + '가';
+  }
+
+  /* ── 이 반지가 "어떻게 생겼는지" 한 조각으로 ──
+   * 추천 이유가 오행 이야기만 반복하면 세 장이 다 같은 말이 됩니다.
+   * 그 반지에만 있는 생김새를 앞에 붙여 서로 다르게 읽히도록 합니다. */
+  var FORM_PROFILE = {
+    flat: '납작하게 편 면', round: '통통하게 둥근 옆선',
+    dshape: '안은 평평하고 밖은 둥근 옆선', knife: '가운데가 날처럼 솟은 옆선',
+    wave: '물결치는 옆선', facet: '각을 세워 깎은 둘레',
+    step: '한 단 낮춘 층', signet: '손등 쪽만 부푼 도장 판',
+    twin: '가운데가 갈린 두 줄'
+  };
+  var FORM_BAND = {
+    bark: '세로로 촘촘한 결', rope: '비스듬히 꼬인 가닥',
+    bead: '줄줄이 이어진 동그란 알', block: '망치로 끊어 낸 덩이',
+    wavy: '옆으로 굽이치는 띠', chevron: '앞에서 한 점으로 꺾이는 V'
+  };
+  var FORM_TEXTURE = {
+    polish: '거울처럼 올린 광', diamond: '서리처럼 잘게 반짝이는 면',
+    sandbar: '한 방향으로 쓸어 간 사포결', fine: '곱게 눌러 둔 무광',
+    soft: '아주 낮게 가라앉힌 빛'
+  };
+
+  function formPhrase(m) {
+    var bits = [];
+    if (m.band && FORM_BAND[m.band]) bits.push(FORM_BAND[m.band]);
+    else if (m.twist > 0) bits.push('나선으로 감긴 홈');
+    else if (m.facets > 0) bits.push(m.facets + '면으로 깎은 둘레');
+    else if (FORM_PROFILE[m.profile]) bits.push(FORM_PROFILE[m.profile]);
+    if (FORM_TEXTURE[m.texture]) bits.push(FORM_TEXTURE[m.texture]);
+    if (!bits.length) return '';
+    return bits.join('에 ');
+  }
+
     var top = picked[0] ? picked[0].score : 1;
     return picked.map(function (s, i) {
       return {
@@ -595,7 +637,9 @@
         family: FAMILIES[s.model.family],
         rank: i + 1,
         fit: Math.max(58, Math.min(99, Math.round(60 + (s.score / top) * 38))),
-        reason: s.reasons.slice(0, 2).join(' · ') || '온명이 제안하는 기본 밸런스 디자인',
+        /* 생김새 한 조각 + 사주에서 온 까닭 하나. 앞이 달라야 세 장이 달리 읽힙니다. */
+        reason: [formPhrase(s.model)].concat(s.reasons.slice(0, 1))
+          .filter(Boolean).join(' — ') || '온명이 제안하는 기본 밸런스 디자인',
         spec: defaultSpec(s.model, record, opts)
       };
     });
