@@ -24,8 +24,8 @@
     });
   }
 
-  var SCREENS = ['start', 'ilju', 'traits', 'advice', 'rings'];
-  var LABELS = ['생일', '일주', '성향', '강점', '반지'];
+  var SCREENS = ['start', 'ilju', 'letters', 'traits', 'advice', 'energy', 'rings'];
+  var LABELS = ['생일', '일주', '두 글자', '성향', '강점', '기운', '반지'];
 
   var state = { at: 0, res: null, name: '', seed: 1 };
 
@@ -90,35 +90,82 @@
     var who = state.name ? state.name + ' 님' : state.res.id + ' 일주';
     $('s-who').textContent = who;
 
-    // 1. 일주
-    // 십이지 아이콘은 지지(띠 글자) 하나를 받습니다
-    var icon = ONM.zodiacIcon ? ONM.zodiacIcon(rec.branch, { size: 190, label: rec.branch + ' 띠' }) : '';
-    $('s-zodiac').innerHTML = icon || '<div class="shop-zodiac-fallback">' + esc(rec.branch) + '</div>';
-    if (ONM.zodiacColor) $('s-zodiac').style.color = ONM.zodiacColor(rec.branch) || '';
+    /* 일주마다 천간 색이 정해져 있습니다 (병이면 빨강, 계면 연한 파랑).
+     * 그 색을 화면 전체에 물려서, 손님마다 화면 분위기가 달라집니다. */
+    var color = ONM.zodiacColor(rec);
+    var app = doc.querySelector('.shop-app');
+    app.style.setProperty('--accent', color.solid);
+    app.style.setProperty('--accent-ink', color.ink);
+    app.style.setProperty('--accent-tint', color.tint);
+
+    // 1. 일주 — 색 동그라미 안에 십이지 아이콘
+    $('s-seal').innerHTML = ONM.zodiacSvg(rec.branch, {
+      label: rec.branchInfo.animal + ' — ' + state.res.id + ' 일주'
+    });
     $('s-tagline').textContent = (rec.tagline || '').replace(/\s*\/\s*/g, ' · ');
     $('s-ilju').innerHTML = esc(state.res.id) + ' <small>' + esc(state.res.hanja) + '</small>';
+    $('s-animal').textContent = ONM.iljuPhrase ? ONM.iljuPhrase(rec) : '';
     $('s-keywords').textContent = rec.keywords || '';
+
     var el = ONM.reading ? ONM.reading.solo(rec) : null;
     $('s-chips').innerHTML = [
-      ['일간', rec.stem + ' · ' + rec.stemInfo.elem],
-      ['일지', rec.branch + ' · ' + rec.branchInfo.elem],
-      ['자리', el && el.sipsin ? el.sipsin.name : ''],
-      ['단계', el && el.stage ? el.stage.name : '']
-    ].filter(function (c) { return c[1]; }).map(function (c) {
+      ['일간', rec.stem + '(' + rec.stemInfo.hanja + ') · ' + rec.stemInfo.elem + ' — ' + rec.stemInfo.title],
+      ['일지', rec.branch + '(' + rec.branchInfo.hanja + ') · ' + rec.branchInfo.elem +
+        ' — ' + rec.branchInfo.animal + ', ' + rec.branchInfo.title]
+    ].map(function (c) {
       return '<span class="shop-chip"><b>' + esc(c[0]) + '</b>' + esc(c[1]) + '</span>';
     }).join('');
+
+    // 2. 두 글자 — 천간과 지지를 한 장씩 풀어 읽습니다
+    $('s-stem-ch').textContent = rec.stem + ' ' + rec.stemInfo.hanja;
+    $('s-stem-title').textContent = rec.stemInfo.title + ' · ' + rec.stemInfo.elem;
+    $('s-stem-long').textContent = rec.stemInfo.long || rec.stemInfo.desc || '';
+    $('s-branch-ch').textContent = rec.branch + ' ' + rec.branchInfo.hanja;
+    $('s-branch-title').textContent = rec.branchInfo.animal + ' · ' + rec.branchInfo.title +
+      ' · ' + rec.branchInfo.elem;
+    $('s-branch-long').textContent = rec.branchInfo.long || rec.branchInfo.desc || '';
     $('s-summary').textContent = rec.summary || '';
+    $('s-flow').innerHTML = el && el.flow
+      ? '<b>' + esc(el.flow.title) + '</b> ' + esc(el.flow.body) : '';
 
     // 2. 성향
+    $('s-traithead').textContent = (state.name ? state.name + ' 님은' : '이 일주는') + ' 이런 결을 가지셨습니다';
     $('s-traits').innerHTML = (rec.traits || []).map(function (t) {
       return '<div class="shop-card"><h3>' + esc(t[0]) + '</h3><p>' + esc(t[1]) + '</p></div>';
     }).join('');
 
-    // 3. 강점 · 조언 · 행운
+    // 3. 강점 · 조언 · 자리별 조언
     $('s-strength').textContent = rec.strength || '';
     $('s-advice').textContent = rec.advice || '';
-    $('s-lucky').innerHTML = '<span class="shop-lucky-label">행운의 말</span>' +
-      (rec.lucky || []).map(function (w) { return '<span class="shop-word">' + esc(w) + '</span>'; }).join('');
+    $('s-life').innerHTML = (el && el.life ? el.life : []).map(function (L) {
+      return '<div class="shop-life-row"><b>' + esc(L.label) + '</b><span>' + esc(L.text) + '</span></div>';
+    }).join('');
+
+    // 4. 타고난 기운 — 십신 · 십이운성 · 오행 배속 · 맞는 일주
+    $('s-enhead').textContent = (state.name ? state.name + ' 님이' : '이 일주가') + ' 타고난 기운';
+    if (el && el.sipsin) {
+      $('s-sipsin-name').textContent = el.sipsin.name + ' — ' + el.sipsin.short;
+      $('s-sipsin-body').textContent = el.sipsin.body || el.sipsin.title || '';
+    }
+    if (el && el.stage) {
+      $('s-stage-name').textContent = el.stage.name + ' — ' + (el.stage.title || '') +
+        ' (12단계 중 ' + el.stage.order + '번째)';
+      $('s-stage-body').textContent = (el.stage.body || '') +
+        (el.stage.tip ? ' ' + el.stage.tip : '');
+    }
+    var E = el && el.elem ? el.elem.stem.info : null;
+    $('s-elem').innerHTML = !E ? '' : [
+      ['어울리는 색', E.color], ['방향', E.dir], ['숫자', E.num],
+      ['계절', E.season], ['하루 중', E.hour]
+    ].map(function (c) {
+      return '<div class="shop-elem-cell"><b>' + esc(c[0]) + '</b><span>' + esc(c[1]) + '</span></div>';
+    }).join('');
+    // matches 는 { best: [...], ... } 모양입니다
+    var best = (el && el.matches && el.matches.best) ? el.matches.best : [];
+    $('s-match').innerHTML = best.slice(0, 4).map(function (m) {
+      return '<span class="shop-match-one">' + esc(m.id) +
+        '<em>' + (m.score != null ? m.score : '') + '</em></span>';
+    }).join('');
 
     renderRings();
   }

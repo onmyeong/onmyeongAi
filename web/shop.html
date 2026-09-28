@@ -53,27 +53,50 @@
     <!-- 1. 일주 -->
     <section class="shop-screen" data-screen="ilju">
       <div class="shop-split">
-        <div class="shop-zodiac" id="s-zodiac"></div>
+        <div class="ilju-seal shop-seal" id="s-seal"></div>
         <div>
           <p class="shop-eyebrow" id="s-tagline"></p>
           <h1 class="shop-h1" id="s-ilju"></h1>
+          <p class="shop-animal" id="s-animal"></p>
           <p class="shop-lead" id="s-keywords"></p>
-          <div class="shop-chips" id="s-chips"></div>
         </div>
       </div>
+      <div class="shop-chips" id="s-chips"></div>
       <p class="shop-body" id="s-summary"></p>
+      <p class="shop-flow" id="s-flow"></p>
     </section>
 
-    <!-- 2. 성향 -->
+    <!-- 2. 두 글자 -->
+    <section class="shop-screen" data-screen="letters">
+      <h1 class="shop-h1 shop-h1-sm">일주는 두 글자입니다</h1>
+      <div class="shop-two">
+        <div class="shop-letter">
+          <span class="shop-letter-tag">윗글자 · 일간</span>
+          <b id="s-stem-ch"></b>
+          <em id="s-stem-title"></em>
+          <p id="s-stem-long"></p>
+          <span class="shop-letter-foot">겉으로 드러나는 나 — 남들이 보는 모습</span>
+        </div>
+        <div class="shop-letter">
+          <span class="shop-letter-tag">아랫글자 · 일지</span>
+          <b id="s-branch-ch"></b>
+          <em id="s-branch-title"></em>
+          <p id="s-branch-long"></p>
+          <span class="shop-letter-foot">아래에서 받치는 자리 — 속에 깔린 바탕</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 성향 -->
     <section class="shop-screen" data-screen="traits">
-      <h1 class="shop-h1 shop-h1-sm">이런 결을 가지셨습니다</h1>
+      <h1 class="shop-h1 shop-h1-sm" id="s-traithead">이런 결을 가지셨습니다</h1>
       <div class="shop-cards" id="s-traits"></div>
     </section>
 
-    <!-- 3. 강점과 조언 -->
+    <!-- 4. 강점과 조언 -->
     <section class="shop-screen" data-screen="advice">
       <div class="shop-two">
-        <div class="shop-panel shop-panel-green">
+        <div class="shop-panel shop-panel-accent">
           <h2>강점</h2>
           <p id="s-strength"></p>
         </div>
@@ -82,10 +105,31 @@
           <p id="s-advice"></p>
         </div>
       </div>
-      <div class="shop-lucky" id="s-lucky"></div>
+      <h2 class="shop-sub">자리별로 보면</h2>
+      <div class="shop-life" id="s-life"></div>
     </section>
 
-    <!-- 4. 추천 반지 -->
+    <!-- 5. 타고난 기운 -->
+    <section class="shop-screen" data-screen="energy">
+      <h1 class="shop-h1 shop-h1-sm" id="s-enhead">타고난 기운</h1>
+      <div class="shop-two">
+        <div class="shop-panel shop-panel-soft">
+          <h2 id="s-sipsin-name"></h2>
+          <p id="s-sipsin-body"></p>
+        </div>
+        <div class="shop-panel shop-panel-soft">
+          <h2 id="s-stage-name"></h2>
+          <p id="s-stage-body"></p>
+        </div>
+      </div>
+      <div class="shop-elem" id="s-elem"></div>
+      <div class="shop-match">
+        <span class="shop-match-label">결이 맞는 일주</span>
+        <span id="s-match"></span>
+      </div>
+    </section>
+
+    <!-- 6. 추천 반지 -->
     <section class="shop-screen" data-screen="rings">
       <h1 class="shop-h1 shop-h1-sm" id="s-ringhead">이 결에 맞는 반지</h1>
       <p class="shop-lead" id="s-ringnote"></p>
@@ -125,6 +169,7 @@
 <script src="assets/js/stones.js"></script>
 <script src="assets/js/rings.js"></script>
 <script src="assets/js/saju.js"></script>
+<script src="assets/js/compat.js"></script>
 <script src="assets/js/reading.js"></script>
 <script src="assets/js/qr.js"></script>
 <script src="assets/js/shop.js"></script>
