@@ -740,3 +740,151 @@ button.term:hover, button.term:focus-visible { color: var(--accent-ink); backgro
 .card-fill { display: flex; flex-direction: column; justify-content: center; gap: 12px; }
 .card-fill > * { margin: 0 !important; }
 .card-fill > .eyebrow + h3 { margin-top: -4px !important; }
+
+/* ── 매장 상담 화면 ───────────────────────────────────────
+ * 태블릿을 손님 앞에 놓고 같이 보는 화면입니다.
+ * 스크롤 대신 넘기기, 글자는 크게, 한 화면에 한 가지만 둡니다. */
+body.shop { margin: 0; height: 100dvh; overflow: hidden; }
+.shop-app { display: grid; grid-template-rows: auto 1fr auto; height: 100dvh; }
+
+.shop-top {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 20px; border-bottom: 1px solid var(--line-soft);
+  background: var(--paper);
+}
+.shop-icon {
+  border: 1px solid var(--line); background: var(--paper); color: var(--body);
+  border-radius: 999px; padding: 8px 16px; font: inherit; font-size: .9rem; cursor: pointer;
+}
+.shop-icon:hover { border-color: var(--green-soft); color: var(--green-deep); }
+.shop-steps { display: flex; gap: 8px; margin: 0 auto; padding: 0; list-style: none; }
+.shop-steps li {
+  font-size: .82rem; color: var(--muted); padding: 6px 14px; border-radius: 999px;
+  border: 1px solid transparent;
+}
+.shop-steps li.is-done { color: var(--green-soft); }
+.shop-steps li.is-on { color: #fff; background: var(--green); font-weight: 600; }
+
+.shop-stage { position: relative; overflow-y: auto; padding: 24px 32px 32px; }
+.shop-screen { display: none; max-width: 980px; margin: 0 auto; }
+.shop-screen.is-on { display: block; animation: shopIn .22s ease both; }
+@keyframes shopIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.shop-center { max-width: 560px; margin: 4vh auto 0; }
+.shop-eyebrow { font-size: .8rem; letter-spacing: .18em; color: var(--green-soft); text-transform: uppercase; margin: 0 0 10px; font-weight: 600; }
+.shop-h1 { font-family: var(--serif); font-size: clamp(2rem, 5vw, 3.1rem); margin: 0 0 14px; line-height: 1.3; color: var(--ink); }
+.shop-h1 small { font-size: .5em; color: var(--muted); font-weight: 400; }
+.shop-h1-sm { font-size: clamp(1.5rem, 3.4vw, 2.1rem); margin-bottom: 18px; }
+.shop-lead { font-size: 1.12rem; color: var(--body); margin: 0 0 14px; }
+.shop-body { font-size: 1.08rem; line-height: 1.85; color: var(--body); margin: 20px 0 0; }
+
+.shop-form { display: grid; gap: 16px; }
+.shop-field { display: grid; gap: 6px; }
+.shop-field > span { font-size: .88rem; color: var(--muted); }
+.shop-field input { font-size: 1.5rem; padding: 14px 16px; border-radius: 14px; }
+.shop-date { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 12px; }
+.shop-note { font-size: .86rem; color: var(--muted); margin: 0; }
+.shop-error { color: var(--clay); font-size: .95rem; margin: 0; }
+.shop-go {
+  font: inherit; font-size: 1.2rem; font-weight: 600; padding: 18px; border: 0;
+  border-radius: 16px; background: var(--green); color: #fff; cursor: pointer;
+}
+.shop-go:hover { background: var(--green-deep); }
+
+.shop-split { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: center; }
+.shop-zodiac svg, .shop-zodiac-fallback { width: 100%; height: auto; }
+.shop-zodiac-fallback { font-family: var(--serif); font-size: 2.4rem; text-align: center; color: var(--green-deep); }
+.shop-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.shop-chip {
+  display: inline-flex; gap: 7px; align-items: baseline; font-size: .92rem;
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 15px; background: var(--paper-2);
+}
+.shop-chip b { color: var(--muted); font-size: .78rem; font-weight: 600; }
+
+.shop-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.shop-card { background: var(--paper); border: 1px solid var(--line-soft); border-radius: 18px; padding: 22px; box-shadow: var(--shadow-sm); }
+.shop-card h3 { font-size: 1.1rem; margin: 0 0 8px; }
+.shop-card p { margin: 0; font-size: 1rem; line-height: 1.75; }
+
+.shop-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.shop-panel { border-radius: 18px; padding: 24px; border: 1px solid var(--line-soft); }
+.shop-panel h2 { font-size: 1.15rem; margin: 0 0 10px; }
+.shop-panel p { margin: 0; font-size: 1.04rem; line-height: 1.8; }
+.shop-panel-green { background: var(--green-tint); border-color: var(--green-soft); }
+.shop-panel-green h2 { color: var(--green-deep); }
+.shop-panel-blue { background: var(--blue-tint); border-color: #d7e3ed; }
+.shop-panel-blue h2 { color: var(--blue-ink); }
+.shop-lucky { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 22px; }
+.shop-lucky-label { font-size: .82rem; color: var(--muted); margin-right: 4px; }
+.shop-word {
+  font-family: var(--serif); font-size: 1.05rem; color: var(--green-deep);
+  background: var(--paper); border: 1px solid var(--green-soft);
+  border-radius: 999px; padding: 8px 18px;
+}
+
+.shop-rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.shop-ring {
+  position: relative; display: grid; gap: 3px; text-decoration: none; color: inherit;
+  background: var(--paper); border: 1px solid var(--line-soft); border-radius: 18px;
+  padding: 14px; box-shadow: var(--shadow-sm); text-align: center;
+}
+.shop-ring-art { max-width: 150px; margin: 0 auto; }
+.shop-ring:hover { border-color: var(--green-soft); text-decoration: none; }
+.shop-ring-art svg { width: 100%; height: auto; }
+.shop-ring-fit {
+  position: absolute; top: 14px; right: 14px; font-size: .78rem; font-weight: 700;
+  color: var(--green-deep); background: var(--green-tint); border-radius: 999px; padding: 3px 10px;
+}
+.shop-ring b { font-family: var(--serif); font-size: 1.25rem; color: var(--ink); }
+.shop-ring em { font-style: normal; font-size: .84rem; color: var(--muted); }
+.shop-ring-why { font-size: .86rem; color: var(--body); margin-top: 6px; }
+.shop-ring-go { font-size: .86rem; color: var(--green); font-weight: 600; margin-top: 4px; }
+.shop-actions { display: flex; justify-content: center; margin-top: 20px; }
+.shop-alt {
+  font: inherit; font-size: .95rem; padding: 12px 24px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--body); cursor: pointer;
+}
+.shop-alt:hover { border-color: var(--green-soft); color: var(--green-deep); }
+
+.shop-bottom {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 20px; border-top: 1px solid var(--line-soft); background: var(--paper);
+}
+.shop-who { margin: 0 auto; font-size: .95rem; color: var(--muted); }
+.shop-nav {
+  font: inherit; font-size: 1.05rem; padding: 14px 28px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--paper); color: var(--body); cursor: pointer;
+}
+.shop-nav-main { background: var(--green); color: #fff; border-color: transparent; font-weight: 600; }
+.shop-nav-main:hover { background: var(--green-deep); }
+.shop-nav:disabled { opacity: .35; cursor: default; }
+
+.shop-sheet {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center;
+  background: rgba(47, 47, 43, .45); padding: 20px;
+}
+.shop-sheet-in {
+  background: var(--paper); border-radius: 22px; padding: 28px; max-width: 420px;
+  width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+}
+.shop-sheet-in h2 { margin: 0 0 6px; }
+.shop-qr { margin: 18px auto; display: grid; place-items: center; }
+.shop-qr svg { border-radius: 10px; }
+.shop-sheet-in input { font-size: .82rem; text-align: center; }
+
+@media (max-width: 860px) {
+  .shop-split { grid-template-columns: 120px minmax(0, 1fr); gap: 18px; }
+  .shop-cards, .shop-two { grid-template-columns: minmax(0, 1fr); }
+  .shop-steps li { padding: 6px 10px; font-size: .76rem; }
+  .shop-stage { padding: 20px 16px; }
+  .shop-nav { padding: 12px 18px; font-size: .95rem; }
+  /* 반지 세 장은 태블릿 세로에서도 한눈에 들어와야 합니다 */
+  .shop-rings { gap: 10px; }
+  .shop-ring { padding: 12px 10px; }
+  .shop-ring b { font-size: 1.1rem; }
+  .shop-ring-why { font-size: .8rem; }
+}
+@media (max-width: 660px) {
+  .shop-rings { grid-template-columns: minmax(0, 1fr); }
+  .shop-ring-art { max-width: 120px; }
+}
