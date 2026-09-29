@@ -431,7 +431,93 @@
       tags: ['균형', '중심', '확고함', '품격', '특별함', '정돈'],
       preset: { oxidize: true },
       desc: '두 가닥 사이 골을 유화로 눌러 까맣게 남겼습니다. 은색 두 줄이 ' +
-        '검은 선을 사이에 두고 나란히 갑니다.' }
+        '검은 선을 사이에 두고 나란히 갑니다.' },
+
+    /* ── 원석을 앉히고 어깨를 꾸민 갈래 ─────────────────────────
+     * 사장님이 캔바 "추가 디자인"에 모아 주신 반지들입니다.
+     * 공통점이 하나였습니다 — 가운데에 카보숑을 베젤로 물리고,
+     * 그 양옆 어깨에만 무늬를 넣습니다. 밴드를 한 바퀴 두르는 것이 아니라
+     * 앞모습에서만 보이는 장식이라, 손등 쪽이 또렷하고 손바닥 쪽은 매끈합니다. */
+
+    { id: 'onm-shoulder-tick', name: '여울목', family: 'signature', profile: 'dshape', texture: 'polish', setting: 'bezel',
+      width: [3.5, 5, 8], thickness: [2.0, 2.8, 3.8], wave: 0, twist: 0, taper: 0.1, facets: 0,
+      shoulder: 'tick',
+      elements: ['금', '수'], moods: ['시그니처', '선물'],
+      tags: ['정제', '섬세', '품격', '중심', '단정', '특별함'],
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: -0.15 },
+      desc: '가운데에 카보숑을 테두리로 물리고, 그 양옆 어깨에만 잔 눈금을 촘촘히 그었습니다. ' +
+        '손등 쪽은 결이 또렷하고 손바닥 쪽은 매끈해서 낄 때 걸리는 데가 없습니다.' },
+
+    { id: 'onm-shoulder-line', name: '나란', family: 'signature', profile: 'flat', texture: 'polish', setting: 'bezel',
+      width: [4, 5.5, 8], thickness: [2.0, 2.8, 3.8], wave: 0, twist: 0, taper: 0.08, facets: 0,
+      shoulder: 'line',
+      elements: ['토', '금'], moods: ['시그니처', '데일리'],
+      tags: ['정돈', '균형', '단정', '품격', '확고함', '중심'],
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: -0.15 },
+      desc: '어깨를 따라 가는 줄 두 개가 원석 쪽으로 나란히 달려옵니다. ' +
+        '선이 시선을 가운데로 모아 주어 원석이 실제보다 커 보입니다.' },
+
+    { id: 'onm-shoulder-notch', name: '갈피', family: 'signature', profile: 'flat', texture: 'polish', setting: 'bezel',
+      width: [4, 5.5, 8], thickness: [2.0, 2.8, 4.0], wave: 0, twist: 0, taper: 0.05, facets: 0,
+      shoulder: 'notch',
+      elements: ['금', '화'], moods: ['시그니처'],
+      tags: ['결단', '확고함', '품격', '정제', '특별함', '중심'],
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: -0.15 },
+      desc: '원석 양옆을 각지게 한 번씩 끊어 냈습니다. 그 한 줄이 그림자를 만들어 ' +
+        '원석이 어깨 위에 얹힌 것처럼 또렷하게 떠오릅니다.' },
+
+    { id: 'onm-shoulder-split', name: '두물', family: 'organic', profile: 'round', texture: 'polish', setting: 'bezel',
+      width: [3.5, 5, 7.5], thickness: [2.0, 2.8, 3.8], wave: 0, twist: 0, taper: 0.12, facets: 0,
+      shoulder: 'split',
+      elements: ['수', '목'], moods: ['선물', '데일리'],
+      tags: ['유연', '조화', '감성', '섬세', '포용', '부드러움'],
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: -0.15 },
+      desc: '어깨가 두 갈래로 갈라졌다가 원석 앞에서 다시 하나로 모입니다. ' +
+        '두 물줄기가 만나는 자리에 돌이 놓인 모양입니다.' },
+
+    { id: 'onm-shoulder-oval', name: '못', family: 'signature', profile: 'dshape', texture: 'polish', setting: 'bezel',
+      width: [4, 5.5, 8], thickness: [2.0, 2.8, 3.8], wave: 0, twist: 0, taper: 0.1, facets: 0,
+      shoulder: 'tick',
+      elements: ['수', '토'], moods: ['시그니처', '선물'],
+      tags: ['차분', '품격', '중심', '섬세', '담담함', '특별함'],
+      preset: { stoneShape: 'oval', stoneSize: 6.0, stoneHeight: -0.2 },
+      desc: '길쭉한 오벌 카보숑을 세로로 세워 물렸습니다. 어깨의 잔 눈금이 ' +
+        '돌을 향해 모여들어, 작은 못에 비친 하늘처럼 가운데가 깊어 보입니다.' },
+
+    { id: 'onm-hammer-stone', name: '윤슬', family: 'rugged', profile: 'dshape', texture: 'fine', setting: 'bezel',
+      width: [4, 5.5, 9], thickness: [2.0, 2.8, 4.0], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'block', bandAmt: 0.8,
+      elements: ['토', '수'], moods: ['시그니처'],
+      tags: ['자연스러운 질감', '단단함', '담담함', '중심', '우직', '특별함'],
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: -0.15 },
+      desc: '밴드 전체를 망치로 두드려 잔물결처럼 만든 뒤 가운데에 카보숑을 앉혔습니다. ' +
+        '두드린 자국마다 빛이 따로 맺혀 물 위에 햇빛이 부서진 것처럼 보입니다.' },
+
+    { id: 'onm-wave-stone', name: '물무늬', family: 'organic', profile: 'flat', texture: 'polish', setting: 'bezel',
+      width: [4.5, 6.5, 9], thickness: [2.0, 2.8, 4.0], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'bark', bandAmt: 0.55,
+      elements: ['수', '목'], moods: ['시그니처', '선물'],
+      tags: ['흐름', '유연', '자연에서 영감', '감성', '변화', '포용'],
+      preset: { organic: 0.4, stoneShape: 'oval', stoneSize: 6.0, stoneHeight: -0.25 },
+      desc: '넓은 밴드를 손으로 눌러 굴곡을 주고 그 위에 결을 그어 물결을 냈습니다. ' +
+        '결이 원석을 감아 돌아, 돌이 물 가운데 놓인 것처럼 앉습니다.' },
+
+    /* ── 원석 없이 형태만으로 ── */
+
+    { id: 'onm-stud', name: '비늘못', family: 'rugged', profile: 'flat', texture: 'polish', setting: 'none',
+      width: [3.5, 5, 8], thickness: [1.8, 2.6, 3.6], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'stud',
+      elements: ['금', '토'], moods: ['시그니처'],
+      tags: ['결단', '강인', '개척', '특별함', '화려', '단단함'],
+      desc: '네모난 뿔이 둘레를 따라 줄줄이 섭니다. 뿔마다 네 면이 각기 다른 각도로 ' +
+        '빛을 받아, 손을 조금만 움직여도 반짝이는 자리가 확 달라집니다.' },
+
+    { id: 'onm-diagonal', name: '비껴', family: 'signature', profile: 'round', texture: 'polish', setting: 'none',
+      width: [3, 4.5, 7], thickness: [1.8, 2.6, 3.6], wave: 0, twist: 0.9, taper: 0, facets: 0,
+      elements: ['화', '금'], moods: ['시그니처', '커플'],
+      tags: ['변화', '흐름', '개척', '특별함', '빛', '유연'],
+      desc: '굵은 홈이 비스듬히 누워 한 바퀴를 감아 올라갑니다. 꼰줄보다 골이 완만해 ' +
+        '손에 걸리지 않으면서도 선이 길게 흐릅니다.' }
   ];
 
   /* ────────────────────── 캔바 원문 → 스타일 해석 ────────────────────── */
