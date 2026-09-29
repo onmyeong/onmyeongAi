@@ -444,7 +444,7 @@
       shoulder: 'tick',
       elements: ['금', '수'], moods: ['시그니처', '선물'],
       tags: ['정제', '섬세', '품격', '중심', '단정', '특별함'],
-      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0 },
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0.2 },
       desc: '가운데에 카보숑을 테두리로 물리고, 그 양옆 어깨에만 잔 눈금을 촘촘히 그었습니다. ' +
         '손등 쪽은 결이 또렷하고 손바닥 쪽은 매끈해서 낄 때 걸리는 데가 없습니다.' },
 
@@ -453,7 +453,7 @@
       shoulder: 'line',
       elements: ['토', '금'], moods: ['시그니처', '데일리'],
       tags: ['정돈', '균형', '단정', '품격', '확고함', '중심'],
-      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0 },
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0.2 },
       desc: '어깨를 따라 가는 줄 두 개가 원석 쪽으로 나란히 달려옵니다. ' +
         '선이 시선을 가운데로 모아 주어 원석이 실제보다 커 보입니다.' },
 
@@ -462,7 +462,7 @@
       shoulder: 'notch',
       elements: ['금', '화'], moods: ['시그니처'],
       tags: ['결단', '확고함', '품격', '정제', '특별함', '중심'],
-      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0 },
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0.2 },
       desc: '원석 양옆을 각지게 한 번씩 끊어 냈습니다. 그 한 줄이 그림자를 만들어 ' +
         '원석이 어깨 위에 얹힌 것처럼 또렷하게 떠오릅니다.' },
 
@@ -471,7 +471,7 @@
       shoulder: 'split',
       elements: ['수', '목'], moods: ['선물', '데일리'],
       tags: ['유연', '조화', '감성', '섬세', '포용', '부드러움'],
-      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0 },
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0.2 },
       desc: '어깨가 두 갈래로 갈라졌다가 원석 앞에서 다시 하나로 모입니다. ' +
         '두 물줄기가 만나는 자리에 돌이 놓인 모양입니다.' },
 
@@ -480,7 +480,7 @@
       shoulder: 'tick',
       elements: ['수', '토'], moods: ['시그니처', '선물'],
       tags: ['차분', '품격', '중심', '섬세', '담담함', '특별함'],
-      preset: { stoneShape: 'oval', stoneSize: 6.0, stoneHeight: -0.2 },
+      preset: { stoneShape: 'oval', stoneSize: 6.0, stoneHeight: 0.15 },
       desc: '길쭉한 오벌 카보숑을 세로로 세워 물렸습니다. 어깨의 잔 눈금이 ' +
         '돌을 향해 모여들어, 작은 못에 비친 하늘처럼 가운데가 깊어 보입니다.' },
 
@@ -489,7 +489,7 @@
       band: 'block', bandAmt: 0.8,
       elements: ['토', '수'], moods: ['시그니처'],
       tags: ['자연스러운 질감', '단단함', '담담함', '중심', '우직', '특별함'],
-      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0 },
+      preset: { stoneShape: 'round', stoneSize: 6.0, stoneHeight: 0.2 },
       desc: '밴드 전체를 망치로 두드려 잔물결처럼 만든 뒤 가운데에 카보숑을 앉혔습니다. ' +
         '두드린 자국마다 빛이 따로 맺혀 물 위에 햇빛이 부서진 것처럼 보입니다.' },
 

@@ -541,7 +541,7 @@ function buildBand(s, model) {
               const seg = (d - IN) / (OUT - IN);
               const ax = seg * TICKS;
               const tri = Math.abs((ax - Math.floor(ax)) * 2 - 1);
-              cut2 = Math.pow(1 - tri, 1.6) * 0.2 * scale;
+              cut2 = Math.pow(1 - tri, 1.6) * 0.13 * scale;
             } else if (shoulder === 'line') {
               // 가로 줄 — 밴드를 따라 길게 두 줄
               [0.42, 0.78].forEach(function (at) {
