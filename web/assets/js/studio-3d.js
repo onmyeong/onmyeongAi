@@ -523,9 +523,11 @@ function buildBand(s, model) {
           if (dth > Math.PI) dth -= Math.PI * 2;
           else if (dth < -Math.PI) dth += Math.PI * 2;
           const d = Math.abs(dth);
-          // 원석 자리(0.34rad 안쪽)는 비워 두고, 1.5rad 넘어가면 없앱니다
-          const rise = smooth(Math.min(1, Math.max(0, (d - 0.34) / 0.22)));
-          const fall = 1 - smooth(Math.min(1, Math.max(0, (d - 1.05) / 0.45)));
+          /* 원석 자리(0.34rad 안쪽)는 비워 두고, 어깨만 쓰다가 옆구리에서 사라집니다.
+           * 실물은 장식이 원석 바로 옆 좁은 구간에만 있고 뒤는 민자입니다. */
+          const IN = 0.34, OUT = 1.16;
+          const rise = smooth(Math.min(1, Math.max(0, (d - IN) / 0.14)));
+          const fall = 1 - smooth(Math.min(1, Math.max(0, (d - (OUT - 0.3)) / 0.3)));
           const sh = rise * fall;
           if (sh > 0.01) {
             const pv2 = profile[j].v;
@@ -533,11 +535,13 @@ function buildBand(s, model) {
             const scale = Math.max(t, 1.2) * sh;
             let cut2 = 0;
             if (shoulder === 'tick') {
-              // 세로 홈 — 폭 방향으로 그은 잔 눈금
-              const n = Math.max(10, Math.round(CIRC / 1.05));
-              const ax = (th / (Math.PI * 2)) * n;
+              /* 굵은 홈 넷 — 어깨 길이를 넷으로 나눠 고르게 놓습니다.
+               * 둘레 길이로 개수를 잡으면 호수가 커질수록 촘촘해져 실물과 달라집니다. */
+              const TICKS = 4;
+              const seg = (d - IN) / (OUT - IN);
+              const ax = seg * TICKS;
               const tri = Math.abs((ax - Math.floor(ax)) * 2 - 1);
-              cut2 = Math.pow(1 - tri, 2.4) * 0.16 * scale;
+              cut2 = Math.pow(1 - tri, 1.6) * 0.2 * scale;
             } else if (shoulder === 'line') {
               // 가로 줄 — 밴드를 따라 길게 두 줄
               [0.42, 0.78].forEach(function (at) {
@@ -551,7 +555,7 @@ function buildBand(s, model) {
             } else if (shoulder === 'split') {
               // 갈라짐 — 어깨 가운데가 두 갈래로 나뉩니다
               const g = 0.3;
-              if (kv2 < g) cut2 = (1 - (kv2 / g) * (kv2 / g)) * 0.3 * scale;
+              if (kv2 < g) cut2 = (1 - (kv2 / g) * (kv2 / g)) * 0.46 * scale;
             }
             if (cut2 > 0) { radius -= cut2; carved += cut2; }
           }
