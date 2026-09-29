@@ -278,9 +278,13 @@ function buildBand(s, model) {
   /* 밴드 무늬 — 디자인마다 정해진 겉면 무늬입니다 (나이테 · 꼰줄 · 구슬 · 돌담 · 물길). */
   const bandKind = (model && model.band) || '';
   const bandAmt = model && model.bandAmt != null ? model.bandAmt : 1;
+  /* 어깨 장식 — 원석 양옆에만 들어가고 뒤로 갈수록 사라지는 무늬입니다.
+   * 밴드를 한 바퀴 도는 무늬(band)와 달리 앞쪽에만 놓입니다. */
+  const shoulder = (model && model.shoulder) || '';
   // 결이 잔 무늬는 줄이 성기면 계단처럼 끊겨 보입니다
-  const bandDense = bandKind === 'bark' || bandKind === 'block' || bandKind === 'rope';
-  const fine = !!s.engrave || !!s.stars || sparkle || !!bandKind;
+  const bandDense = bandKind === 'bark' || bandKind === 'block' || bandKind === 'rope' ||
+    (model && (model.shoulder === 'tick' || model.band === 'stud'));
+  const fine = !!s.engrave || !!s.stars || sparkle || !!bandKind || !!(model && model.shoulder);
   const SEG = (sparkle || bandDense) ? 720 : fine ? 560 : 320;
   const profile = makeProfile(s, sparkle ? 54 : fine ? 46 : PROFILE_STEPS);
   const P = profile.length;
@@ -479,6 +483,18 @@ function buildBand(s, model) {
             const across = Math.sqrt(Math.max(0, 1 - kv * kv));
             const swellB = Math.min(1, 0.2 + 0.8 * along) * (0.35 + 0.65 * across);
             cut = (1 - swellB) * 0.3 * depthScale;
+          } else if (bandKind === 'stud') {
+            /* 피라미드 — 네모난 뿔이 줄줄이 섭니다.
+             * 칸 한가운데가 가장 높고 네 모서리로 갈수록 깎여 내려갑니다. */
+            const STUD = 2.2;                                   // 뿔 하나 크기 (mm)
+            const nAround = Math.max(8, Math.round(CIRC / STUD));
+            const ax = (th / (Math.PI * 2)) * nAround;
+            const fx = ax - Math.floor(ax);
+            const rows = Math.max(1, Math.round(s.width / STUD));
+            const ay = (pv / Math.max(0.001, s.width) + 0.5) * rows;
+            const fy = ay - Math.floor(ay);
+            const edge = Math.max(Math.abs(fx - 0.5), Math.abs(fy - 0.5)) * 2;
+            cut = edge * 0.34 * depthScale;
           } else if (bandKind === 'block') {
             /* 돌담 — 망치로 두드려 면을 툭툭 끊어 낸 자국.
              * 덩이마다 기울기와 높이가 달라 모서리가 제각각 빛을 받습니다. */
@@ -498,6 +514,51 @@ function buildBand(s, model) {
             cut = nz * 0.2 * depthScale;
           }
           if (cut > 0) { radius -= cut; carved += cut; }
+        }
+        /* 어깨 장식 — 원석이 앉는 앞쪽 양옆에만 새깁니다.
+         * 원석 바로 옆에서 시작해 손바닥 쪽으로 가며 서서히 사라지므로,
+         * 밴드를 한 바퀴 두르는 무늬와 달리 앞모습에서만 보입니다. */
+        if (shoulder) {
+          let dth = th - Math.PI / 2;
+          if (dth > Math.PI) dth -= Math.PI * 2;
+          else if (dth < -Math.PI) dth += Math.PI * 2;
+          const d = Math.abs(dth);
+          /* 원석 자리(0.34rad 안쪽)는 비워 두고, 어깨만 쓰다가 옆구리에서 사라집니다.
+           * 실물은 장식이 원석 바로 옆 좁은 구간에만 있고 뒤는 민자입니다. */
+          const IN = 0.34, OUT = 1.16;
+          const rise = smooth(Math.min(1, Math.max(0, (d - IN) / 0.14)));
+          const fall = 1 - smooth(Math.min(1, Math.max(0, (d - (OUT - 0.3)) / 0.3)));
+          const sh = rise * fall;
+          if (sh > 0.01) {
+            const pv2 = profile[j].v;
+            const kv2 = Math.min(1, Math.abs(2 * pv2 / Math.max(0.001, s.width)));
+            const scale = Math.max(t, 1.2) * sh;
+            let cut2 = 0;
+            if (shoulder === 'tick') {
+              /* 굵은 홈 넷 — 어깨 길이를 넷으로 나눠 고르게 놓습니다.
+               * 둘레 길이로 개수를 잡으면 호수가 커질수록 촘촘해져 실물과 달라집니다. */
+              const TICKS = 4;
+              const seg = (d - IN) / (OUT - IN);
+              const ax = seg * TICKS;
+              const tri = Math.abs((ax - Math.floor(ax)) * 2 - 1);
+              cut2 = Math.pow(1 - tri, 1.6) * 0.13 * scale;
+            } else if (shoulder === 'line') {
+              // 가로 줄 — 밴드를 따라 길게 두 줄
+              [0.42, 0.78].forEach(function (at) {
+                const dd = Math.abs(kv2 - at);
+                if (dd < 0.1) cut2 = Math.max(cut2, (1 - dd / 0.1) * 0.15 * scale);
+              });
+            } else if (shoulder === 'notch') {
+              // 각진 홈 — 원석 옆에 V 자로 한 줄
+              const dd = Math.abs(d - 0.62);
+              if (dd < 0.12) cut2 = (1 - dd / 0.12) * 0.22 * scale;
+            } else if (shoulder === 'split') {
+              // 갈라짐 — 어깨 가운데가 두 갈래로 나뉩니다
+              const g = 0.3;
+              if (kv2 < g) cut2 = (1 - (kv2 / g) * (kv2 / g)) * 0.46 * scale;
+            }
+            if (cut2 > 0) { radius -= cut2; carved += cut2; }
+          }
         }
         if (bump.amp > 0) {
           let nz;
