@@ -72,7 +72,7 @@
     if (!global.navigator.share) share.classList.add('is-hidden');
     else share.addEventListener('click', function () {
       global.navigator.share({
-        title: '온명 · 궁합 보기',
+        title: '온명 반지공방 · 궁합 보기',
         text: '우리 둘 궁합 한번 볼래? 생일만 넣으면 돼.',
         url: $('p-link').value
       }).catch(function () {});
