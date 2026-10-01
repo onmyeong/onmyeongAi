@@ -27,22 +27,51 @@
 
     <!-- 0. 시작 -->
     <section class="shop-screen is-on" data-screen="start">
-      <div class="shop-center">
+      <div class="shop-center" id="s-center">
         <p class="shop-eyebrow">온명 매장 상담</p>
-        <h1 class="shop-h1">생년월일을 여쭤보세요</h1>
+        <h1 class="shop-h1">태어난 날에서 시작합니다</h1>
+        <p class="shop-lead">그날의 두 글자가 그 사람의 결을 말해 줍니다. 생년월일만 여쭤보면 됩니다.</p>
+
+        <div class="shop-mode" role="group" aria-label="상담 방식">
+          <button class="shop-mode-btn is-on" type="button" id="s-mode-solo">혼자 보기</button>
+          <button class="shop-mode-btn" type="button" id="s-mode-pair">둘이 보기 · 궁합</button>
+        </div>
+
         <div class="shop-form">
-          <label class="shop-field">
-            <span>이름</span>
-            <input id="s-name" type="text" autocomplete="off" placeholder="김지민">
-          </label>
-          <div class="shop-date">
-            <label class="shop-field"><span>년 (양력)</span>
-              <input id="s-y" type="number" inputmode="numeric" placeholder="1994"></label>
-            <label class="shop-field"><span>월</span>
-              <input id="s-m" type="number" inputmode="numeric" placeholder="9"></label>
-            <label class="shop-field"><span>일</span>
-              <input id="s-d" type="number" inputmode="numeric" placeholder="14"></label>
+          <div class="shop-people" id="s-people">
+            <div class="shop-person">
+              <p class="shop-person-tag is-hidden" id="s-tag-a">첫 번째 분</p>
+              <label class="shop-field">
+                <span>이름</span>
+                <input id="s-name" type="text" autocomplete="off" placeholder="김지민">
+              </label>
+              <div class="shop-date">
+                <label class="shop-field"><span>년 (양력)</span>
+                  <input id="s-y" type="number" inputmode="numeric" placeholder="1994"></label>
+                <label class="shop-field"><span>월</span>
+                  <input id="s-m" type="number" inputmode="numeric" placeholder="9"></label>
+                <label class="shop-field"><span>일</span>
+                  <input id="s-d" type="number" inputmode="numeric" placeholder="14"></label>
+              </div>
+            </div>
+
+            <div class="shop-person is-hidden" id="s-second">
+              <p class="shop-person-tag">두 번째 분</p>
+              <label class="shop-field">
+                <span>이름</span>
+                <input id="s-name2" type="text" autocomplete="off" placeholder="이하늘">
+              </label>
+              <div class="shop-date">
+                <label class="shop-field"><span>년 (양력)</span>
+                  <input id="s-y2" type="number" inputmode="numeric" placeholder="1996"></label>
+                <label class="shop-field"><span>월</span>
+                  <input id="s-m2" type="number" inputmode="numeric" placeholder="3"></label>
+                <label class="shop-field"><span>일</span>
+                  <input id="s-d2" type="number" inputmode="numeric" placeholder="12"></label>
+              </div>
+            </div>
           </div>
+
           <p class="shop-note">밤 11시 이후 출생이면 다음 날 일주로 봅니다.</p>
           <p class="shop-error is-hidden" id="s-error" role="alert"></p>
           <button class="shop-go" type="button" id="s-start">일주 보기</button>
@@ -136,6 +165,77 @@
       <div class="shop-rings" id="s-rings"></div>
       <div class="shop-actions">
         <button class="shop-alt" type="button" id="s-reshuffle">다른 디자인 보기</button>
+      </div>
+    </section>
+
+    <!-- ───── 궁합 (둘이 보기) ───── -->
+
+    <!-- C1. 두 사람 -->
+    <section class="shop-screen" data-screen="pair">
+      <div class="shop-pair-head">
+        <div class="shop-pair-one">
+          <div class="ilju-seal shop-seal" id="c-seal-a"></div>
+          <b id="c-name-a"></b>
+          <em id="c-ilju-a"></em>
+          <span id="c-phrase-a"></span>
+        </div>
+        <div class="shop-pair-score">
+          <div class="shop-score-dial" id="c-dial"><span id="c-score"></span></div>
+          <b id="c-grade"></b>
+          <p id="c-headline"></p>
+        </div>
+        <div class="shop-pair-one">
+          <div class="ilju-seal shop-seal" id="c-seal-b"></div>
+          <b id="c-name-b"></b>
+          <em id="c-ilju-b"></em>
+          <span id="c-phrase-b"></span>
+        </div>
+      </div>
+      <p class="shop-flow" id="c-nick"></p>
+      <div class="shop-chips" id="c-axes-mini"></div>
+    </section>
+
+    <!-- C2. 세 갈래 점수 -->
+    <section class="shop-screen" data-screen="axes">
+      <h1 class="shop-h1 shop-h1-sm">어디가 맞고 어디가 다른지</h1>
+      <div class="shop-axes" id="c-axes"></div>
+      <div class="shop-panel shop-panel-accent" style="margin-top:20px">
+        <h2 id="c-yy-label"></h2>
+        <p id="c-yy-text"></p>
+      </div>
+    </section>
+
+    <!-- C3. 글자로 보는 풀이 -->
+    <section class="shop-screen" data-screen="mix">
+      <h1 class="shop-h1 shop-h1-sm">두 일주를 겹쳐 보면</h1>
+      <div class="shop-life" id="c-lines"></div>
+      <h2 class="shop-sub">서로를 이렇게 봅니다</h2>
+      <div class="shop-two" id="c-sipsin"></div>
+    </section>
+
+    <!-- C4. 함께 지낼 때 -->
+    <section class="shop-screen" data-screen="play">
+      <h1 class="shop-h1 shop-h1-sm">함께 지낼 때</h1>
+      <div class="shop-two">
+        <div class="shop-panel shop-panel-green">
+          <h2>잘 맞는 점</h2>
+          <ul class="shop-list" id="c-good"></ul>
+        </div>
+        <div class="shop-panel shop-panel-blue">
+          <h2>살펴볼 점</h2>
+          <ul class="shop-list" id="c-care"></ul>
+        </div>
+      </div>
+      <div class="shop-cards" id="c-chem" style="margin-top:16px"></div>
+    </section>
+
+    <!-- C5. 커플링 -->
+    <section class="shop-screen" data-screen="crings">
+      <h1 class="shop-h1 shop-h1-sm" id="c-ringhead">두 분께 어울리는 커플링</h1>
+      <p class="shop-lead" id="c-ringnote"></p>
+      <div class="shop-rings shop-rings-pair" id="c-rings"></div>
+      <div class="shop-actions">
+        <button class="shop-alt" type="button" id="c-reshuffle">다른 디자인 보기</button>
       </div>
     </section>
 

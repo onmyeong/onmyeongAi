@@ -24,54 +24,110 @@
     });
   }
 
-  var SCREENS = ['start', 'ilju', 'letters', 'traits', 'advice', 'energy', 'rings'];
-  var LABELS = ['생일', '일주', '두 글자', '성향', '강점', '기운', '반지'];
+  /* 상담은 두 갈래입니다.
+   *   solo — 혼자 오신 분: 일주를 읽고 반지로 넘어갑니다
+   *   pair — 둘이 오신 분: 궁합을 보고 커플링으로 넘어갑니다
+   * 화면은 한 벌만 두고, 어느 갈래냐에 따라 보여 줄 화면만 골라 넘깁니다. */
+  var FLOW = {
+    solo: {
+      screens: ['start', 'ilju', 'letters', 'traits', 'advice', 'energy', 'rings'],
+      labels: ['생일', '일주', '두 글자', '성향', '강점', '기운', '반지'],
+      last: '반지 보기 →'
+    },
+    pair: {
+      screens: ['start', 'pair', 'axes', 'mix', 'play', 'crings'],
+      labels: ['생일', '두 사람', '점수', '풀이', '함께', '커플링'],
+      last: '커플링 보기 →'
+    }
+  };
 
-  var state = { at: 0, res: null, name: '', seed: 1 };
+  var state = { mode: 'solo', at: 0, res: null, resB: null, cp: null, name: '', name2: '', seed: 1 };
+
+  function flow() { return FLOW[state.mode]; }
+  function ready() { return state.mode === 'pair' ? !!state.cp : !!state.res; }
 
   /* ───────────── 화면 넘기기 ───────────── */
 
   function paintSteps() {
-    $('s-steps').innerHTML = SCREENS.map(function (k, i) {
+    var f = flow();
+    $('s-steps').innerHTML = f.labels.map(function (label, i) {
       return '<li class="' + (i === state.at ? 'is-on' : (i < state.at ? 'is-done' : '')) + '">' +
-        esc(LABELS[i]) + '</li>';
+        esc(label) + '</li>';
     }).join('');
   }
 
   function go(n) {
-    if (n < 0 || n >= SCREENS.length) return;
-    if (n > 0 && !state.res) return;              // 생일을 아직 안 넣었으면 못 넘어갑니다
+    var f = flow();
+    if (n < 0 || n >= f.screens.length) return;
+    if (n > 0 && !ready()) return;                // 생일을 아직 안 넣었으면 못 넘어갑니다
     state.at = n;
+    var want = f.screens[n];
     var all = doc.querySelectorAll('.shop-screen');
-    for (var i = 0; i < all.length; i++) all[i].classList.toggle('is-on', i === n);
+    for (var i = 0; i < all.length; i++) {
+      all[i].classList.toggle('is-on', all[i].getAttribute('data-screen') === want);
+    }
     $('s-prev').disabled = n === 0;
-    $('s-next').disabled = n === SCREENS.length - 1;
-    $('s-next').textContent = n === SCREENS.length - 2 ? '반지 보기 →' : '다음 →';
+    $('s-next').disabled = n === f.screens.length - 1;
+    $('s-next').textContent = n === f.screens.length - 2 ? f.last : '다음 →';
     paintSteps();
     $('s-stage').scrollTop = 0;
   }
 
+  /* ───────────── 혼자 / 둘이 고르기 ───────────── */
+
+  function setMode(mode) {
+    state.mode = mode;
+    var pair = mode === 'pair';
+    $('s-mode-solo').classList.toggle('is-on', !pair);
+    $('s-mode-pair').classList.toggle('is-on', pair);
+    $('s-second').classList.toggle('is-hidden', !pair);
+    $('s-tag-a').classList.toggle('is-hidden', !pair);
+    $('s-people').classList.toggle('is-pair', pair);     // 두 분을 나란히 놓습니다
+    $('s-center').classList.toggle('is-wide', pair);
+    $('s-start').textContent = pair ? '궁합 보기' : '일주 보기';
+    $('s-error').classList.add('is-hidden');
+    // 갈래가 바뀌면 앞서 본 상담은 지웁니다 (손님이 바뀐 것이므로)
+    state.res = null; state.resB = null; state.cp = null;
+    $('s-who').textContent = '';
+    resetAccent();
+    go(0);
+  }
+
   /* ───────────── 상담 시작 ───────────── */
+
+  function read(ids) {
+    return ONM.getIlju({
+      name: $(ids[0]).value,
+      year: $(ids[1]).value, month: $(ids[2]).value, day: $(ids[3]).value,
+      hour: '', minute: ''
+    });
+  }
 
   function start() {
     var err = $('s-error');
-    var input = {
-      name: $('s-name').value,
-      year: $('s-y').value, month: $('s-m').value, day: $('s-d').value,
-      hour: '', minute: ''
-    };
-    var res;
-    try { res = ONM.getIlju(input); }
-    catch (e) {
+    var a, b;
+    try {
+      a = read(['s-name', 's-y', 's-m', 's-d']);
+      if (state.mode === 'pair') b = read(['s-name2', 's-y2', 's-m2', 's-d2']);
+    } catch (e) {
       err.textContent = e.message || '생년월일을 다시 확인해 주세요.';
       err.classList.remove('is-hidden');
       return;
     }
     err.classList.add('is-hidden');
-    state.res = res;
-    state.name = givenName(input.name);
+    state.res = a;
+    state.resB = b || null;
+    state.name = givenName($('s-name').value);
+    state.name2 = state.mode === 'pair' ? givenName($('s-name2').value) : '';
     state.seed = Math.floor(Math.random() * 100000) + 1;
-    render();
+
+    if (state.mode === 'pair') {
+      state.cp = ONM.compat.compare(a.record, b.record, { a: state.name, b: state.name2 });
+      renderCouple();
+    } else {
+      state.cp = null;
+      render();
+    }
     go(1);
   }
 
@@ -83,6 +139,27 @@
     return n;
   }
 
+  /* ───────────── 손님마다 달라지는 색 ─────────────
+   * 일주마다 천간 색이 정해져 있습니다 (병이면 빨강, 계면 연한 파랑).
+   * 그 색은 도장 · 칩 · 패널 같은 '내용'에만 물립니다. 버튼과 진행 표시 같은
+   * 화면 틀은 늘 온명의 쑥색입니다 — 손님이 바뀔 때마다 매장 화면 전체가
+   * 빨갛게 변하면 곤란하니까요. */
+
+  function paintAccent(rec) {
+    var color = ONM.zodiacColor(rec);
+    var app = doc.querySelector('.shop-app');
+    app.style.setProperty('--accent', color.solid);
+    app.style.setProperty('--accent-ink', color.ink);
+    app.style.setProperty('--accent-tint', color.tint);
+  }
+
+  function resetAccent() {
+    var app = doc.querySelector('.shop-app');
+    ['--accent', '--accent-ink', '--accent-tint'].forEach(function (k) {
+      app.style.removeProperty(k);          // 처음 화면은 온명의 쑥색으로 돌아갑니다
+    });
+  }
+
   /* ───────────── 내용 채우기 ───────────── */
 
   function render() {
@@ -90,13 +167,7 @@
     var who = state.name ? state.name + ' 님' : state.res.id + ' 일주';
     $('s-who').textContent = who;
 
-    /* 일주마다 천간 색이 정해져 있습니다 (병이면 빨강, 계면 연한 파랑).
-     * 그 색을 화면 전체에 물려서, 손님마다 화면 분위기가 달라집니다. */
-    var color = ONM.zodiacColor(rec);
-    var app = doc.querySelector('.shop-app');
-    app.style.setProperty('--accent', color.solid);
-    app.style.setProperty('--accent-ink', color.ink);
-    app.style.setProperty('--accent-tint', color.tint);
+    paintAccent(rec);
 
     // 1. 일주 — 색 동그라미 안에 십이지 아이콘
     $('s-seal').innerHTML = ONM.zodiacSvg(rec.branch, {
@@ -188,8 +259,133 @@
     }).join('');
   }
 
+  /* ───────────── 궁합 (둘이 보기) ─────────────
+   * 자료는 온라인 궁합 리포트와 같은 compat.compare() 를 그대로 씁니다.
+   * 여기서 다른 것은 한 화면에 한 가지만 두고 넘긴다는 점뿐입니다. */
+
+  function renderCouple() {
+    var A = state.res, B = state.resB, cp = state.cp;
+    var ra = A.record, rb = B.record;
+    var who = (state.name || A.id) + ' × ' + (state.name2 || B.id);
+    $('s-who').textContent = who;
+
+    // 화면 색은 첫 번째 분의 천간 색을 씁니다
+    paintAccent(ra);
+
+    // C1. 두 사람과 점수
+    /* 도장은 각자의 천간 색을 씁니다 — 두 분이 한눈에 구분되도록 */
+    sealFor('c-seal-a', ra, A.id);
+    sealFor('c-seal-b', rb, B.id);
+    $('c-name-a').textContent = state.name ? state.name + ' 님' : A.id + ' 일주';
+    $('c-name-b').textContent = state.name2 ? state.name2 + ' 님' : B.id + ' 일주';
+    $('c-ilju-a').textContent = A.id + ' (' + A.hanja + ')';
+    $('c-ilju-b').textContent = B.id + ' (' + B.hanja + ')';
+    $('c-phrase-a').textContent = ONM.iljuPhrase ? ONM.iljuPhrase(ra) : '';
+    $('c-phrase-b').textContent = ONM.iljuPhrase ? ONM.iljuPhrase(rb) : '';
+    $('c-dial').style.setProperty('--v', cp.score);
+    $('c-score').textContent = cp.score;
+    $('c-grade').textContent = cp.grade;
+    $('c-headline').textContent = cp.headline;
+    $('c-nick').innerHTML = '<b>' + esc(cp.nickname) + '</b>' + esc(cp.elementLine || '');
+
+    // 한눈에 보는 세 축 (자세한 건 다음 화면에서)
+    $('c-axes-mini').innerHTML = (cp.axes || []).map(function (ax) {
+      return '<span class="shop-chip"><b>' + esc(ax.name.split(' · ')[0]) + '</b>' + ax.score + '점</span>';
+    }).join('');
+
+    // C2. 세 갈래 점수
+    $('c-axes').innerHTML = (cp.axes || []).map(function (ax) {
+      return '<div class="shop-axis">' +
+        '<div class="shop-axis-top"><b>' + esc(ax.name) + '</b><span>' + ax.score + '</span></div>' +
+        '<div class="shop-axis-bar"><i style="width:' + Math.max(4, Math.min(100, ax.score)) + '%"></i></div>' +
+        '<p>' + esc(ax.note) + '</p>' +
+      '</div>';
+    }).join('');
+    $('c-yy-label').textContent = cp.yinYang ? '음양 — ' + cp.yinYang.label : '';
+    $('c-yy-text').textContent = cp.yinYang ? cp.yinYang.text : '';
+
+    // C3. 글자 풀이와 서로를 보는 자리(십신)
+    $('c-lines').innerHTML = [
+      ['윗글자', cp.stemLine], ['아랫글자', cp.branchLine], ['오행', cp.elementLine]
+    ].filter(function (L) { return L[1]; }).map(function (L) {
+      return '<div class="shop-life-row"><b>' + esc(L[0]) + '</b><span>' + esc(L[1]) + '</span></div>';
+    }).join('');
+    $('c-sipsin').innerHTML = [
+      [$('c-name-a').textContent + '이 보는 상대', cp.sipsinA],
+      [$('c-name-b').textContent + '이 보는 상대', cp.sipsinB]
+    ].filter(function (x) { return x[1]; }).map(function (x) {
+      return '<div class="shop-panel shop-panel-soft">' +
+        '<h2>' + esc(x[0]) + ' — ' + esc(x[1].name) + '</h2>' +
+        '<p><b>' + esc(x[1].title || '') + '</b> ' + esc(x[1].text || '') + '</p>' +
+      '</div>';
+    }).join('');
+
+    // C4. 함께 지낼 때
+    function list(items) {
+      return (items || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') ||
+        '<li>특별히 짚을 것이 없는, 무난한 자리입니다.</li>';
+    }
+    $('c-good').innerHTML = list(cp.good);
+    $('c-care').innerHTML = list(cp.care);
+    $('c-chem').innerHTML = (cp.chemistry || []).map(function (c) {
+      return '<div class="shop-card"><h3>' + esc(c.title) + '</h3><p>' + esc(c.text) + '</p></div>';
+    }).join('');
+
+    renderCoupleRings();
+  }
+
+  function sealFor(id, rec, iljuId) {
+    var el = $(id);
+    el.innerHTML = ONM.zodiacSvg(rec.branch, { label: rec.branchInfo.animal + ' — ' + iljuId + ' 일주' });
+    var c = ONM.zodiacColor(rec);
+    var one = el.parentNode;            // .shop-pair-one — 이름과 일주 글자도 같은 색으로
+    one.style.setProperty('--accent', c.solid);
+    one.style.setProperty('--accent-ink', c.ink);
+    one.style.setProperty('--accent-tint', c.tint);
+  }
+
+  function renderCoupleRings() {
+    var cp = state.cp, ra = state.res.record, rb = state.resB.record;
+    $('c-ringhead').textContent = (state.name && state.name2)
+      ? state.name + ' 님과 ' + state.name2 + ' 님의 커플링'
+      : '두 분께 어울리는 커플링';
+    $('c-ringnote').textContent = cp.bridge
+      ? '두 분을 잇는 기운은 ' + cp.bridge + '입니다. 그 결에 맞는 디자인을 먼저 올렸습니다. ' +
+        '같은 디자인이라도 폭과 두께는 두 분을 갈라 잡아 드립니다.'
+      : '두 분 각자의 추천을 합쳐 높은 순으로 골랐습니다.';
+
+    var list = ONM.compat.coupleRings(ra, rb, { limit: 3, seed: state.seed, bridge: cp.bridge });
+    $('c-rings').innerHTML = list.map(function (x) {
+      return '<a class="shop-ring" href="' + esc(coupleStudioLink(x)) + '">' +
+        '<span class="shop-ring-pair">' +
+          '<span class="shop-ring-art">' + R.ringSvg(x.specA, { size: 150 }) + '</span>' +
+          '<span class="shop-ring-art">' + R.ringSvg(x.specB, { size: 150 }) + '</span>' +
+        '</span>' +
+        '<span class="shop-ring-fit">' + (x.fit != null ? x.fit + '%' : '') + '</span>' +
+        '<b>' + esc(x.model.name) + '</b>' +
+        '<em>' + esc(x.family.label) + '</em>' +
+        '<span class="shop-ring-why">' + esc(x.reason || '') + '</span>' +
+        '<span class="shop-ring-note">' +
+          esc(($('c-name-a').textContent) + ' ' + x.noteA + ' · ' + ($('c-name-b').textContent) + ' ' + x.noteB) +
+        '</span>' +
+        '<span class="shop-ring-go">두 반지 맞춰 보기 →</span>' +
+      '</a>';
+    }).join('');
+  }
+
+  /* 커플링은 스튜디오의 "한 사람씩" 흐름으로 넘깁니다.
+   * 첫 번째 분 반지를 맞추면 두 번째 분 차례가 이어집니다. */
+  function coupleStudioLink(x) {
+    return 'studio.html?shop=1&couple=1&step=a' +
+      '&iljuB=' + encodeURIComponent(state.resB.id) +
+      '&ilju=' + encodeURIComponent(state.res.id) +
+      (state.name ? '&n=' + encodeURIComponent(state.name) : '') +
+      '&' + R.specToQuery(x.specA);
+  }
+
   function studioLink(x) {
-    return 'studio.html?' + R.specToQuery(x.spec) +
+    /* shop=1 — 넘어간 화면에서도 온라인 메뉴 없이 상담 화면으로 바로 돌아옵니다 */
+    return 'studio.html?shop=1&' + R.specToQuery(x.spec) +
       '&ilju=' + encodeURIComponent(state.res.id) +
       (state.name ? '&n=' + encodeURIComponent(state.name) : '');
   }
@@ -199,8 +395,15 @@
   function reportUrl() {
     var base = location.origin + location.pathname.replace(/[^/]*$/, 'index.html');
     if (!state.res) return base;
-    var s = state.res.solar;
-    return base + '?y=' + s.year + '&m=' + s.month + '&d=' + s.day +
+    if (state.mode === 'pair' && state.resB) {
+      // 궁합은 두 일주를 그대로 싣습니다 (손님 폰에서 바로 같은 리포트가 열립니다)
+      return base + '?mode=couple&a=' + encodeURIComponent(state.res.id) +
+        '&b=' + encodeURIComponent(state.resB.id) +
+        (state.name ? '&n=' + encodeURIComponent(state.name) : '') +
+        (state.name2 ? '&n2=' + encodeURIComponent(state.name2) : '');
+    }
+    var d = state.res.solar;
+    return base + '?y=' + d.year + '&m=' + d.month + '&d=' + d.day +
       (state.name ? '&n=' + encodeURIComponent(state.name) : '');
   }
 
@@ -216,8 +419,14 @@
   /* ───────────── 붙이기 ───────────── */
 
   $('s-start').addEventListener('click', start);
-  ['s-name', 's-y', 's-m', 's-d'].forEach(function (id) {
+  ['s-name', 's-y', 's-m', 's-d', 's-name2', 's-y2', 's-m2', 's-d2'].forEach(function (id) {
     $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') start(); });
+  });
+  $('s-mode-solo').addEventListener('click', function () { setMode('solo'); });
+  $('s-mode-pair').addEventListener('click', function () { setMode('pair'); });
+  $('c-reshuffle').addEventListener('click', function () {
+    state.seed = Math.floor(Math.random() * 100000) + 1;
+    renderCoupleRings();
   });
   $('s-prev').addEventListener('click', function () { go(state.at - 1); });
   $('s-next').addEventListener('click', function () { go(state.at + 1); });
@@ -227,9 +436,11 @@
   });
   $('s-home').addEventListener('click', function () {
     if (state.res && !global.confirm('상담을 처음부터 다시 시작할까요?')) return;
-    state.res = null; state.name = '';
-    ['s-name', 's-y', 's-m', 's-d'].forEach(function (id) { $(id).value = ''; });
+    state.res = null; state.resB = null; state.cp = null; state.name = ''; state.name2 = '';
+    ['s-name', 's-y', 's-m', 's-d', 's-name2', 's-y2', 's-m2', 's-d2']
+      .forEach(function (id) { $(id).value = ''; });
     $('s-who').textContent = '';
+    resetAccent();           // 앞 손님 색이 남아 있지 않도록 되돌립니다
     go(0);
   });
   $('s-send').addEventListener('click', function () { if (state.res) openSheet(); });

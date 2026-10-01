@@ -745,7 +745,12 @@ button.term:hover, button.term:focus-visible { color: var(--accent-ink); backgro
  * 태블릿을 손님 앞에 놓고 같이 보는 화면입니다.
  * 스크롤 대신 넘기기, 글자는 크게, 한 화면에 한 가지만 둡니다. */
 body.shop { margin: 0; height: 100dvh; overflow: hidden; }
-.shop-app { display: grid; grid-template-rows: auto 1fr auto; height: 100dvh; }
+/* minmax(0, 1fr) — 칸을 화면 너비에 못 박습니다.
+ * 이게 없으면 안쪽 내용이 넓을 때 칸이 같이 늘어나 가로 스크롤이 생깁니다. */
+.shop-app {
+  display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+}
 
 .shop-top {
   display: flex; align-items: center; gap: 16px;
@@ -891,11 +896,13 @@ body.shop { margin: 0; height: 100dvh; overflow: hidden; }
 
 /* ── 매장 화면 — 일주 색과 늘어난 내용 ─────────────────────
  * 천간 색(병이면 빨강, 계면 연한 파랑)을 화면 전체에 물립니다. */
-.shop-steps li.is-on { background: var(--accent); }
-.shop-steps li.is-done { color: var(--accent); }
-.shop-go, .shop-nav-main { background: var(--accent); }
-.shop-go:hover, .shop-nav-main:hover { background: var(--accent-ink); }
-.shop-eyebrow { color: var(--accent-ink); }
+/* 버튼 · 진행 표시 같은 화면 틀은 늘 온명의 쑥색입니다.
+ * 손님마다 달라지는 천간 색은 도장 · 칩 · 패널 같은 '내용'에만 물립니다. */
+.shop-steps li.is-on { background: var(--green); }
+.shop-steps li.is-done { color: var(--green-soft); }
+.shop-go, .shop-nav-main { background: var(--green); }
+.shop-go:hover, .shop-nav-main:hover { background: var(--green-deep); }
+.shop-eyebrow { color: var(--green-soft); }
 .shop-seal { max-width: 170px; }
 .shop-animal { font-size: 1rem; color: var(--muted); margin: 0 0 8px; }
 .shop-flow {
@@ -953,4 +960,114 @@ body.shop { margin: 0; height: 100dvh; overflow: hidden; }
   .shop-letter { padding: 18px; }
   .shop-letter b { font-size: 2rem; }
   .shop-life-row { grid-template-columns: 76px minmax(0, 1fr); gap: 10px; }
+}
+
+/* ── 매장(태블릿) 모드 ──────────────────────────────────────────
+ * shop.html 에서 넘어온 화면에서는 온라인용 메뉴와 푸터를 감추고
+ * 상담 화면으로 돌아가는 줄만 남깁니다. */
+.shop-bar { display: none; }
+body.is-shop .site-head,
+body.is-shop .site-foot { display: none !important; }
+body.is-shop .shop-bar {
+  display: block; border-bottom: 1px solid var(--line-soft); background: var(--paper-2);
+}
+body.is-shop .shop-bar .wrap {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding-block: 12px; font-size: .9rem;
+}
+body.is-shop .shop-bar a { color: var(--green-deep); font-weight: 600; text-decoration: none; }
+body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spacing: .08em; }
+
+/* ── 매장 화면 — 혼자 / 둘이 고르기 ───────────────────────── */
+.shop-mode { display: flex; gap: 8px; margin: 18px 0 22px; }
+.shop-mode-btn {
+  flex: 1; padding: 13px 16px; border-radius: 14px; font-size: 1rem;
+  border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer;
+}
+.shop-mode-btn.is-on {
+  background: var(--green-tint); border-color: var(--green-soft);
+  color: var(--green-deep); font-weight: 600;
+}
+.shop-person-tag {
+  margin: 0; font-size: .82rem; letter-spacing: .12em; font-weight: 600; color: var(--green-soft);
+}
+.shop-people { display: grid; gap: 16px; }
+.shop-person { display: grid; gap: 14px; align-content: start; }
+/* 둘이 볼 때는 두 분을 나란히 놓습니다 — 태블릿 한 화면에 다 들어오도록 */
+.shop-people.is-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.shop-people.is-pair .shop-person + .shop-person {
+  padding-left: 24px; border-left: 1px dashed var(--line);
+}
+.shop-center.is-wide { max-width: 820px; }
+/* 시작 화면 제목은 한 줄에 들어오는 크기로 */
+[data-screen="start"] .shop-h1 { font-size: clamp(1.8rem, 3.2vw, 2.5rem); margin-bottom: 10px; }
+[data-screen="start"] .shop-center { margin-top: 1.5vh; }
+[data-screen="start"] .shop-lead { margin-bottom: 0; }
+
+/* ── 매장 화면 — 궁합 ─────────────────────────────────────── */
+.shop-pair-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 24px; align-items: center;
+}
+.shop-pair-one { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.shop-pair-one .shop-seal { max-width: 130px; }
+.shop-pair-one b { font-family: var(--serif); font-size: 1.3rem; color: var(--ink); margin-top: 8px; }
+.shop-pair-one em { font-style: normal; font-size: .95rem; color: var(--accent-ink); }
+.shop-pair-one span { font-size: .88rem; color: var(--muted); }
+.shop-pair-score { display: grid; justify-items: center; gap: 6px; text-align: center; max-width: 260px; }
+.shop-score-dial {
+  width: 132px; height: 132px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--accent) calc(var(--v, 50) * 1%), var(--line-soft) 0);
+}
+.shop-score-dial > span {
+  width: 104px; height: 104px; border-radius: 50%; background: var(--paper);
+  display: grid; place-items: center;
+  font-family: var(--serif); font-size: 2.3rem; color: var(--accent-ink); font-weight: 600;
+}
+.shop-pair-score b { font-family: var(--serif); font-size: 1.2rem; color: var(--ink); }
+.shop-pair-score p { margin: 0; font-size: .95rem; color: var(--body); line-height: 1.7; }
+
+.shop-axes { display: grid; gap: 14px; }
+.shop-axis { padding: 18px 20px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line-soft); }
+.shop-axis-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.shop-axis-top b { font-size: 1.05rem; color: var(--ink); }
+.shop-axis-top span { font-family: var(--serif); font-size: 1.3rem; color: var(--accent-ink); font-weight: 600; }
+.shop-axis-bar { height: 10px; border-radius: 99px; background: var(--line-soft); margin: 10px 0 8px; overflow: hidden; }
+.shop-axis-bar > i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.shop-axis p { margin: 0; font-size: .86rem; color: var(--muted); }
+
+.shop-list { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.shop-list li { font-size: 1.02rem; line-height: 1.75; }
+
+/* 커플링 — 한 장에 반지 두 짝 */
+.shop-ring-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; }
+.shop-rings-pair .shop-ring-art { max-width: 100%; }
+.shop-ring-note { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+
+@media (max-width: 860px) {
+  .shop-pair-head { grid-template-columns: minmax(0, 1fr); }
+  .shop-pair-score { max-width: none; order: -1; }
+  .shop-mode { flex-direction: column; }
+  .shop-people.is-pair { grid-template-columns: minmax(0, 1fr); }
+  .shop-people.is-pair .shop-person + .shop-person {
+    padding: 18px 0 0; border-left: 0; border-top: 1px dashed var(--line);
+  }
+}
+
+/* 입력칸은 기본 너비(20자)가 꽤 넓습니다. 칸을 줄일 수 있게 못을 박아 둡니다. */
+.shop-field input { min-width: 0; width: 100%; box-sizing: border-box; }
+
+/* 매장 화면을 폰에서 열었을 때 — 진행 표시와 생일 칸이 가로로 넘치지 않도록 */
+@media (max-width: 660px) {
+  .shop-top { gap: 8px; padding: 12px 14px; }
+  .shop-stage { padding: 20px 14px; }
+  .shop-field input { font-size: 1.15rem; padding: 12px; }
+  .shop-date { gap: 8px; }
+  .shop-steps {
+    min-width: 0; flex: 1; overflow-x: auto; flex-wrap: nowrap;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .shop-steps::-webkit-scrollbar { display: none; }
+  .shop-steps li { flex: 0 0 auto; }
+  .shop-icon { flex: 0 0 auto; }
 }
