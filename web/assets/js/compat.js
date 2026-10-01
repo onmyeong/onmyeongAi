@@ -143,6 +143,10 @@
    * @param {Object} b ONMYEONG.ILJU 레코드
    * @returns {Object} { score, grade, headline, good[], care[], stemLine, branchLine, elementLine, bridge }
    */
+  /* 온명의 눈금 — 점수를 이만큼 후하게 잡습니다. 한 군데서만 고치면 됩니다. */
+  var GENEROUS = 5;
+  function kind(n) { return Math.max(43, Math.min(97, Math.round(n) + GENEROUS)); }
+
   function compare(a, b, names) {
     names = names || {};
     /* 이름을 적어 주셨으면 "지민 님", 아니면 "계묘 일주"로 부릅니다 */
@@ -260,7 +264,12 @@
       care.push('편안한 만큼 무심해지기 쉽습니다. 먼저 표현하는 쪽이 관계를 끌고 갑니다.');
     }
 
-    score = Math.max(38, Math.min(97, Math.round(score)));
+    /* ── 온명의 눈금 ──
+     * 이 점수는 맞다/틀리다를 가리는 숫자가 아니라, 같은 관계를 어느 톤으로
+     * 읽어 드릴지 정한 눈금입니다. 온명은 이 눈금을 조금 후하게 잡습니다 —
+     * 손님 앞에서 기죽이는 쪽보다, 어디를 맞춰 가면 되는지 보이는 쪽이
+     * 상담에 맞습니다. 관계를 가르는 순서(어느 쌍이 더 높은가)는 그대로입니다. */
+    score = kind(score);
 
     var grade, headline;
     if (score >= 85) {
@@ -348,10 +357,12 @@
       nickname: ONM.iljuPhrase(a) + ' × ' + ONM.iljuPhrase(b),
       labelA: A,
       labelB: B,
+      /* 세 축도 같은 눈금으로 보여 드립니다. 위 chemistry 문구를 고르는 기준은
+       * 손대지 않은 원래 값(axis)이라 읽어 드리는 내용은 그대로입니다. */
       axes: [
-        { key: 'stem', name: '첫인상 · 드러나는 성격', score: axis.stem, note: '일주의 윗글자(천간)로 봅니다' },
-        { key: 'branch', name: '생활 · 속마음', score: axis.branch, note: '일주의 아랫글자(지지)로 봅니다' },
-        { key: 'elem', name: '리듬 · 지내는 결', score: axis.elem, note: '두 일지의 오행으로 봅니다' }
+        { key: 'stem', name: '첫인상 · 드러나는 성격', score: kind(axis.stem), note: '일주의 윗글자(천간)로 봅니다' },
+        { key: 'branch', name: '생활 · 속마음', score: kind(axis.branch), note: '일주의 아랫글자(지지)로 봅니다' },
+        { key: 'elem', name: '리듬 · 지내는 결', score: kind(axis.elem), note: '두 일지의 오행으로 봅니다' }
       ],
       sipsinA: sipA,
       sipsinB: sipB,
