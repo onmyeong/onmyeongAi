@@ -117,6 +117,9 @@
 
   (function talkButtons() {
     var o = CONFIG.order, html = '';
+    /* 온명은 네이버 플레이스(톡톡) 문의가 가장 빠릅니다 — 그래서 맨 앞에 둡니다. */
+    var place = (CONFIG.studio && CONFIG.studio.mapUrl) || '';
+    if (place) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(place) + '">네이버 플레이스로 문의</a>';
     if (o.kakao) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(o.kakao) + '">카카오톡 채널</a>';
     if (o.instagram) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(o.instagram) + '">인스타그램 DM</a>';
     if (o.email) html += '<a class="btn" id="mail-link" href="#">이메일로 보내기</a>';

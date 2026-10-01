@@ -272,7 +272,7 @@
     $('r-tagline').textContent = rec.tagline;
     $('r-keywords').textContent = rec.keywords;
     $('r-summary').textContent = rec.summary;
-    document.title = '온명 · ' + rec.id + '(' + rec.hanja + ') 일주 리포트';
+    document.title = '온명 반지공방 · ' + rec.id + '(' + rec.hanja + ') 일주 리포트';
 
     $('r-elements').innerHTML =
       badge(rec.stem + ' ' + rec.stemInfo.hanja, rec.stemInfo.elem, '일간') +
@@ -511,7 +511,7 @@
     box.style.setProperty('--accent-tint', ca.tint);
     box.style.setProperty('--accent-b', cb.solid);
 
-    document.title = '온명 · ' + a.id + ' × ' + b.id + ' 일주 궁합';
+    document.title = '온명 반지공방 · ' + a.id + ' × ' + b.id + ' 일주 궁합';
 
     $('c-seal-a').innerHTML = ONM.zodiacSvg(a.branch, { label: a.id + ' 일주' });
     $('c-seal-b').innerHTML = ONM.zodiacSvg(b.branch, { label: b.id + ' 일주' });
@@ -782,7 +782,7 @@
   function soloPayload() {
     var rec = state.result.record;
     return {
-      title: '온명 · ' + rec.id + ' 일주',
+      title: '온명 반지공방 · ' + rec.id + ' 일주',
       text: rec.id + '(' + rec.hanja + ') — ' + ONM.iljuPhrase(rec) + '. ' + rec.keywords,
       url: location.href
     };
@@ -791,7 +791,7 @@
   function couplePayload() {
     var a = state.result.record, b = state.resultB.record, cp = state.compat;
     return {
-      title: '온명 · ' + a.id + ' × ' + b.id + ' 궁합',
+      title: '온명 반지공방 · ' + a.id + ' × ' + b.id + ' 궁합',
       text: a.id + ' × ' + b.id + ' — ' + cp.grade + ' ' + cp.score + '점. ' + cp.headline,
       url: location.href
     };
