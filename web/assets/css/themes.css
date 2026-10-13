@@ -2,56 +2,14 @@
  * 온명 — 디자인 시안 (미리보기 전용)
  * ------------------------------------------------------------------
  * 주소에 ?preview=1 을 붙였을 때만 아래 시안으로 갈아입습니다.
- * 평소 사이트는 onmyeong.css 의 :root 값 그대로입니다.
+ * 평소 사이트는 onmyeong.css 의 :root — 즉 1안 「먹빛과 백자」입니다.
+ * (1안은 기본값이 되었으므로 여기서 뺐습니다. 2·3안은 나중에 다시 비교할 수 있게 남겨 둡니다.)
  *
  * 값은 GPT가 제안한 3안을 그대로 옮긴 것입니다.
  *   --maxw 는 색이 아니라 페이지 너비라서 기존 값(1080px)을 그대로 씁니다.
  *   --accent 3종은 일주마다 코드가 덮어쓰는 자리라 여기 두지 않습니다.
  *   (--accent 가 var(--green) 을 보고 있어서 시안의 green 을 자동으로 따라갑니다.)
  */
-
-/* ── 1안. 먹빛과 백자 — 본문 Noto Sans KR · 제목 Noto Serif KR ── */
-:root[data-theme="muk"] {
-  /* 바탕 */
-  --cream: #F1EFE9;
-  --cream-2: #E8E5DD;
-  --paper: #FCFBF8;
-  --paper-2: #F6F4EE;
-
-  /* 글자와 선 */
-  --ink: #252D30;
-  --body: #465054;
-  --muted: #626A6D;
-  --line: #D3D6D1;
-  --line-soft: #E1E3DE;
-
-  /* 포인트 */
-  --green: #364D50;
-  --green-deep: #263B3E;
-  --green-soft: #476468;
-  --green-tint: #E2E8E5;
-  --blue-tint: #E6EBF0;
-  --blue-ink: #405E79;
-  --clay: #98523D;
-  --clay-tint: #F3E5DE;
-
-  /* 오행 */
-  --mok: #41734F;
-  --hwa: #B34E42;
-  --to: #96702F;
-  --geum: #687687;
-  --su: #345F8A;
-
-  /* 모양 */
-  --radius: 12px;
-  --radius-lg: 20px;
-  --shadow: 0 10px 30px rgba(37, 45, 48, .09);
-  --shadow-sm: 0 4px 14px rgba(37, 45, 48, .06);
-
-  /* 글꼴: Google Fonts 에서 별도로 로드 */
-  --sans: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
-  --serif: 'Noto Serif KR', 'Apple SD Gothic Neo', Georgia, serif;
-}
 
 /* ── 2안. 자개와 남색 — 본문 Gowun Dodum · 제목 Gowun Batang ── */
 :root[data-theme="jagae"] {

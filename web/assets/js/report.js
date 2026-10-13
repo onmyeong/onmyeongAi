@@ -437,15 +437,16 @@
       termLabel(label) + ' ' + esc(text) + ' · ' + esc(elem) + '</span>';
   }
 
-  /** 오행별 색 — 천간 색 지표와 같은 계열로 맞춘다 */
-  var ELEM_COLOR = { 목: '#548235', 화: '#e15b4c', 토: '#d9a92b', 금: '#7f8894', 수: '#2b7cc9' };
+  /** 오행별 색 — 여기서 색을 직접 들고 있지 않고 CSS 쪽 한 곳(:root 의 --mok …)을
+   *  보게 합니다. 팔레트를 갈아입어도 이 카드가 혼자 옛 색으로 남지 않도록. */
+  var ELEM_TITLE_CLASS = { 목: 'elem-mok', 화: 'elem-hwa', 토: 'elem-to', 금: 'elem-geum', 수: 'elem-su' };
 
   function pillarCard(label, ko, info) {
     return '<div class="card">' +
       '<p class="eyebrow">' + esc(label) + '</p>' +
       '<h2 style="margin-bottom:4px">' + esc(info.hanja) + ' <span style="font-size:.6em;color:var(--muted)">' +
       esc(ko) + ' · ' + esc(info.elem) + '</span></h2>' +
-      '<h3 style="color:' + (ELEM_COLOR[info.elem] || 'var(--accent-ink)') + '">' + esc(info.title) + '</h3>' +
+      '<h3 class="' + (ELEM_TITLE_CLASS[info.elem] || 'elem-accent') + '">' + esc(info.title) + '</h3>' +
       '<p style="margin:0 0 10px">' + esc(info.desc) + '</p>' +
       (info.long ? '<p style="margin:0" class="pillar-long">' + esc(info.long) + '</p>' : '') +
       '</div>';
