@@ -35,7 +35,7 @@
   if (o.kakao) rows.push(['카카오톡', o.kakao]);
   if (o.instagram) rows.push(['인스타그램', '@' + String(o.instagram).replace(/^@/, '')]);
   if (o.email) rows.push(['이메일', o.email]);
-  rows.push(['제작 기간', '평균 ' + (o.leadDays || 10) + '일 · ' + (o.leadTime || '')]);
+  rows.push(['제작 기간', (o.leadTime || '') + ' (핸드메이드 제작)']);
   rows.push(['배송', (o.shipFree ? '주문 배송비 없음' : '배송비 별도') +
     (o.pickup ? ' · 공방 방문 수령 가능' : '')]);
 
