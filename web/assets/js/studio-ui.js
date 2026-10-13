@@ -143,6 +143,13 @@
     }).join('');
 
     $('c-engraving').value = spec.engraving || '';
+    /* 글자 수 상한은 config.js 한 곳에서 옵니다 — 입력칸과 안내를 같이 맞춥니다 */
+    (function engraveLimit() {
+      var n = R.engraveMax();
+      $('c-engraving').maxLength = n;
+      var tag = $('c-engrave-max');
+      if (tag) tag.textContent = '(반지 안쪽, 최대 ' + n + '자)';
+    }());
     applyModelLimits();
     setOutputs();
   }

@@ -1439,6 +1439,12 @@
   }
 
   /** URL 쿼리 → 사양. 모델을 찾을 수 없으면 기본 모델로 돌아갑니다. */
+  /** 각인 글자 수 상한 — config.js 의 order.engraveMax 한 곳에서 옵니다 */
+  function engraveMax() {
+    var n = ONM.CONFIG && ONM.CONFIG.order && ONM.CONFIG.order.engraveMax;
+    return (typeof n === 'number' && n > 0) ? n : 8;
+  }
+
   function specFromQuery(search) {
     var p = new URLSearchParams(search || (typeof location !== 'undefined' ? location.search : ''));
     var model = ONM.rings.getModel(p.get('modelId')) || MODELS[0];
@@ -1471,7 +1477,9 @@
     if (p.get('profile')) spec.profile = p.get('profile');
     if (p.get('setting')) spec.setting = p.get('setting');
     if (p.has('stone')) spec.stone = p.get('stone') || null;
-    if (p.get('engraving')) spec.engraving = p.get('engraving');
+    /* 주소에 긴 각인이 실려 와도 제한을 넘기지 않게 여기서 잘라 둡니다.
+     * 입력칸의 maxlength 는 사람이 칠 때만 막아 주기 때문입니다. */
+    if (p.get('engraving')) spec.engraving = p.get('engraving').slice(0, engraveMax());
     if (p.has('reviewEvent')) spec.reviewEvent = p.get('reviewEvent') === 'true';
     if (p.get('ilju')) spec.ilju = p.get('ilju');
     spec.quantity = Math.max(1, parseInt(p.get('qty'), 10) || 1);
@@ -1489,6 +1497,7 @@
   }
 
   ONM.rings = {
+    engraveMax: engraveMax,
     specToQuery: specToQuery,
     specFromQuery: specFromQuery,
     limitsFor: limitsFor,

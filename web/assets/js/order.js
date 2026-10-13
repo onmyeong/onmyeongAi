@@ -64,6 +64,13 @@
   }
 
   $('o-engraving').value = spec.engraving || '';
+  /* 글자 수 상한은 config.js 한 곳에서 옵니다 — 입력칸과 안내를 같이 맞춥니다 */
+  (function engraveLimit() {
+    var n = R.engraveMax();
+    $('o-engraving').maxLength = n;
+    var tag = $('o-engrave-max');
+    if (tag) tag.textContent = '(안쪽, 최대 ' + n + '자)';
+  }());
   /* ───────────── 희망 수령일 · 받는 방법 ─────────────
    * 평균 제작 기간보다 이른 날짜는 고를 수 없게 막습니다.
    * 더 급하시면 상담에서 일정을 잡는 쪽이 정확합니다. */
