@@ -1,0 +1,140 @@
+/*
+ * 온명 — 디자인 시안 (미리보기 전용)
+ * ------------------------------------------------------------------
+ * 주소에 ?preview=1 을 붙였을 때만 아래 시안으로 갈아입습니다.
+ * 평소 사이트는 onmyeong.css 의 :root 값 그대로입니다.
+ *
+ * 값은 GPT가 제안한 3안을 그대로 옮긴 것입니다.
+ *   --maxw 는 색이 아니라 페이지 너비라서 기존 값(1080px)을 그대로 씁니다.
+ *   --accent 3종은 일주마다 코드가 덮어쓰는 자리라 여기 두지 않습니다.
+ *   (--accent 가 var(--green) 을 보고 있어서 시안의 green 을 자동으로 따라갑니다.)
+ */
+
+/* ── 1안. 먹빛과 백자 — 본문 Noto Sans KR · 제목 Noto Serif KR ── */
+:root[data-theme="muk"] {
+  /* 바탕 */
+  --cream: #F1EFE9;
+  --cream-2: #E8E5DD;
+  --paper: #FCFBF8;
+  --paper-2: #F6F4EE;
+
+  /* 글자와 선 */
+  --ink: #252D30;
+  --body: #465054;
+  --muted: #626A6D;
+  --line: #D3D6D1;
+  --line-soft: #E1E3DE;
+
+  /* 포인트 */
+  --green: #364D50;
+  --green-deep: #263B3E;
+  --green-soft: #476468;
+  --green-tint: #E2E8E5;
+  --blue-tint: #E6EBF0;
+  --blue-ink: #405E79;
+  --clay: #98523D;
+  --clay-tint: #F3E5DE;
+
+  /* 오행 */
+  --mok: #41734F;
+  --hwa: #B34E42;
+  --to: #96702F;
+  --geum: #687687;
+  --su: #345F8A;
+
+  /* 모양 */
+  --radius: 12px;
+  --radius-lg: 20px;
+  --shadow: 0 10px 30px rgba(37, 45, 48, .09);
+  --shadow-sm: 0 4px 14px rgba(37, 45, 48, .06);
+
+  /* 글꼴: Google Fonts 에서 별도로 로드 */
+  --sans: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --serif: 'Noto Serif KR', 'Apple SD Gothic Neo', Georgia, serif;
+}
+
+/* ── 2안. 자개와 남색 — 본문 Gowun Dodum · 제목 Gowun Batang ── */
+:root[data-theme="jagae"] {
+  /* 바탕 */
+  --cream: #F1EAE0;
+  --cream-2: #E7DED1;
+  --paper: #FFFDF8;
+  --paper-2: #F8F3EB;
+
+  /* 글자와 선 */
+  --ink: #252C40;
+  --body: #4D5061;
+  --muted: #666878;
+  --line: #D9D2CE;
+  --line-soft: #E8E1DB;
+
+  /* 포인트 */
+  --green: #343D63;
+  --green-deep: #252D4D;
+  --green-soft: #56648A;
+  --green-tint: #E7E7F0;
+  --blue-tint: #E3ECF0;
+  --blue-ink: #385D75;
+  --clay: #A04C52;
+  --clay-tint: #F5E6E5;
+
+  /* 오행 */
+  --mok: #347450;
+  --hwa: #B34449;
+  --to: #98702C;
+  --geum: #737B90;
+  --su: #355C99;
+
+  /* 모양 */
+  --radius: 10px;
+  --radius-lg: 18px;
+  --shadow: 0 10px 30px rgba(37, 44, 64, .12);
+  --shadow-sm: 0 4px 14px rgba(37, 44, 64, .08);
+
+  /* 글꼴: Google Fonts 에서 별도로 로드 */
+  --sans: 'Gowun Dodum', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --serif: 'Gowun Batang', 'Apple SD Gothic Neo', Georgia, serif;
+}
+
+/* ── 3안. 홍매와 온기 — 본문 Nanum Gothic · 제목 Nanum Myeongjo ── */
+:root[data-theme="hongmae"] {
+  /* 바탕 */
+  --cream: #F7F0EB;
+  --cream-2: #EDE2DC;
+  --paper: #FFFCF9;
+  --paper-2: #FAF5F1;
+
+  /* 글자와 선 */
+  --ink: #342C30;
+  --body: #594C51;
+  --muted: #736267;
+  --line: #DED0CC;
+  --line-soft: #EBDFDA;
+
+  /* 포인트 */
+  --green: #854B57;
+  --green-deep: #693842;
+  --green-soft: #935A66;
+  --green-tint: #F3E4E5;
+  --blue-tint: #E6EDF0;
+  --blue-ink: #47636F;
+  --clay: #A14D36;
+  --clay-tint: #F7E7DE;
+
+  /* 오행 */
+  --mok: #3D7651;
+  --hwa: #B54847;
+  --to: #96702D;
+  --geum: #737B88;
+  --su: #38668D;
+
+  /* 모양 */
+  --radius: 18px;
+  --radius-lg: 28px;
+  --shadow: 0 10px 30px rgba(88, 52, 61, .09);
+  --shadow-sm: 0 4px 14px rgba(88, 52, 61, .06);
+
+  /* 글꼴: Google Fonts 에서 별도로 로드 */
+  --sans: 'Nanum Gothic', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --serif: 'Nanum Myeongjo', 'Apple SD Gothic Neo', Georgia, serif;
+}
