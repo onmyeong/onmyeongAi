@@ -85,8 +85,9 @@
     var when = $('o-when');
     when.min = iso(first);
     when.value = iso(first);
-    $('when-note').textContent = '가장 빠른 날짜는 ' + iso(first) + '입니다 (평균 제작 ' + lead + '일). ' +
-      (CONFIG.order.deliveryNote || '');
+    /* 날짜 계산 결과를 그대로 읊지 않습니다 — 고를 수 있는 날짜는 달력이 이미
+     * 막아 주고 있어서, 여기에는 제작 기간 안내만 둡니다. */
+    $('when-note').textContent = CONFIG.order.deliveryNote || '';
 
     function paintPickup() {
       var visit = $('o-pickup').value === 'visit';
