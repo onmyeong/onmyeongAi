@@ -14,9 +14,7 @@
   var KEY = 'onmyeong.preview.theme';
 
   var THEMES = [
-    { id: '',        label: '지금',   note: '현재 사이트' },
-    { id: 'muk',     label: '1안',   note: '먹빛과 백자',
-      fonts: 'family=Noto+Sans+KR:wght@400;700&family=Noto+Serif+KR:wght@400;700' },
+    { id: '',        label: '지금',   note: '1안 먹빛과 백자 (적용됨)' },
     { id: 'jagae',   label: '2안',   note: '자개와 남색',
       fonts: 'family=Gowun+Dodum&family=Gowun+Batang:wght@400;700' },
     { id: 'hongmae', label: '3안',   note: '홍매와 온기',

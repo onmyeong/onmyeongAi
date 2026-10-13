@@ -4,47 +4,51 @@
  */
 
 :root {
+  /* ── 1안 「먹빛과 백자」 ──────────────────────────────────────
+   * 백자의 상아빛 위에 먹색을 머금은 청회색.
+   * 민화와 은반지 사진을 중심에 두고 화면은 한발 물러섭니다. */
+
   /* 바탕 */
-  --cream: #f5f1e7;
-  --cream-2: #efeade;
-  --paper: #fffdf8;
-  --paper-2: #faf7ef;
+  --cream: #F1EFE9;
+  --cream-2: #E8E5DD;
+  --paper: #FCFBF8;
+  --paper-2: #F6F4EE;
 
   /* 글자 */
-  --ink: #2f2f2b;
-  --body: #5b5b53;
-  --muted: #8c897e;
-  --line: #e6e0d1;
-  --line-soft: #efe9dc;
+  --ink: #252D30;
+  --body: #465054;
+  --muted: #626A6D;
+  --line: #D3D6D1;
+  --line-soft: #E1E3DE;
 
   /* 포인트 */
-  --green: #4e7c3f;
-  --green-deep: #3d6431;
-  --green-soft: #7ba368;
-  --green-tint: #eaf2e3;
-  --blue-tint: #e7eef4;
-  --blue-ink: #4a7091;
-  --clay: #c1805b;
-  --clay-tint: #f6ece3;
+  --green: #364D50;
+  --green-deep: #263B3E;
+  --green-soft: #476468;
+  --green-tint: #E2E8E5;
+  --blue-tint: #E6EBF0;
+  --blue-ink: #405E79;
+  --clay: #98523D;
+  --clay-tint: #F3E5DE;
 
   /* 오행 */
-  --mok: #5e8c4a;
-  --hwa: #c4705a;
-  --to: #b08a52;
-  --geum: #7f8894;
-  --su: #5c7fa3;
+  --mok: #41734F;
+  --hwa: #B34E42;
+  --to: #96702F;
+  --geum: #687687;
+  --su: #345F8A;
 
-  /* 일주별 포인트 색 — 리포트가 뜨면 그 일주의 천간 색으로 바뀝니다 (딸깍 "일주 색 지표") */
+  /* 일주별 포인트 색 — 리포트가 뜨면 그 일주의 천간 색으로 바뀝니다 */
   --accent: var(--green);
   --accent-ink: var(--green-deep);
   --accent-tint: var(--green-tint);
 
-  --radius: 16px;
-  --radius-lg: 24px;
+  --radius: 12px;
+  --radius-lg: 20px;
   --maxw: 1080px;
-  --shadow: 0 10px 30px rgba(112, 98, 72, .08);
-  --shadow-sm: 0 4px 14px rgba(112, 98, 72, .06);
-  --sans: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --shadow: 0 10px 30px rgba(37, 45, 48, .09);
+  --shadow-sm: 0 4px 14px rgba(37, 45, 48, .06);
+  --sans: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --serif: 'Noto Serif KR', 'Nanum Myeongjo', 'Apple SD Gothic Neo', Georgia, serif;
 }
 
@@ -56,8 +60,8 @@ body {
   font-family: var(--sans);
   color: var(--body);
   background:
-    radial-gradient(760px 420px at 88% -6%, rgba(123, 163, 104, .13), transparent 62%),
-    radial-gradient(620px 380px at 4% 4%, rgba(193, 128, 91, .08), transparent 60%),
+    radial-gradient(760px 420px at 88% -6%, color-mix(in srgb, var(--green-soft) 13%, transparent), transparent 62%),
+    radial-gradient(620px 380px at 4% 4%, color-mix(in srgb, var(--clay) 8%, transparent), transparent 60%),
     var(--cream);
   line-height: 1.72;
   letter-spacing: -.01em;
@@ -75,6 +79,7 @@ a:hover { text-decoration: underline; }
   position: sticky; top: 0; z-index: 50;
   backdrop-filter: blur(12px);
   background: rgba(245, 241, 231, .86);
+  background: color-mix(in srgb, var(--cream) 86%, transparent);
   border-bottom: 1px solid var(--line-soft);
 }
 .site-head .wrap { display: flex; align-items: center; gap: 18px; padding-block: 14px; flex-wrap: wrap; }
@@ -137,9 +142,9 @@ section { padding-block: clamp(34px, 6vw, 64px); }
 .tone-green { background: var(--accent-tint); border-color: var(--accent); }
 .tone-green h3 { color: var(--accent-ink); }
 /* 천간이 파랑 계열(임·계)이면 조언 상자를 따뜻한 톤으로 바꿔 두 상자가 겹쳐 보이지 않게 한다 */
-.tone-warm { background: var(--clay-tint); border-color: #ecd9c8; }
-.tone-warm h3 { color: #a2603a; }
-.tone-blue { background: var(--blue-tint); border-color: #d7e3ed; }
+.tone-warm { background: var(--clay-tint); border-color: color-mix(in srgb, var(--clay) 22%, var(--clay-tint)); }
+.tone-warm h3 { color: var(--clay); }
+.tone-blue { background: var(--blue-tint); border-color: color-mix(in srgb, var(--blue-ink) 22%, var(--blue-tint)); }
 .tone-blue h3 { color: var(--blue-ink); }
 
 /* ── 입력 ───────────────────────────────────────────── */
@@ -151,7 +156,9 @@ input, select, textarea {
   border-radius: 11px; padding: 11px 13px; width: 100%;
 }
 input:focus, select:focus, textarea:focus {
-  outline: 3px solid rgba(123, 163, 104, .28); outline-offset: 0; border-color: var(--green-soft);
+  outline: 3px solid rgba(123, 163, 104, .28);
+  outline-color: color-mix(in srgb, var(--green-soft) 45%, transparent);
+  outline-offset: 0; border-color: var(--green-soft);
 }
 select {
   appearance: none;
@@ -178,11 +185,15 @@ fieldset { border: 0; padding: 0; margin: 0; }
   border-radius: 999px; font-size: .76rem; border: 1px solid var(--line); color: var(--muted);
   background: var(--paper-2);
 }
-.badge.mok { color: var(--mok); border-color: #cfdfc4; background: #f0f6ea; }
-.badge.hwa { color: var(--hwa); border-color: #ecd2c9; background: #fbf0ec; }
-.badge.to  { color: var(--to);  border-color: #e6d8bd; background: #faf4e8; }
-.badge.geum{ color: var(--geum);border-color: #d8dce2; background: #f3f5f7; }
-.badge.su  { color: var(--su);  border-color: #cedcea; background: #eef4fa; }
+/* 오행 배지 — 테두리와 바탕을 각 오행 색에서 바로 뽑아 씁니다.
+ * 글자는 오행 색에 먹색을 16% 섞어 조금 눌러 둡니다. 오행 5색은 표식용이라
+ * 그대로 글자로 쓰면 흙·금색이 흰 바탕에서도 대비 기준(4.5:1)에 못 미칩니다.
+ * color-mix 를 못 읽는 브라우저는 윗줄의 오행 색 그대로 보게 됩니다. */
+.badge.mok { color: var(--mok);  color: color-mix(in srgb, var(--ink) 16%, var(--mok));  border-color: color-mix(in srgb, var(--mok) 30%, var(--paper));  background: color-mix(in srgb, var(--mok) 7%, var(--paper)); }
+.badge.hwa { color: var(--hwa);  color: color-mix(in srgb, var(--ink) 16%, var(--hwa));  border-color: color-mix(in srgb, var(--hwa) 30%, var(--paper));  background: color-mix(in srgb, var(--hwa) 7%, var(--paper)); }
+.badge.to  { color: var(--to);   color: color-mix(in srgb, var(--ink) 16%, var(--to));   border-color: color-mix(in srgb, var(--to) 30%, var(--paper));   background: color-mix(in srgb, var(--to) 7%, var(--paper)); }
+.badge.geum{ color: var(--geum); color: color-mix(in srgb, var(--ink) 16%, var(--geum)); border-color: color-mix(in srgb, var(--geum) 30%, var(--paper)); background: color-mix(in srgb, var(--geum) 7%, var(--paper)); }
+.badge.su  { color: var(--su);   color: color-mix(in srgb, var(--ink) 16%, var(--su));   border-color: color-mix(in srgb, var(--su) 30%, var(--paper));   background: color-mix(in srgb, var(--su) 7%, var(--paper)); }
 
 /* ── 일주 대문 ───────────────────────────────────────── */
 .ilju-hero { display: grid; grid-template-columns: minmax(0, 186px) 1fr; gap: 30px; align-items: center; }
@@ -239,7 +250,7 @@ fieldset { border: 0; padding: 0; margin: 0; }
 }
 
 /* ── 반지 카드 ───────────────────────────────────────── */
-.stage-bg { background: linear-gradient(170deg, #fffdf8 0%, #f2ede1 100%); }
+.stage-bg { background: linear-gradient(170deg, var(--paper) 0%, var(--cream-2) 100%); }
 
 /* 반지 미리보기 상자 — 카드 · 주문 요약 · 스튜디오 폴백이 같은 규칙을 씁니다.
  * SVG에 width/height 100%를 직접 주어야 상자 밖으로 삐져나가지 않습니다. */
@@ -289,6 +300,7 @@ input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -7px;
   border-radius: 50%; background: var(--green); border: 2px solid #fff; cursor: pointer;
   box-shadow: 0 2px 6px rgba(78,124,63,.35);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--green) 35%, transparent);
 }
 input[type="range"]::-moz-range-thumb {
   width: 18px; height: 18px; border-radius: 50%; background: var(--green);
@@ -296,7 +308,11 @@ input[type="range"]::-moz-range-thumb {
 }
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
 .swatch { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; padding: 0; }
-.swatch[aria-pressed="true"] { border-color: var(--green); box-shadow: 0 0 0 3px rgba(78,124,63,.18); }
+.swatch[aria-pressed="true"] {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(78,124,63,.18);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent);
+}
 .spec-table { width: 100%; border-collapse: collapse; font-size: .87rem; }
 .spec-table th, .spec-table td { text-align: left; padding: 8px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 .spec-table th { color: var(--muted); font-weight: 400; width: 40%; }
@@ -359,6 +375,7 @@ input[type="range"]::-moz-range-thumb {
 .mode-card[aria-pressed="true"] {
   border-color: var(--green); background: var(--green-tint);
   box-shadow: 0 0 0 3px rgba(78, 124, 63, .12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 12%, transparent);
 }
 .mode-card .mark {
   flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%;
@@ -434,6 +451,7 @@ input[type="range"]::-moz-range-thumb {
 .stone-svg, .stone-img {
   flex: 0 0 auto; border-radius: 50%; display: block;
   box-shadow: 0 2px 8px rgba(112, 98, 72, .18);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 20%, transparent);
 }
 .stone-peek { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .stone-peek:empty { display: none; }
@@ -591,7 +609,11 @@ figure.photo figcaption { margin-top: 8px; font-size: .82rem; color: var(--muted
   padding: 2px 2px 10px; margin: -2px -2px -10px;
   scrollbar-width: thin; scrollbar-color: var(--line) transparent;
 }
-.photo-strip:focus-visible { outline: 3px solid rgba(123, 163, 104, .28); outline-offset: 4px; }
+.photo-strip:focus-visible {
+  outline: 3px solid rgba(123, 163, 104, .28);
+  outline-color: color-mix(in srgb, var(--green-soft) 45%, transparent);
+  outline-offset: 4px;
+}
 .photo-strip > figure.photo { scroll-snap-align: start; }
 .photo-strip figure.photo img { aspect-ratio: 3 / 4; }
 .photo-strip::-webkit-scrollbar { height: 6px; }
@@ -646,7 +668,7 @@ button.term:hover, button.term:focus-visible { color: var(--accent-ink); backgro
 .ref-thumb {
   position: relative; width: 72px; height: 72px; padding: 0;
   border: 2px solid var(--line); border-radius: 10px;
-  background-size: cover; background-position: center; background-color: #f3efe7;
+  background-size: cover; background-position: center; background-color: var(--cream-2);
   cursor: pointer;
 }
 .ref-thumb.is-on { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-tint); }
@@ -817,7 +839,7 @@ body.shop { margin: 0; height: 100dvh; overflow: hidden; }
 .shop-panel p { margin: 0; font-size: 1.04rem; line-height: 1.8; }
 .shop-panel-green { background: var(--green-tint); border-color: var(--green-soft); }
 .shop-panel-green h2 { color: var(--green-deep); }
-.shop-panel-blue { background: var(--blue-tint); border-color: #d7e3ed; }
+.shop-panel-blue { background: var(--blue-tint); border-color: color-mix(in srgb, var(--blue-ink) 22%, var(--blue-tint)); }
 .shop-panel-blue h2 { color: var(--blue-ink); }
 .shop-lucky { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 22px; }
 .shop-lucky-label { font-size: .82rem; color: var(--muted); margin-right: 4px; }
@@ -866,7 +888,9 @@ body.shop { margin: 0; height: 100dvh; overflow: hidden; }
 
 .shop-sheet {
   position: fixed; inset: 0; z-index: 90; display: grid; place-items: center;
-  background: rgba(47, 47, 43, .45); padding: 20px;
+  background: rgba(47, 47, 43, .45);
+  background: color-mix(in srgb, var(--ink) 48%, transparent);
+  padding: 20px;
 }
 .shop-sheet-in {
   background: var(--paper); border-radius: 22px; padding: 28px; max-width: 420px;
@@ -1071,3 +1095,12 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
   .shop-steps li { flex: 0 0 auto; }
   .shop-icon { flex: 0 0 auto; }
 }
+
+/* 기둥 카드 제목 — 오행 색을 글자로 씁니다.
+ * 배지와 같은 이유로 먹색을 16% 섞어 대비를 맞춥니다. */
+.elem-mok  { color: var(--mok);  color: color-mix(in srgb, var(--ink) 16%, var(--mok)); }
+.elem-hwa  { color: var(--hwa);  color: color-mix(in srgb, var(--ink) 16%, var(--hwa)); }
+.elem-to   { color: var(--to);   color: color-mix(in srgb, var(--ink) 16%, var(--to)); }
+.elem-geum { color: var(--geum); color: color-mix(in srgb, var(--ink) 16%, var(--geum)); }
+.elem-su   { color: var(--su);   color: color-mix(in srgb, var(--ink) 16%, var(--su)); }
+.elem-accent { color: var(--accent-ink); }
