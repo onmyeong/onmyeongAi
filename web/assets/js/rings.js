@@ -866,7 +866,23 @@
    *   consult       상담이 필요한 이유 (없으면 null)
    *   pending[]     값을 아직 못 매기는 항목 (예: 컬러큐빅)
    */
-  function estimatePrice(spec, quantity) {
+  /** 큰 호수 추가금 — 이 호수가 닿는 가장 높은 칸 { from, price }, 없으면 null.
+   *  예전 설정(칸 하나짜리 { from, price })도 그대로 읽습니다. */
+  function sizeSurcharge(size) {
+    var t = CONFIG && CONFIG.price && CONFIG.price.bigSize;
+    if (!t) return null;
+    var tiers = Array.isArray(t) ? t : [t];
+    var hit = null;
+    tiers.forEach(function (x) {
+      if (size >= x.from && (!hit || x.from > hit.from)) hit = x;
+    });
+    return hit;
+  }
+
+  /* size2 — 같은 디자인을 2개 이상 주문하면서 두 번째 반지 호수가 다를 때.
+   * 반지 값은 같고 큰 호수 추가금만 호수마다 달라지므로, 두 번째 반지 몫만 따로 맞춥니다.
+   * (세 번째부터는 첫 번째와 같은 호수로 봅니다 — 주문서에 호수 칸이 둘뿐입니다.) */
+  function estimatePrice(spec, quantity, size2) {
     var P = CONFIG.price;
     var model = MODELS.filter(function (m) { return m.id === spec.modelId; })[0];
     if (!model) return null;
@@ -890,7 +906,8 @@
     var extraT = Math.max(0, spec.thickness - P.baseThickness) * P.perThicknessMm;
     /* 손가락이 굵으면 둘레가 길어져 은이 더 들어갑니다.
      * 표면 텍스처나 디자인 자체에는 추가금이 없습니다. */
-    var big = (P.bigSize && spec.size >= P.bigSize.from) ? P.bigSize.price : 0;
+    var bigTier = sizeSurcharge(spec.size);
+    var big = bigTier ? bigTier.price : 0;
 
     /* 원석 값. 물리는 공임은 원석 값에 포함돼 있어 따로 더하지 않습니다.
      * 컬러큐빅은 색과 크기를 상담에서 정하므로 값을 비워 둡니다. */
@@ -914,6 +931,12 @@
     var options = stoneCost + setting + plating + oxidize + epoxy + engrave;
     var one = body + options;
     var total = one * qty;
+    var bigTier2 = null, big2 = 0;
+    if (qty >= 2 && size2 != null && Number(size2) !== Number(spec.size)) {
+      bigTier2 = sizeSurcharge(Number(size2));
+      big2 = bigTier2 ? bigTier2.price : 0;
+      total += (big2 - big) * metal.mult;          // 두 번째 반지의 호수 차이만큼
+    }
     if (qty >= 2) total *= (1 - P.couplePairDiscount);
 
     return {
@@ -928,6 +951,11 @@
         base: Math.round(base * metal.mult),
         size: Math.round((extraW + extraT) * metal.mult),
         big: Math.round(big * metal.mult),
+        bigFrom: bigTier ? bigTier.from : 0,
+        // 두 번째 반지가 다른 호수일 때만 값이 있습니다 (null = 첫 번째와 같음)
+        size2: (bigTier2 || (size2 != null && Number(size2) !== Number(spec.size))) ? Number(size2) : null,
+        big2: Math.round(big2 * metal.mult),
+        bigFrom2: bigTier2 ? bigTier2.from : 0,
         stone: stoneCost,
         plating: plating,
         oxidize: oxidize,
@@ -945,7 +973,10 @@
     var P = CONFIG.price;
     var rows = [['기본 (폭 ' + P.baseWidth + 'mm · 두께 ' + P.baseThickness + 'mm 민자)', q.base]];
     if (q.size) rows.push(['치수 — 두껍고 넓어진 만큼', q.size]);
-    if (q.big) rows.push(['호수 — ' + CONFIG.price.bigSize.from + '호 이상', q.big]);
+    if (q.big) rows.push(['호수 — ' + q.bigFrom + '호 이상', q.big]);
+    if (q.size2 != null && q.big2 !== q.big) {
+      rows.push(['두 번째 반지 호수 — ' + (q.big2 ? q.bigFrom2 + '호 이상' : q.size2 + '호, 추가금 없음'), q.big2]);
+    }
     if (q.stone) rows.push(['원석', q.stone]);
     if (q.plating) rows.push(['도금', q.plating]);
     if (q.oxidize) rows.push(['유화', q.oxidize]);
@@ -1540,6 +1571,7 @@
 
   ONM.rings = {
     engraveMax: engraveMax,
+    sizeSurcharge: sizeSurcharge,
     specToQuery: specToQuery,
     specFromQuery: specFromQuery,
     limitsFor: limitsFor,
