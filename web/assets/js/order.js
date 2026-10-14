@@ -213,6 +213,7 @@
         (sp.epoxy ? ' · ' + (CONFIG.epoxy.coverage[sp.epoxyCoverage || 'part'] || {}).label : ''),
       '앞뒤 두께  : ' + sp.thickness.toFixed(1) + ' / ' +
         (sp.backThickness || sp.thickness).toFixed(1) + ' mm',
+      '내경 굴림  : ' + R.comfortLabel(sp.comfort),
       '굴곡       : ' + organicWord(sp.organic) + handNote(sp),
       '돌 높이    : ' + ((sp.stoneType && sp.stoneType !== 'none')
         ? (Number(sp.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),
@@ -280,6 +281,7 @@
         (spec.epoxy ? ' · ' + (CONFIG.epoxy.coverage[spec.epoxyCoverage || 'part'] || {}).label : ''),
       '앞뒤 두께  : ' + spec.thickness.toFixed(1) + ' / ' +
         (spec.backThickness || spec.thickness).toFixed(1) + ' mm',
+      '내경 굴림  : ' + R.comfortLabel(spec.comfort),
       '굴곡       : ' + organicWord(spec.organic) + handNote(spec),
       '돌 높이    : ' + ((spec.stoneType && spec.stoneType !== 'none')
         ? (Number(spec.stoneHeight) || 0).toFixed(1) + ' mm' : '—'),

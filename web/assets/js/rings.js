@@ -795,6 +795,7 @@
       grain: 'vertical',      // 사포바를 골랐을 때 줄 방향
       plateSize: 1,           // 인장 판 크기 (0.5~1.8)
       backThickness: 0,       // 0 = 앞뒤 같은 두께. 값을 주면 손바닥 쪽이 그만큼 얇아집니다
+      comfort: 0,             // 내경 굴림 (0 = 안쪽 평평 ~ 1 = 가장 깊게). 호수는 그대로입니다
       organic: 0,             // 왁스를 손으로 깎았을 때의 불규칙한 굴곡 (0~1)
       sculpt: '',             // 손으로 민 두께 자국 (아래 SCULPT 참고)
       sculptW: '',            // 손으로 민 폭 자국
@@ -868,6 +869,13 @@
    */
   /** 큰 호수 추가금 — 이 호수가 닿는 가장 높은 칸 { from, price }, 없으면 null.
    *  예전 설정(칸 하나짜리 { from, price })도 그대로 읽습니다. */
+  /** 내경 굴림을 사람이 읽는 말로 — 스튜디오 · 주문서 · 사양서가 같은 말을 씁니다 */
+  function comfortLabel(v) {
+    var c = Math.max(0, Math.min(1, Number(v) || 0));
+    if (!c) return '없음 (안쪽 평평)';
+    return (c < 0.34 ? '살짝' : c < 0.67 ? '보통' : '깊게') + ' 굴림 (' + Math.round(c * 100) + '%)';
+  }
+
   function sizeSurcharge(size) {
     var t = CONFIG && CONFIG.price && CONFIG.price.bigSize;
     if (!t) return null;
@@ -1487,7 +1495,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'plateSize', 'backThickness', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt', 'stars', 'draw',
+    'plateSize', 'backThickness', 'comfort', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt', 'stars', 'draw',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'reviewEvent', 'ilju', 'qty'];
 
@@ -1523,7 +1531,7 @@
     var model = ONM.rings.getModel(p.get('modelId')) || MODELS[0];
     var record = p.get('ilju') && ONM.ILJU ? ONM.ILJU[p.get('ilju')] : null;
     var spec = defaultSpec(model, record, { metal: p.get('metal') || undefined });
-    ['width', 'thickness', 'size', 'plateSize', 'backThickness', 'organic',
+    ['width', 'thickness', 'size', 'plateSize', 'backThickness', 'comfort', 'organic',
      'stoneHeight', 'stoneAngle'].forEach(function (k) {
       var v = parseFloat(p.get(k));
       if (!isNaN(v)) spec[k] = v;
@@ -1572,6 +1580,7 @@
   ONM.rings = {
     engraveMax: engraveMax,
     sizeSurcharge: sizeSurcharge,
+    comfortLabel: comfortLabel,
     specToQuery: specToQuery,
     specFromQuery: specFromQuery,
     limitsFor: limitsFor,

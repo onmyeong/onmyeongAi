@@ -247,6 +247,22 @@ function widthScaleAt(s, th) {
 
 const MIN_WALL = 0.28;   // mm — 이보다 얇아지면 면이 겹쳐 뚫린 것처럼 보입니다
 
+/* 내경 굴림 — 안쪽 면의 양 가장자리를 둥글게 깎아 끼고 뺄 때 걸리지 않게 합니다.
+ * 안쪽 한가운데는 그대로 두므로 호수(안지름)는 변하지 않고, 가장자리로 갈수록
+ * 바깥으로 물러납니다. 단면에서 보면 안쪽이 완만한 활처럼 볼록해집니다.
+ *   comfort 0 = 평평한 안쪽(굴림 없음) · 1 = 가장 깊게
+ * 깊이는 그 자리 두께의 최대 40%, 1.0mm 를 넘지 않습니다. */
+function comfortDepth(s, tLocal) {
+  const c = Math.max(0, Math.min(1, Number(s.comfort) || 0));
+  return c > 0 ? Math.min(1.0, 0.4 * tLocal) * c : 0;
+}
+function comfortRel(s, vRel, tLocal) {        // vRel: -0.5 ~ 0.5 (폭 대비)
+  const d = comfortDepth(s, tLocal);
+  if (!d) return 0;
+  const k = Math.min(1, Math.abs(vRel) * 2);  // 0 = 가운데, 1 = 가장자리
+  return d * k * k;                            // 활 모양 — 가장자리에서 가장 깊게
+}
+
 /* ─────────────────── 인장(시그넷) ───────────────────
  * 인장 반지는 한 바퀴 내내 같은 굵기가 아닙니다.
  * 뒤쪽은 가는 밴드로 얇게 지나가다가 손등 쪽에서만 어깨가 부풀어 오르고,
@@ -400,6 +416,9 @@ function buildBand(s, model) {
       const p = rot[j];
       let radius = innerR;
       let carved = 0;                     // 이 정점이 파인 정도 (mm)
+      // 내경 굴림 — 이 폭 자리에서 안쪽 면이 물러난 만큼
+      const rel = comfortRel(s, profile[j].v / Math.max(0.001, s.width), tAt);
+      if (!p.outer) radius += rel;
       if (p.outer) {
         let u = p.u * uScale;
         // 각진 면(패싯)은 모서리가 가장 두꺼워지므로, 모서리가 정확히 두께에 닿게 맞춘다
@@ -660,7 +679,8 @@ function buildBand(s, model) {
         }
 
         // 벽이 0이 되면 안쪽 면과 바깥 면이 겹쳐 반지가 뚫려 보입니다.
-        if (radius < innerR + MIN_WALL) radius = innerR + MIN_WALL;
+        // 내경을 굴린 만큼 안쪽 면이 바깥으로 나와 있으므로 그 위로 벽을 남깁니다.
+        if (radius < innerR + rel + MIN_WALL) radius = innerR + rel + MIN_WALL;
       }
       depth[d++] = carved;
       pos[n++] = radius * Math.cos(th);
