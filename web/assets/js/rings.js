@@ -798,7 +798,10 @@
       comfort: 0,             // 내경 굴림 (0 = 안쪽 평평 ~ 1 = 가장 깊게). 호수는 그대로입니다
       organic: 0,             // 왁스를 손으로 깎았을 때의 불규칙한 굴곡 (0~1)
       sculpt: '',             // 손으로 민 두께 자국 (아래 SCULPT 참고)
-      sculptW: '',            // 손으로 민 폭 자국
+      sculptW: '',            // 손으로 민 폭 자국 (예전 방식 — 양쪽 가장자리가 함께 움직임)
+      relief: '',             // 살 붙이기 · 깎기 (둘레 48 × 폭 8 격자, 짚은 자리만 오르내림)
+      sculptWa: '',           // 폭 — 한쪽 가장자리만 밀어낸 자국
+      sculptWb: '',           // 폭 — 반대쪽 가장자리
       engrave: '',            // 도안 새기기 (둘레 48 × 폭 8 격자)
       stoneAt: '',            // 돌을 놓은 자리들 (도, 쉼표로 구분)
       stars: '',              // 별 조각을 새긴 자리들 ('각도_크기', 쉼표로 구분)
@@ -928,6 +931,9 @@
       if (stoneCost == null) { pending.push(kind.label + ' 값'); stoneCost = 0; }
       stoneCost *= stoneAngles(spec).length;                     // 놓은 알 개수만큼
     }
+    /* 살을 붙이면 붙인 만큼 은이 더 들어갑니다. 얼마나 붙였는지는 화면만으로
+     * 무게를 잴 수 없으니, 금액은 상담에서 확정합니다. */
+    if (hasAddedFlesh(spec)) pending.push('살 붙이기 중량');
     var setting = P.setting[spec.setting] || 0;
 
     /* 도금과 유화는 같이 못 하므로 둘 중 하나만 더해집니다 */
@@ -1113,8 +1119,16 @@
 
   /** 손으로 손댄 흔적이 하나라도 있는가 */
   function hasSculpt(spec) {
-    return !!(spec.sculpt || spec.sculptW || spec.matte || spec.engrave ||
-      spec.stoneAt || spec.stars || spec.draw);
+    return !!(spec.sculpt || spec.sculptW || spec.relief || spec.sculptWa || spec.sculptWb ||
+      spec.matte || spec.engrave || spec.stoneAt || spec.stars || spec.draw);
+  }
+
+  /** 살을 덧붙인 자리가 한 군데라도 있는가 (중량이 늘어 상담에서 금액을 정합니다) */
+  function hasAddedFlesh(spec) {
+    if (spec.relief && reliefRead(spec.relief).some(function (v) { return v > 0.02; })) return true;
+    // 예전 방식으로 붙인 자국 (옛 주소)
+    if (spec.sculpt && sculptRead(spec.sculpt).some(function (v) { return v > 0.02; })) return true;
+    return false;
   }
 
   /** 색 채움 값 — 부분만 채우는지 한 바퀴 다 두르는지로 갈립니다 */
@@ -1497,10 +1511,53 @@
     return any ? out : '';
   }
 
+  /* ── 살 붙이기 · 깎기 격자 ──
+   * 도안 격자와 같은 둘레 48 × 폭 8 칸에 -1(깎음) ~ 1(붙임)을 담습니다.
+   * 한 칸 = 글자 하나, 'i'(18)가 손대지 않은 자리입니다.
+   * 손대지 않은 칸이 길게 이어지면 '~' + 칸 수 한 글자로 줄여 주소를 짧게 둡니다. */
+  var RELIEF_N = ENGRAVE_X * ENGRAVE_Y;
+
+  function reliefRead(str) {
+    var out = new Array(RELIEF_N), k = 0, i = 0;
+    str = str || '';
+    while (k < RELIEF_N && i < str.length) {
+      var ch = str.charAt(i++);
+      if (ch === '~') {
+        var run = SCULPT_CHARS.indexOf(str.charAt(i++));
+        for (var r = 0; r < run && k < RELIEF_N; r++) out[k++] = 0;
+        continue;
+      }
+      var c = SCULPT_CHARS.indexOf(ch);
+      out[k++] = c < 0 ? 0 : (c - SCULPT_MID) / SCULPT_MID;
+    }
+    while (k < RELIEF_N) out[k++] = 0;
+    return out;
+  }
+
+  function reliefWrite(arr) {
+    var raw = '', any = false;
+    for (var i = 0; i < RELIEF_N; i++) {
+      var v = Math.max(-1, Math.min(1, arr[i] || 0));
+      var c = Math.max(0, Math.min(SCULPT_MAX, Math.round(SCULPT_MID + v * SCULPT_MID)));
+      if (c !== SCULPT_MID) any = true;
+      raw += SCULPT_CHARS.charAt(c);
+    }
+    if (!any) return '';
+    var mid = SCULPT_CHARS.charAt(SCULPT_MID);
+    return raw.replace(new RegExp(mid + '{4,}', 'g'), function (m) {
+      var out = '';
+      for (var n = m.length; n > 0; n -= SCULPT_MAX) {
+        var take = Math.min(SCULPT_MAX, n);
+        out += take >= 4 ? '~' + SCULPT_CHARS.charAt(take) : new Array(take + 1).join(mid);
+      }
+      return out;
+    });
+  }
+
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'plateSize', 'backThickness', 'comfort', 'organic', 'sculpt', 'sculptW', 'matte', 'engrave', 'stoneAt', 'stars', 'draw',
+    'plateSize', 'backThickness', 'comfort', 'organic', 'sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'engrave', 'stoneAt', 'stars', 'draw',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'reviewEvent', 'ilju', 'qty'];
 
@@ -1551,6 +1608,9 @@
     if (p.get('stoneShape')) spec.stoneShape = p.get('stoneShape');
     if (p.get('sculpt')) spec.sculpt = p.get('sculpt').slice(0, SCULPT_N);
     if (p.get('sculptW')) spec.sculptW = p.get('sculptW').slice(0, SCULPT_N);
+    if (p.get('sculptWa')) spec.sculptWa = p.get('sculptWa').slice(0, SCULPT_N);
+    if (p.get('sculptWb')) spec.sculptWb = p.get('sculptWb').slice(0, SCULPT_N);
+    if (p.get('relief')) spec.relief = reliefWrite(reliefRead(p.get('relief').slice(0, RELIEF_N * 2)));
     if (p.get('matte')) spec.matte = p.get('matte').slice(0, SCULPT_N);
     if (p.get('engrave')) spec.engrave = p.get('engrave').slice(0, ENGRAVE_X * ENGRAVE_Y);
     if (p.has('stoneAt')) spec.stoneAt = p.get('stoneAt') || '';
@@ -1605,6 +1665,9 @@
     ENGRAVE_Y: ENGRAVE_Y,
     engraveRead: engraveRead,
     engraveWrite: engraveWrite,
+    reliefRead: reliefRead,
+    reliefWrite: reliefWrite,
+    hasAddedFlesh: hasAddedFlesh,
     stoneAngles: stoneAngles,
     starList: starList,
     starWrite: starWrite,

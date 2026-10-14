@@ -115,7 +115,7 @@ function bumpFor(s) {
 /* 손으로 다듬은 자국을 각도에 맞춰 부드럽게 읽어 온다.
  * 24 지점 사이를 부드러운 곡선으로 이어, 민 자리와 안 민 자리가 툭 끊기지 않게 한다. */
 function sculptOf(s, key) {
-  const cache = key === 'sculptW' ? '_sculptW' : key === 'matte' ? '_matte' : '_sculpt';
+  const cache = '_' + key;
   if (!s[cache] || R.sculptWrite(s[cache]) !== (s[key] || '')) {
     s[cache] = R.sculptRead(s[key] || '');
   }
@@ -145,8 +145,36 @@ function engraveOf(s) {
   return s._engrave;
 }
 
+/* 살 붙이기 · 깎기도 같은 격자에 담습니다 (-1 깎음 ~ 1 붙임).
+ * 예전에는 둘레 24지점에만 담아 폭 전체가 한꺼번에 오르내렸는데,
+ * 이제는 짚은 자리만 — 윗면 한쪽 가장자리만 도톰하게 붙일 수도 있습니다. */
+function reliefOf(s) {
+  if (!s._relief || R.reliefWrite(s._relief) !== (s.relief || '')) {
+    s._relief = R.reliefRead(s.relief || '');
+  }
+  return s._relief;
+}
+
 const EX = R.ENGRAVE_X, EY = R.ENGRAVE_Y;
 const smooth = (x) => x * x * (3 - 2 * x);
+
+/* 살은 도안처럼 가장자리가 또렷할 필요가 없고, 오히려 매끈하게 부풀어야 합니다.
+ * 칸 사이를 smoothstep 으로 이으면 칸마다 계단이 져 보여서,
+ * 이웃 네 칸을 함께 보는 곡선(Catmull-Rom)으로 잇습니다. */
+function cr(p0, p1, p2, p3, t) {
+  return p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
+}
+function reliefAt(g, th, vN) {
+  const x = ((th - Math.PI / 2) / (Math.PI * 2) * EX % EX + EX) % EX;
+  const y = Math.max(0, Math.min(EY - 1, (vN + 0.5) * (EY - 1)));
+  const x0 = Math.floor(x), y0 = Math.min(EY - 2, Math.floor(y));
+  const fx = x - x0, fy = y - y0;
+  const row = (yy) => {
+    const r = Math.max(0, Math.min(EY - 1, yy)) * EX;
+    return cr(g[r + (x0 - 1 + EX) % EX], g[r + x0 % EX], g[r + (x0 + 1) % EX], g[r + (x0 + 2) % EX], fx);
+  };
+  return cr(row(y0 - 1), row(y0), row(y0 + 1), row(y0 + 2), fy);
+}
 
 /** g = 격자(정점마다 다시 읽지 않도록 밖에서 한 번만 풀어서 넘깁니다),
  * th = 둘레 각도, vN = 폭 방향 위치(-0.5 ~ 0.5). 돌아오는 값은 0~1 깊이 */
@@ -317,6 +345,10 @@ function buildBand(s, model) {
 
   // 도안 격자는 한 번만 풀어 둡니다 (정점마다 다시 풀면 눈에 띄게 느려집니다)
   const engGrid = s.engrave ? engraveOf(s) : null;
+  const reliefGrid = s.relief ? reliefOf(s) : null;
+  // 폭 — 가장자리마다 따로 밀어낸 자국 (a = +폭 쪽, b = -폭 쪽)
+  const edgeA = s.sculptWa ? sculptOf(s, 'sculptWa') : null;
+  const edgeB = s.sculptWb ? sculptOf(s, 'sculptWb') : null;
   // 별 조각은 각도를 라디안으로 미리 바꿔 둡니다 (0도 = 손등 쪽 한가운데)
   const stars = R.starList(s).map((st) => ({
     rad: Math.PI / 2 + (Number(st.angle) || 0) * Math.PI / 180,
@@ -400,9 +432,15 @@ function buildBand(s, model) {
       const k2 = Math.max(0, 1 - Math.abs(d) / reach);
       vOff = -0.5 * bandAmt * s.width * k2;
     }
+    /* 한쪽 가장자리만 넓히거나 좁히면 그쪽 절반만 늘고 줄어듭니다 (최대 ±50%).
+     * 가운데 선은 그대로라 반대쪽은 손대지 않은 모양 그대로 남습니다. */
+    const ea = edgeA ? readAt(edgeA, th) : 0;
+    const eb = edgeB ? readAt(edgeB, th) : 0;
     for (let j = 0; j < P; j++) {
       const p = profile[j];
-      rot[j] = { u: p.u, v: p.v * wScale + vOff, outer: p.outer };
+      const e = p.v >= 0 ? ea : eb;
+      const k = e ? Math.max(0.25, 1 + 0.5 * e) : 1;
+      rot[j] = { u: p.u, v: p.v * wScale * k + vOff, outer: p.outer };
     }
 
     let facetR = 1;
@@ -423,6 +461,11 @@ function buildBand(s, model) {
         let u = p.u * uScale;
         // 각진 면(패싯)은 모서리가 가장 두꺼워지므로, 모서리가 정확히 두께에 닿게 맞춘다
         if (facets > 0) u *= facetR * Math.cos(Math.PI / facets);
+        // 살 붙이기 · 깎기 — 짚은 자리만 도톰해지거나 얇아집니다 (최대 ±55%)
+        if (reliefGrid) {
+          const r = Math.max(-1, Math.min(1, reliefAt(reliefGrid, th, profile[j].v / Math.max(0.001, s.width))));
+          if (Math.abs(r) > 0.002) u *= 1 + 0.55 * r;
+        }
         /* 색을 채울 홈 — 폭 방향으로 좁게 파인 줄입니다.
          * 실물은 넓은 면에 색을 바르는 게 아니라 가는 홈을 파고 그 안에 수지를 채웁니다. */
         if (s.epoxy && epoxyArc(s, th)) {
@@ -1241,25 +1284,26 @@ let viewTurn = 0;
 // 지금 화면을 짚고 있는 손가락(포인터)들 — 두 손가락이 닿으면 붓질 대신 돌리기로 넘깁니다
 const activePointers = new Set();
 // 붓질을 시작할 때의 다듬기 값 — 두 번째 손가락이 닿으면 이걸로 되돌립니다
-const STROKE_KEYS = ['sculpt', 'sculptW', 'matte', 'engrave', 'draw', 'stars', 'stoneAt'];
+const STROKE_KEYS = ['sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'engrave', 'draw', 'stars', 'stoneAt'];
 let strokeBefore = null;
 let sculpting = null;
 
 /* 도구 — 무엇을 밀고 있는지에 따라 손대는 자국이 달라집니다.
- *   push   두께    : 위로 끌면 도톰, 아래로 끌면 얇게
- *   wide   폭      : 위로 끌면 넓게, 아래로 끌면 좁게
+ *   add/carve 살 붙이기 · 깎기 : 짚은 자리만 도톰하게 / 얇게 (relief 격자)
+ *   wide   폭      : 짚은 쪽 가장자리만 — 위로 끌면 넓게, 아래로 끌면 좁게
  *   chisel 각 세우기: 좁은 붓으로 깊게 깎아 각을 냅니다 (파기만 합니다)
  *   matte  부분무광 : 그 자리만 무광으로 칠합니다 (아래로 끌면 지웁니다)
- * brush = 몇 지점까지 번지는가, gain = 1px 끌 때 얼마나 밀리는가 */
+ * 어느 도구도 스스로 대칭을 만들지 않습니다 — 대칭은 '좌우 대칭'을 켰을 때만.
+ * brush = 몇 지점까지 번지는가(relief 는 mm 반지름), gain = 1px 끌 때 얼마나 밀리는가 */
 const TOOLS = {
   /* 살 붙이기 / 살 깎기 — 예전 '두께' 한 도구가 위·아래로 끄는 방향에 따라 둘 다 했는데,
    * 버튼에 드러나지 않아 깎기만 되는 줄 알기 쉬웠습니다. 둘로 나눠 어느 쪽으로 끌든
    * 한 가지만 하게 했습니다. (왁스를 덧붙여 도톰하게 / 깎아 내 얇게) */
-  add:    { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '살 붙이기', addOnly: true },
-  carve:  { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '살 깎기', carveOnly: true },
-  push:   { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '두께' },   // 예전 도구 (버튼 없음)
-  wide:   { key: 'sculptW', brush: 2.6, gain: 0.010, label: '폭' },
-  chisel: { key: 'sculpt',  brush: 0.9, gain: 0.024, label: '각 세우기', carveOnly: true },
+  add:    { relief: true, brushMm: 1.7, gain: 0.012, label: '살 붙이기', addOnly: true },
+  carve:  { relief: true, brushMm: 1.7, gain: 0.012, label: '살 깎기', carveOnly: true },
+  push:   { relief: true, brushMm: 1.7, gain: 0.012, label: '두께' },   // 예전 도구 (버튼 없음)
+  wide:   { edge: true, brush: 2.6, gain: 0.010, label: '폭' },
+  chisel: { relief: true, brushMm: 0.8, gain: 0.030, label: '각 세우기', carveOnly: true },
   matte:  { key: 'matte',   brush: 2.2, gain: 0.020, label: '부분 무광' },
   // 아래 둘은 격자 위에 그립니다 — 끄는 방향이 아니라 지나간 자리가 그대로 무늬가 됩니다
   engrave: { grid: true, brush: 1.3, label: '도안 새기기' },
@@ -1274,9 +1318,7 @@ const TOOLS = {
 const sculptState = { tool: 'add', size: 1, mirror: false };
 
 function ensureSculpt(key) {
-  const cache = key === 'sculptW' ? '_sculptW' : key === 'matte' ? '_matte' : '_sculpt';
-  if (!spec[cache]) spec[cache] = R.sculptRead(spec[key] || '');
-  return spec[cache];
+  return sculptOf(spec, key);
 }
 
 /** 화면 좌표 → 반지 위 각도. 반지 평면(회전 적용)과 광선을 만나게 해서 구한다. */
@@ -1335,9 +1377,10 @@ function dab(arr, n, center, radius, amount, carveOnly, addOnly) {
   }
 }
 
-function sculptPush(angle, drag) {
+function sculptPush(angle, drag, key) {
   const tool = TOOLS[sculptState.tool] || TOOLS.push;
-  const arr = ensureSculpt(tool.key);
+  key = key || tool.key;
+  const arr = ensureSculpt(key);
   const n = arr.length;
   const radius = Math.max(0.8, tool.brush * sculptState.size);
   // 깎기 · 붙이기 전용 도구는 어느 쪽으로 끌든 한 방향으로만 밉니다
@@ -1354,7 +1397,59 @@ function sculptPush(angle, drag) {
     const mirrored = ((n - center) % n + n) % n;
     if (Math.abs(mirrored - center) > 0.01) dab(arr, n, mirrored, radius, amount, tool.carveOnly, tool.addOnly);
   }
-  spec[tool.key] = R.sculptWrite(arr);
+  spec[key] = R.sculptWrite(arr);
+}
+
+/** 살 붙이기 · 깎기 — 짚은 자리(둘레 각도 + 폭 위치) 둘레만 오르내립니다.
+ * 붓 크기를 mm 로 잡아 두어, 호수나 폭이 달라도 손에 닿는 크기가 같습니다. */
+function reliefPush(angle, vN, drag) {
+  const tool = TOOLS[sculptState.tool] || TOOLS.push;
+  const g = reliefOf(spec);
+  const outerR = R.sizeToInnerDiameter(spec.size) / 2 + spec.thickness;
+  const cellX = (Math.PI * 2 * outerR) / EX;                    // 둘레 한 칸 (mm)
+  const cellY = Math.max(0.2, spec.width) / (EY - 1);           // 폭 한 칸 (mm)
+  const r = (tool.brushMm || 1.7) * sculptState.size;
+  const rx = Math.max(0.8, r / cellX);
+  const ry = Math.max(0.8, r / cellY);
+  const amount = tool.carveOnly ? -Math.abs(drag) * tool.gain
+    : tool.addOnly ? Math.abs(drag) * tool.gain
+    : drag * tool.gain;
+  const cx = ((angle - Math.PI / 2) / (Math.PI * 2) * EX % EX + EX) % EX;
+  const cy = (vN + 0.5) * (EY - 1);
+
+  const dabAt = (centerX) => {
+    for (let y = 0; y < EY; y++) {
+      const dy = (y - cy) / ry;
+      if (Math.abs(dy) >= 1) continue;
+      for (let x = 0; x < EX; x++) {
+        let dx = Math.abs(x - centerX);
+        if (dx > EX / 2) dx = EX - dx;
+        dx /= rx;
+        const d = Math.hypot(dx, dy);
+        if (d >= 1) continue;
+        const w = Math.cos(d * Math.PI / 2);                    // 가운데가 가장 세게
+        const i = y * EX + x;
+        let v = g[i] + amount * w * w;
+        if (tool.carveOnly) v = Math.min(g[i], v);
+        if (tool.addOnly) v = Math.max(g[i], v);
+        g[i] = Math.max(-1, Math.min(1, v));
+      }
+    }
+  };
+  dabAt(cx);
+  // 대칭을 켜면 손등 쪽 가운데를 기준으로 둘레 반대편에도 (같은 폭 자리에) 똑같이
+  if (sculptState.mirror) {
+    const mirrored = ((EX - cx) % EX + EX) % EX;
+    if (Math.abs(mirrored - cx) > 0.01) dabAt(mirrored);
+  }
+  spec.relief = R.reliefWrite(g);
+}
+
+/** 화면에 보이는 쪽 가장자리 — 반지를 정확히 짚지 못했을 때 폭 도구가 고를 쪽 */
+function facingEdge() {
+  if (!ringGroup) return 'a';
+  ringGroup.updateMatrixWorld();
+  return ringGroup.worldToLocal(camera.position.clone()).z >= 0 ? 'a' : 'b';
 }
 
 /** 도안 격자에 한 번 찍기. vN = 폭 방향 위치(-0.5~0.5)
@@ -1509,8 +1604,7 @@ function bindSculpt() {
      * 첫 손가락이 그새 그어 버린 자국은 지우고 붓질을 끝냅니다. */
     if (activePointers.size > 1 && sculpting) {
       if (strokeBefore) {
-        STROKE_KEYS.forEach((k) => { spec[k] = strokeBefore[k]; });
-        delete spec._sculpt; delete spec._sculptW; delete spec._matte; delete spec._engrave;
+        STROKE_KEYS.forEach((k) => { spec[k] = strokeBefore[k]; delete spec['_' + k]; });
         studio.changed();
       }
       sculpting = null;
@@ -1556,7 +1650,13 @@ function bindSculpt() {
     strokeBefore = {};
     STROKE_KEYS.forEach((k) => { strokeBefore[k] = spec[k]; });
     if (studio.holdHistory) studio.holdHistory(true);  // 한 번 그은 것이 되돌리기 한 칸이 되도록
-    sculpting = { angle: pt.angle, x: ev.clientX, y: ev.clientY, moved: false };
+    sculpting = { angle: pt.angle, v: pt.v, x: ev.clientX, y: ev.clientY, moved: false };
+    /* 폭은 짚은 쪽 가장자리 하나만 움직입니다. 한 번 긋는 동안은 그쪽으로 고정해야
+     * 가운데를 지나도 반대쪽이 따라 움직이지 않습니다. */
+    if (tool.edge) {
+      const side = pt.v !== null && Math.abs(pt.v) > 0.04 ? (pt.v >= 0 ? 'a' : 'b') : facingEdge();
+      sculpting.edgeKey = side === 'a' ? 'sculptWa' : 'sculptWb';
+    }
     // 도안은 짚은 그 자리부터 바로 새겨집니다
     if (tool.grid && pt.v !== null) {
       engravePaint(pt.angle, pt.v, tool.wipe);
@@ -1600,12 +1700,15 @@ function bindSculpt() {
     sculpting.x = ev.clientX;
     sculpting.moved = true;
     // 끄는 동안 현재 가리키는 자리를 따라가면 붓처럼 칠할 수 있다
-    const a = angleAtPointer(ev);
-    const at = a === null ? sculpting.angle : a;
+    const cur = pointAtPointer(ev);
+    const at = cur ? cur.angle : sculpting.angle;
     if (at === null || at === undefined) return;   // 아직 자리를 못 잡았으면 건너뜁니다
     sculpting.angle = at;
+    // 반지 밖으로 살짝 빗나가면 마지막으로 짚었던 폭 자리를 그대로 씁니다
+    if (cur && cur.v !== null) sculpting.v = cur.v;
     // 끈 거리(px)만 넘기면 도구가 알아서 제 세기로 밀어 냅니다
-    sculptPush(at, step);
+    if (tool.relief) reliefPush(at, sculpting.v === null ? 0 : sculpting.v, step);
+    else sculptPush(at, step, sculpting.edgeKey);
     studio.changed();
   });
 
@@ -1718,8 +1821,10 @@ try {
   studio.angleAtPointer = angleAtPointer;
   studio.pointAt = pointAtPointer;
   studio.clearSculpt = () => {
-    spec._sculpt = spec._sculptW = spec._matte = spec._engrave = null;
-    spec.sculpt = spec.sculptW = spec.matte = spec.engrave = '';
+    ['sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'engrave'].forEach((k) => {
+      spec['_' + k] = null;
+      spec[k] = '';
+    });
     spec.stoneAt = '';
     spec.stars = '';
     spec.draw = '';
