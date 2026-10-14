@@ -508,7 +508,49 @@
       elements: ['화', '금'], moods: ['시그니처', '커플'],
       tags: ['변화', '흐름', '개척', '특별함', '빛', '유연'],
       desc: '굵은 홈이 비스듬히 누워 한 바퀴를 감아 올라갑니다. 꼰줄보다 골이 완만해 ' +
-        '손에 걸리지 않으면서도 선이 길게 흐릅니다.' }
+        '손에 걸리지 않으면서도 선이 길게 흐릅니다.' },
+
+    // ── 레퍼런스 추가분 (2026.10) ─────────────────────────────────
+    { id: 'onm-hollow', name: '우묵', family: 'minimal', profile: 'valley', texture: 'soft', setting: 'none',
+      width: [3.5, 5, 7], thickness: [1.6, 2.2, 3.0], wave: 0, twist: 0, taper: 0, facets: 0,
+      elements: ['수', '금'], moods: ['커플', '데일리'],
+      tags: ['차분', '포용', '깊이', '정돈', '인연', '섬세'],
+      desc: '둥근 밴드 한가운데를 넓고 얕게 파 내 골이 한 바퀴 흐릅니다. 양 어깨만 빛을 받고 ' +
+        '골 안은 은은하게 가라앉아, 같은 은인데도 두 겹처럼 보입니다.' },
+
+    { id: 'onm-hammer', name: '두드림', family: 'rugged', profile: 'flat', texture: 'fine', setting: 'none',
+      width: [2, 5, 8], thickness: [1.6, 2.2, 3.2], wave: 0, twist: 0, taper: 0, facets: 0,
+      band: 'hammer', bandAmt: 1.2, hammerCell: 3.0,
+      elements: ['금', '토'], moods: ['커플', '시그니처'],
+      tags: ['강인', '결단', '우직', '개척', '끈기', '강직'],
+      desc: '망치로 한 면씩 두드려 큼직한 면을 불규칙하게 남겼습니다. 면마다 기울기가 달라 ' +
+        '손을 움직일 때마다 다른 자리가 빛을 받습니다. 가는 쪽과 넓은 쪽을 짝으로 맞추기 좋습니다.' },
+
+    { id: 'onm-flow', name: '흘림', family: 'organic', profile: 'dshape', texture: 'polish', setting: 'none',
+      width: [3, 4.5, 7], thickness: [1.6, 2.2, 3.2], wave: 0.35, twist: 0, taper: 0, facets: 0,
+      band: 'wavy', bandAmt: 0.28,
+      elements: ['수', '목'], moods: ['커플', '선물'],
+      tags: ['유연', '빛', '조화', '변화', '감성', '성장'],
+      preset: { organic: 0.9 },
+      desc: '녹은 은이 흐르다 굳은 듯 밴드가 굽이치고, 표면엔 손끝으로 누른 듯한 자국이 남았습니다. ' +
+        '거울처럼 광을 올려 굴곡마다 빛이 길게 흘러내립니다. 같은 모양이 둘로 나오지 않습니다.' },
+
+    { id: 'onm-ribbon', name: '댕기', family: 'signature', profile: 'round', texture: 'soft', setting: 'none',
+      width: [3.5, 5.5, 8], thickness: [1.8, 2.6, 3.6], wave: 0.2, twist: 0, taper: 0, facets: 0,
+      sweep: 4.2, sweepN: 5, sweepSlant: 0.9, sweepShape: 'fold',
+      elements: ['목', '화'], moods: ['시그니처', '커플'],
+      tags: ['추진력', '개척', '리더십', '개성', '감성', '성장'],
+      preset: { organic: 0.5 },
+      desc: '머리를 땋아 묶던 댕기처럼, 띠가 비스듬히 접히며 한 바퀴를 감아 돕니다. ' +
+        '접힌 면마다 빛이 꺾여 들어 무광인데도 입체감이 큽니다. 원석 없이 형태만으로 존재감을 냅니다.' },
+
+    { id: 'onm-molded', name: '빚음', family: 'organic', profile: 'flat', texture: 'fine', setting: 'none',
+      width: [5, 6.5, 9], thickness: [1.8, 2.4, 3.4], wave: 0.25, twist: 0, taper: 0, facets: 0,
+      elements: ['토', '목'], moods: ['커플', '데일리'],
+      tags: ['포용', '인내', '편안', '균형', '온기', '자연스러운 질감'],
+      preset: { organic: 1 },
+      desc: '흙을 손으로 빚듯 왁스를 주물러 만든 넓은 밴드입니다. 가장자리가 고르지 않게 ' +
+        '오르내리고, 곱게 눌러 낸 무광 덕에 손에 닿는 결이 부드럽습니다.' }
   ];
 
   /* ────────────────────── 캔바 원문 → 스타일 해석 ────────────────────── */
@@ -683,12 +725,13 @@
     dshape: '안은 평평하고 밖은 둥근 옆선', knife: '가운데가 날처럼 솟은 옆선',
     wave: '물결치는 옆선', facet: '각을 세워 깎은 둘레',
     step: '한 단 낮춘 층', signet: '손등 쪽만 부푼 도장 판',
-    twin: '가운데가 갈린 두 줄'
+    twin: '가운데가 갈린 두 줄', valley: '가운데를 우묵하게 파 낸 골'
   };
   var FORM_BAND = {
     bark: '세로로 촘촘한 결', rope: '비스듬히 꼬인 가닥',
     bead: '줄줄이 이어진 동그란 알', block: '망치로 끊어 낸 덩이',
-    wavy: '옆으로 굽이치는 띠', chevron: '앞에서 한 점으로 꺾이는 V'
+    wavy: '옆으로 굽이치는 띠', chevron: '앞에서 한 점으로 꺾이는 V',
+    hammer: '망치로 두드려 남긴 큼직한 면'
   };
   var FORM_TEXTURE = {
     polish: '거울처럼 올린 광', diamond: '서리처럼 잘게 반짝이는 면',
@@ -941,7 +984,8 @@
     facet:  '각이 진 (패싯)',
     step:   '층이 진 (스텝)',
     signet: '손등 쪽만 부푼 판 (인장)',
-    twin:   '가운데가 갈린 두 줄 (트윈)'
+    twin:   '가운데가 갈린 두 줄 (트윈)',
+    valley: '가운데가 우묵하게 파인 (오목)'
   };
   /* 겉면 마감은 실제로 만들 수 있는 다섯 가지만 둡니다. */
   var TEXTURE_LABEL = {

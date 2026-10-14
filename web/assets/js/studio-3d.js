@@ -43,6 +43,15 @@ function outerAt(profile, v, t, w) {
       const edge = k > 0.9 ? 1 - (k - 0.9) * 1.6 : 1;
       return t * (1 - 0.78 * dip) * edge;
     }
+    /* 우묵 — 둥근 밴드 한가운데를 넓고 얕게 파 낸 골.
+     * 두 줄(twin)처럼 날카롭게 갈라지지 않고, 어깨에서 골 바닥까지 한 곡선으로
+     * 부드럽게 내려앉습니다. 바닥은 두께의 60% 를 남겨 반지가 힘을 받습니다. */
+    case 'valley': {
+      const G = 0.72;                                          // 골이 닿는 곳 (폭 대비)
+      const dip = k < G ? 0.5 + 0.5 * Math.cos(Math.PI * k / G) : 0;   // 가운데 1 → 어깨 0
+      const roll = k > 0.8 ? 1 - Math.pow((k - 0.8) / 0.2, 2) * 0.45 : 1;    // 둥근 가장자리
+      return t * (roll - 0.52 * dip);
+    }
     default:       return t;
   }
 }
@@ -282,7 +291,7 @@ function buildBand(s, model) {
    * 밴드를 한 바퀴 도는 무늬(band)와 달리 앞쪽에만 놓입니다. */
   const shoulder = (model && model.shoulder) || '';
   // 결이 잔 무늬는 줄이 성기면 계단처럼 끊겨 보입니다
-  const bandDense = bandKind === 'bark' || bandKind === 'block' || bandKind === 'rope' ||
+  const bandDense = bandKind === 'bark' || bandKind === 'block' || bandKind === 'rope' || bandKind === 'hammer' ||
     (model && (model.shoulder === 'tick' || model.band === 'stud'));
   const fine = !!s.engrave || !!s.stars || sparkle || !!bandKind || !!(model && model.shoulder);
   const SEG = (sparkle || bandDense) ? 720 : fine ? 560 : 320;
@@ -312,7 +321,8 @@ function buildBand(s, model) {
   const barkN  = Math.max(16, Math.round(CIRC / 0.8));    // 세로 결 한 줄 간격 0.8mm
   const ropeN  = Math.max(8,  Math.round(CIRC / 1.9));    // 꼬인 가닥 하나 1.9mm
   const beadN  = Math.max(6,  Math.round(CIRC / Math.max(2.2, s.width * 0.95)));
-  const BCELL  = 1.4;                                     // 돌담 한 덩이 (mm)
+  // 돌담 한 덩이 (mm). 디자인이 크게 두드린 면을 원하면 blockCell 로 키웁니다
+  const BCELL  = (model && model.blockCell) || 1.4;
   const blockN = Math.max(8,  Math.round(CIRC / BCELL));
   const rippleN = 3;                                      // 물길이 한 바퀴에 굽이치는 횟수
   const ropeSlant = (Math.PI * 2) / Math.max(1.6, s.width) * 1.15;
@@ -442,10 +452,20 @@ function buildBand(s, model) {
          * 날을 비스듬히 뉘어 밀기 때문에 면이 대각선으로 길게 눕습니다.
          * 한 바퀴에 정수 개가 들어가도록 두어 돌아와도 무늬가 어긋나지 않습니다. */
         if (sweep > 0) {
-          const RIDGES = 11;          // 한 바퀴에 들어가는 면의 수
-          const SLANT = 2.6;          // 클수록 더 비스듬하게 눕습니다
+          // 한 바퀴에 들어가는 면의 수 / 기울기. 리본처럼 크게 접힌 디자인은 면을 줄이고 더 눕힙니다
+          const RIDGES = (model && model.sweepN) || 11;
+          const SLANT = (model && model.sweepSlant) || 2.6;
           const phase = RIDGES * th + SLANT * p.v;
-          const saw = Math.abs(((phase / Math.PI) % 2) - 1);     // 0~1 삼각파 = 또렷한 모서리
+          /* 기본은 대칭 삼각파(양쪽 경사가 같은 능선).
+           * 'fold' 는 한쪽은 길게 눕고 한쪽은 가파르게 떨어지는 톱니라,
+           * 띠가 앞 장 위로 겹쳐 접힌 것처럼 보입니다 (리본 · 댕기). */
+          let saw;
+          if (model && model.sweepShape === 'fold') {
+            const f = ((phase / (Math.PI * 2)) % 1 + 1) % 1;      // 0 → 1 로 오르다 뚝 떨어짐
+            saw = f < 0.82 ? f / 0.82 : (1 - f) / 0.18;
+          } else {
+            saw = Math.abs(((phase / Math.PI) % 2) - 1);         // 0~1 삼각파 = 또렷한 모서리
+          }
           const jitter = valueNoise(Math.cos(th) * 3 + 31, Math.sin(th) * 3 + p.v * 1.4);
           const cut = (saw * 0.74 + jitter * 0.26) * 0.12 * sweep * Math.max(t, 1.2);
           radius -= cut;
@@ -512,6 +532,45 @@ function buildBand(s, model) {
             let nz = 0.5 + 0.55 * (gx * (fx - 0.5) + gy * (fy - 0.5)) + 0.35 * (lift - 0.5);
             nz = Math.max(0, Math.min(1, nz));
             cut = nz * 0.2 * depthScale;
+          } else if (bandKind === 'hammer') {
+            /* 망치 면 — 둘레 위에 점을 흩어 두고, 점마다 "평평한 면" 하나를 댑니다.
+             * 면들 중 가장 낮은 것이 겉면이 되므로(min), 이웃한 두 면은 절벽이 아니라
+             * 또렷한 능선으로 만납니다. 보석을 깎은 면처럼 경계가 곧고 끊김이 없습니다.
+             *
+             * 면 하나의 높이 = 점에서 멀어질수록 오르는 이차식 + 면마다 다른 기울기.
+             * 이차식이 반지 둘레의 굽음을 상쇄해 면이 평평하게 펴지고,
+             * 기울기가 달라 면마다 빛을 받는 방향이 제각각이 됩니다.
+             * 둘레 칸 수를 정수로 두어 한 바퀴 돌아와도 이음매가 맞습니다. */
+            const HC = (model && model.hammerCell) || 3.0;           // 면 하나 크기 (mm)
+            const nA = Math.max(6, Math.round(CIRC / HC));
+            const rowsH = Math.max(1, Math.round(s.width / HC));
+            const cw = CIRC / nA, ch = s.width / rowsH;
+            const R0 = innerR + t;
+            const kx = 2.4 / R0, ky = 2.4 / R0;                      // 면이 펴지는 정도
+            const x = (th / (Math.PI * 2)) * CIRC;                   // 둘레 위 거리 (mm)
+            const y = pv + s.width / 2;                              // 폭 위 거리 (mm)
+            const cx = Math.floor(x / cw), cy = Math.floor(y / ch);
+            let qmin = 1e9;
+            for (let ox = -1; ox <= 1; ox++) {
+              for (let oy = -1; oy <= 1; oy++) {
+                const gxI = cx + ox, gyI = cy + oy;
+                if (gyI < -1 || gyI > rowsH) continue;
+                const wx = ((gxI % nA) + nA) % nA;                   // 둘레는 돌아서 이어집니다
+                const seed = wx * 31 + gyI * 7;
+                const px = (gxI + 0.2 + 0.6 * hash(wx * 2.3 + 1, gyI * 3.7 + 5)) * cw;
+                const py = (gyI + 0.2 + 0.6 * hash(wx * 4.1 + 9, gyI * 1.3 + 2)) * ch;
+                const dx = x - px, dy = y - py;
+                const tilx = (hash(seed + 3, 11) * 2 - 1) * 0.14;
+                const tily = (hash(seed + 7, 19) * 2 - 1) * 0.14;
+                const off = hash(seed + 13, 5) * 0.05;
+                const q = 0.5 * kx * dx * dx + 0.5 * ky * dy * dy + tilx * dx + tily * dy + off;
+                if (q < qmin) qmin = q;
+              }
+            }
+            // 면 한가운데가 가장 깊고, 능선은 원래 겉면에 닿습니다
+            const DEEP = 0.5 * kx * Math.pow(cw * 0.55, 2) + 0.5 * ky * Math.pow(ch * 0.55, 2);
+            cut = Math.max(0, DEEP - qmin) * bandAmt;
+            cut = Math.min(cut, 0.42 * Math.max(t, 1.2));            // 너무 깊이 파이지 않게
           }
           if (cut > 0) { radius -= cut; carved += cut; }
         }
