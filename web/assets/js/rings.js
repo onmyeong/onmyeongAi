@@ -909,7 +909,9 @@
     /* 값은 가장 가늘고 얇은 민자 반지(기본가)에서 시작합니다.
      * 거기에 키운 치수만큼, 그리고 디자인마다 손이 더 가는 만큼을 더합니다.
      * 옵션을 모두 빼고 치수를 줄이면 값은 기본가까지 그대로 내려갑니다. */
-    var base = P.base;
+    // 인장 모양은 판 무게만큼 기본가가 다릅니다
+    var isSignet = spec.profile === 'signet' && P.signetBase;
+    var base = isSignet ? P.signetBase : P.base;
     var extraW = Math.max(0, spec.width - P.baseWidth) * P.perWidthMm;
     var extraT = Math.max(0, spec.thickness - P.baseThickness) * P.perThicknessMm;
     /* 손가락이 굵으면 둘레가 길어져 은이 더 들어갑니다.
@@ -957,6 +959,7 @@
       // 값이 어떻게 나왔는지 그대로 보여 주기 위한 내역
       parts: {
         base: Math.round(base * metal.mult),
+        signet: !!isSignet,
         size: Math.round((extraW + extraT) * metal.mult),
         big: Math.round(big * metal.mult),
         bigFrom: bigTier ? bigTier.from : 0,
@@ -979,7 +982,9 @@
     if (!price || !price.parts || price.consult) return [];
     var q = price.parts;
     var P = CONFIG.price;
-    var rows = [['기본 (폭 ' + P.baseWidth + 'mm · 두께 ' + P.baseThickness + 'mm 민자)', q.base]];
+    var rows = [[q.signet
+      ? '기본 — 인장 반지 (판 무게 포함)'
+      : '기본 (폭 ' + P.baseWidth + 'mm · 두께 ' + P.baseThickness + 'mm 민자)', q.base]];
     if (q.size) rows.push(['치수 — 두껍고 넓어진 만큼', q.size]);
     if (q.big) rows.push(['호수 — ' + q.bigFrom + '호 이상', q.big]);
     if (q.size2 != null && q.big2 !== q.big) {
