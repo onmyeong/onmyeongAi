@@ -57,7 +57,7 @@
       elements: ['금', '토'], moods: ['시그니처'],
       tags: ['결단', '강인', '개척', '추진력', '용기', '리더십'],
       desc: '잘게 깎아 낸 면이 층마다 빛을 튕겨 냅니다. 두드릴수록 단단해지는 금속의 성질을 형태로 남겼습니다.' },
-    { id: 'rugged-fortress', name: '성돌', family: 'rugged', profile: 'step', texture: 'fine', setting: 'bezel',
+    { id: 'rugged-fortress', name: '고을', family: 'rugged', profile: 'step', texture: 'fine', setting: 'bezel',
       width: [4, 6, 10], thickness: [2.0, 2.8, 4.5], wave: 0, twist: 0, taper: 0, facets: 6,
       elements: ['토', '금'], moods: ['시그니처', '선물'],
       tags: ['원칙', '의리', '책임감', '신의', '버팀목', '강직'],
