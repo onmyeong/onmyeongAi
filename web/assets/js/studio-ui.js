@@ -294,6 +294,7 @@
     });
     var sz = CONFIG.limits.sizeKR;
     $('c-size').min = sz.min; $('c-size').max = sz.max; $('c-size').value = spec.size;
+    $('c-comfort').value = Math.max(0, Math.min(1, Number(spec.comfort) || 0));
 
     /* 뒤쪽 두께는 앞쪽을 넘을 수 없습니다 (뒤가 더 두꺼운 반지는 손에 걸립니다).
      * 0 은 "앞뒤 같게"라는 뜻이라 최솟값을 앞 두께의 절반으로 둡니다. */
@@ -313,6 +314,7 @@
     // 손가락이 굵으면 은이 더 들어가므로 큰 호수일수록 값이 단계별로 오릅니다
     var big = R.sizeSurcharge(spec.size);
     $('o-size').textContent = spec.size + '호' + (big ? ' (+' + R.formatKRW(big.price) + ')' : '');
+    $('o-comfort').textContent = R.comfortLabel(spec.comfort);
 
     var gap = spec.thickness - (spec.backThickness || spec.thickness);
     $('o-backthickness').textContent = (spec.backThickness || spec.thickness).toFixed(1) + 'mm' +
@@ -353,6 +355,12 @@
       setOutputs();
       studio.changed();
     });
+  });
+
+  $('c-comfort').addEventListener('input', function () {
+    spec.comfort = parseFloat(this.value) || 0;
+    setOutputs();
+    studio.changed();
   });
 
   $('c-backthickness').addEventListener('input', function () {
@@ -837,6 +845,7 @@
       ['두께', spec.thickness.toFixed(1) + ' mm'],
       ['폭', spec.width.toFixed(1) + ' mm'],
       ['호수', spec.size + '호 (안지름 ' + R.sizeToInnerDiameter(spec.size).toFixed(1) + 'mm)'],
+      ['내경 굴림', R.comfortLabel(spec.comfort)],
       ['소재', (CONFIG.price.metals[spec.metal] || {}).label || spec.metal],
       ['표면 느낌', R.textureLabel(spec)],
       ['옆모양', R.PROFILE_LABEL[spec.profile]],
