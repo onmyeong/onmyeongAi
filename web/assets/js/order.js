@@ -33,10 +33,10 @@
     var lim = CONFIG.limits.sizeKR;
     var html = '';
     for (var s = lim.min; s <= lim.max; s++) {
-      var big = CONFIG.price.bigSize && s >= CONFIG.price.bigSize.from;
+      var big = R.sizeSurcharge(s);
       html += '<option value="' + s + '">' + s + '호 (내경 ' +
         R.sizeToInnerDiameter(s).toFixed(1) + 'mm)' +
-        (big ? ' · +' + R.formatKRW(CONFIG.price.bigSize.price) : '') + '</option>';
+        (big ? ' · +' + R.formatKRW(big.price) : '') + '</option>';
     }
     $('o-size').innerHTML = html;
     $('o-size2').innerHTML = html;
@@ -368,7 +368,8 @@
   }
 
   function currentPrice() {
-    return isCouple ? pairPrice() : R.estimatePrice(spec, qty);
+    // 같은 디자인 2개 이상 — 두 번째 반지 호수가 다르면 그 호수의 추가금으로 따로 셉니다
+    return isCouple ? pairPrice() : R.estimatePrice(spec, qty, qty >= 2 ? size2 : null);
   }
 
   function specRows(sp, label) {
