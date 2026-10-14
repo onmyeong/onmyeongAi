@@ -58,8 +58,80 @@
       listeners.forEach(function (fn) { try { fn(spec); } catch (e) { console.error(e); } });
       render2d();
       syncPanel();
+      scheduleCommit();
+    },
+    /* 붓질하는 동안은 기록을 미뤄 두었다가 손을 떼면 한 칸으로 남깁니다 */
+    holdHistory: function (on) {
+      hist.hold = !!on;
+      if (!on) scheduleCommit(true);
     }
   };
+
+  /* ───────────── 되돌리기 · 다시 하기 ─────────────
+   * 사양 전체를 한 장씩 찍어 두고(앞에 _ 가 붙은 계산용 값은 빼고) 앞뒤로 오갑니다.
+   * 슬라이더를 끄는 동안처럼 잇달아 바뀌는 것은 손을 멈춘 뒤 한 칸으로 묶습니다.
+   * 붓질은 그은 한 번이 한 칸입니다. */
+  var HIST_MAX = 80;
+  var hist = { past: [], future: [], cur: null, timer: 0, hold: false, applying: false };
+
+  function snapSpec() {
+    var o = {};
+    Object.keys(spec).forEach(function (k) { if (k.charAt(0) !== '_') o[k] = spec[k]; });
+    return JSON.stringify(o);
+  }
+  function scheduleCommit(now) {
+    if (hist.applying || hist.cur === null) return;
+    clearTimeout(hist.timer);
+    hist.timer = setTimeout(commitHistory, now ? 0 : 450);
+  }
+  function commitHistory() {
+    clearTimeout(hist.timer);
+    if (hist.applying || hist.hold || hist.cur === null) return;
+    var s = snapSpec();
+    if (s === hist.cur) return;
+    hist.past.push(hist.cur);
+    if (hist.past.length > HIST_MAX) hist.past.shift();
+    hist.cur = s;
+    hist.future = [];
+    paintHistory();
+  }
+  function restoreSpec(s) {
+    hist.applying = true;
+    try {
+      Object.keys(spec).forEach(function (k) { delete spec[k]; });   // 계산용 값(_sculpt 등)까지 비웁니다
+      var o = JSON.parse(s);
+      Object.keys(o).forEach(function (k) { spec[k] = o[k]; });
+      buildControls();
+      studio.changed();
+    } finally {
+      hist.applying = false;
+    }
+  }
+  function undo() {
+    commitHistory();                         // 아직 기록 전인 마지막 손질부터 남깁니다
+    if (!hist.past.length) return false;
+    hist.future.push(hist.cur);
+    hist.cur = hist.past.pop();
+    restoreSpec(hist.cur);
+    paintHistory();
+    return true;
+  }
+  function redo() {
+    commitHistory();
+    if (!hist.future.length) return false;
+    hist.past.push(hist.cur);
+    hist.cur = hist.future.pop();
+    restoreSpec(hist.cur);
+    paintHistory();
+    return true;
+  }
+  function paintHistory() {
+    var u = $('undo'), r = $('redo');
+    if (u) u.disabled = !hist.past.length;
+    if (r) r.disabled = !hist.future.length;
+  }
+  studio.undo = undo;
+  studio.redo = redo;
 
   /* ───────────── 2D 미리보기 (3D가 뜨기 전/못 뜰 때) ───────────── */
   function render2d() {
@@ -421,6 +493,8 @@
     var box = $('sculpt-box'), hint = $('sculpt-hint');
 
     var HINTS = {
+      add:    '그은 자리에 살이 붙어 도톰해집니다. 왁스를 덧붙이듯 여러 번 그으면 더 두꺼워집니다.',
+      carve:  '그은 자리를 깎아 얇게 만듭니다. 여러 번 그을수록 더 깎입니다.',
       push:   '위로 끌면 그 자리가 도톰해지고, 아래로 끌면 얇아집니다.',
       wide:   '위로 끌면 그 자리가 넓어지고, 아래로 끌면 좁아집니다.',
       chisel: '좁은 붓으로 깊게 깎아 각을 세웁니다. 어느 쪽으로 끌든 파내기만 합니다.',
@@ -435,7 +509,7 @@
 
     function tool() {
       var on = $('sculpt-tools').querySelector('[aria-pressed="true"]');
-      return on ? on.getAttribute('data-tool') : 'push';
+      return on ? on.getAttribute('data-tool') : 'add';
     }
 
     /** 원석을 안 골랐으면 '알 놓기'는 쓸 수 없습니다 */
@@ -448,9 +522,9 @@
       // 원석을 빼면 다른 도구로 돌려 놓습니다
       if (!has && btn.getAttribute('aria-pressed') === 'true') {
         Array.prototype.forEach.call($('sculpt-tools').querySelectorAll('[data-tool]'), function (x) {
-          x.setAttribute('aria-pressed', String(x.getAttribute('data-tool') === 'push'));
+          x.setAttribute('aria-pressed', String(x.getAttribute('data-tool') === 'add'));
         });
-        if (studio.setSculptTool) studio.setSculptTool('push');
+        if (studio.setSculptTool) studio.setSculptTool('add');
       }
     }
 
@@ -460,10 +534,12 @@
       toggle.textContent = on ? '다듬기 끝내기' : '손으로 다듬기';
       toggle.classList.toggle('btn-primary', on);
       box.classList.toggle('is-hidden', !on);
+      $('turn-row').classList.toggle('is-hidden', !on);
       var t = tool();
       var tap = (t === 'stone' || t === 'star' || t === 'unpaint');
       hint.textContent = (HINTS[t] || '') +
-        (tap || t === 'draw' ? '' : ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.');
+        (tap || t === 'draw' ? '' : ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.') +
+        ' 다듬는 중에도 오른쪽 버튼(태블릿은 두 손가락)으로 끌면 반지가 돌아갑니다.';
       // 크기 조절칸은 그 도구를 고른 동안에만 꺼냅니다
       $('f-starsize').classList.toggle('is-hidden', t !== 'star');
       $('f-drawsize').classList.toggle('is-hidden', t !== 'draw');
@@ -478,7 +554,15 @@
       refresh(false);
 
       toggle.addEventListener('click', function () {
-        refresh(studio.setSculptMode(toggle.getAttribute('aria-pressed') !== 'true'));
+        var on = studio.setSculptMode(toggle.getAttribute('aria-pressed') !== 'true');
+        refresh(on);
+        /* 다듬기를 켜면 반지 화면을 맨 위로 올립니다. 그래야 반지와 아래 도구가 한 화면에
+         * 같이 들어와, 도구를 고르러 내려갔다가 반지가 화면 밖으로 나가는 일이 줄어듭니다. */
+        if (on) {
+          var st = $('stage');
+          var top = st.getBoundingClientRect().top + window.pageYOffset - 12;
+          try { window.scrollTo({ top: top, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, top); }
+        }
       });
 
       clear.addEventListener('click', function () {
@@ -958,4 +1042,27 @@
   paintIlju();
   render2d();
   syncPanel();
+
+  // 처음 연 그대로를 첫 장으로 — 여기까지 되돌릴 수 있습니다
+  hist.cur = snapSpec();
+  paintHistory();
+  $('undo').addEventListener('click', undo);
+  $('redo').addEventListener('click', redo);
+
+  /* 단축키 — Ctrl+Z 되돌리기, Ctrl+Shift+Z · Ctrl+Y 다시 하기 (맥은 Cmd).
+   * 각인 칸처럼 글자를 치는 중에는 그 칸의 글자 되돌리기를 그대로 둡니다. */
+  document.addEventListener('keydown', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    var t = e.target;
+    var typing = t && (t.tagName === 'TEXTAREA' || t.isContentEditable ||
+      (t.tagName === 'INPUT' && /^(text|search|email|tel|url|number|password)$/i.test(t.type || 'text')));
+    if (typing) return;
+    var k = (e.key || '').toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
+  });
+
+  /* 다듬는 동안 반지 돌리기 — 버튼으로 30°씩 바퀴처럼 돌립니다 */
+  $('turn-left').addEventListener('click', function () { if (studio.turnRing) studio.turnRing(30); });
+  $('turn-right').addEventListener('click', function () { if (studio.turnRing) studio.turnRing(-30); });
 })();

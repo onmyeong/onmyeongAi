@@ -1235,6 +1235,14 @@ function initScene() {
  * 실제로 왁스를 손가락으로 밀어낸 것처럼 이어집니다.
  */
 let sculptOn = false;
+/* 반지를 바퀴처럼 제 축으로 돌려 둔 각도. 다듬을 자리를 위로 가져오는 데 씁니다.
+ * 반지를 다시 그려도 그대로 유지합니다 (보는 방향일 뿐 사양은 바뀌지 않습니다). */
+let viewTurn = 0;
+// 지금 화면을 짚고 있는 손가락(포인터)들 — 두 손가락이 닿으면 붓질 대신 돌리기로 넘깁니다
+const activePointers = new Set();
+// 붓질을 시작할 때의 다듬기 값 — 두 번째 손가락이 닿으면 이걸로 되돌립니다
+const STROKE_KEYS = ['sculpt', 'sculptW', 'matte', 'engrave', 'draw', 'stars', 'stoneAt'];
+let strokeBefore = null;
 let sculpting = null;
 
 /* 도구 — 무엇을 밀고 있는지에 따라 손대는 자국이 달라집니다.
@@ -1244,7 +1252,12 @@ let sculpting = null;
  *   matte  부분무광 : 그 자리만 무광으로 칠합니다 (아래로 끌면 지웁니다)
  * brush = 몇 지점까지 번지는가, gain = 1px 끌 때 얼마나 밀리는가 */
 const TOOLS = {
-  push:   { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '두께' },
+  /* 살 붙이기 / 살 깎기 — 예전 '두께' 한 도구가 위·아래로 끄는 방향에 따라 둘 다 했는데,
+   * 버튼에 드러나지 않아 깎기만 되는 줄 알기 쉬웠습니다. 둘로 나눠 어느 쪽으로 끌든
+   * 한 가지만 하게 했습니다. (왁스를 덧붙여 도톰하게 / 깎아 내 얇게) */
+  add:    { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '살 붙이기', addOnly: true },
+  carve:  { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '살 깎기', carveOnly: true },
+  push:   { key: 'sculpt',  brush: 2.6, gain: 0.010, label: '두께' },   // 예전 도구 (버튼 없음)
   wide:   { key: 'sculptW', brush: 2.6, gain: 0.010, label: '폭' },
   chisel: { key: 'sculpt',  brush: 0.9, gain: 0.024, label: '각 세우기', carveOnly: true },
   matte:  { key: 'matte',   brush: 2.2, gain: 0.020, label: '부분 무광' },
@@ -1258,7 +1271,7 @@ const TOOLS = {
   draw:    { paint: true, label: '그리기' },
   unpaint: { click: true, label: '그린 선 지우기', wipeDraw: true }
 };
-const sculptState = { tool: 'push', size: 1, mirror: false };
+const sculptState = { tool: 'add', size: 1, mirror: false };
 
 function ensureSculpt(key) {
   const cache = key === 'sculptW' ? '_sculptW' : key === 'matte' ? '_matte' : '_sculpt';
@@ -1309,7 +1322,7 @@ function angleAtPointer(ev) {
   return pt ? pt.angle : null;
 }
 
-function dab(arr, n, center, radius, amount, carveOnly) {
+function dab(arr, n, center, radius, amount, carveOnly, addOnly) {
   for (let i = 0; i < n; i++) {
     let d = Math.abs(i - center);
     if (d > n / 2) d = n - d;                // 한 바퀴이므로 가까운 쪽으로
@@ -1317,6 +1330,7 @@ function dab(arr, n, center, radius, amount, carveOnly) {
     const w = Math.cos((d / radius) * Math.PI / 2);         // 가운데가 가장 세게
     let v = arr[i] + amount * w * w;
     if (carveOnly) v = Math.min(arr[i], v);                 // 깎기 전용 도구는 파기만 합니다
+    if (addOnly) v = Math.max(arr[i], v);                   // 붙이기 전용 도구는 붙이기만 합니다
     arr[i] = Math.max(-1, Math.min(1, v));
   }
 }
@@ -1326,17 +1340,19 @@ function sculptPush(angle, drag) {
   const arr = ensureSculpt(tool.key);
   const n = arr.length;
   const radius = Math.max(0.8, tool.brush * sculptState.size);
-  // 각 세우기는 어느 쪽으로 끌든 파내기만 합니다
-  const amount = tool.carveOnly ? -Math.abs(drag) * tool.gain : drag * tool.gain;
+  // 깎기 · 붙이기 전용 도구는 어느 쪽으로 끌든 한 방향으로만 밉니다
+  const amount = tool.carveOnly ? -Math.abs(drag) * tool.gain
+    : tool.addOnly ? Math.abs(drag) * tool.gain
+    : drag * tool.gain;
 
   // 위쪽(π/2)을 0번으로 맞춘다 — readAt 과 같은 규칙
   const center = ((angle - Math.PI / 2) / (Math.PI * 2) * n % n + n) % n;
-  dab(arr, n, center, radius, amount, tool.carveOnly);
+  dab(arr, n, center, radius, amount, tool.carveOnly, tool.addOnly);
 
   // 대칭을 켜면 손등 쪽 중심선을 기준으로 반대편도 똑같이 손봅니다
   if (sculptState.mirror) {
     const mirrored = ((n - center) % n + n) % n;
-    if (Math.abs(mirrored - center) > 0.01) dab(arr, n, mirrored, radius, amount, tool.carveOnly);
+    if (Math.abs(mirrored - center) > 0.01) dab(arr, n, mirrored, radius, amount, tool.carveOnly, tool.addOnly);
   }
   spec[tool.key] = R.sculptWrite(arr);
 }
@@ -1486,8 +1502,31 @@ function stoneToggle(angle) {
 function bindSculpt() {
   const el = renderer.domElement;
 
+  // 손가락 수는 다듬기 여부와 상관없이 셉니다 (pointerup 이 화면 밖에서 나도 빠지게)
+  el.addEventListener('pointerdown', (ev) => {
+    activePointers.add(ev.pointerId);
+    /* 두 번째 손가락이 닿았다 = 돌리거나 확대하려는 것.
+     * 첫 손가락이 그새 그어 버린 자국은 지우고 붓질을 끝냅니다. */
+    if (activePointers.size > 1 && sculpting) {
+      if (strokeBefore) {
+        STROKE_KEYS.forEach((k) => { spec[k] = strokeBefore[k]; });
+        delete spec._sculpt; delete spec._sculptW; delete spec._matte; delete spec._engrave;
+        studio.changed();
+      }
+      sculpting = null;
+      drawing = null;
+      strokeBefore = null;
+      if (studio.holdHistory) studio.holdHistory(false);
+    }
+  }, true);
+  const dropPointer = (ev) => { activePointers.delete(ev.pointerId); };
+  el.addEventListener('pointerup', dropPointer, true);
+  el.addEventListener('pointercancel', dropPointer, true);
+  el.addEventListener('pointerleave', dropPointer, true);
+
   el.addEventListener('pointerdown', (ev) => {
     if (!sculptOn || ev.button !== 0) return;
+    if (activePointers.size > 1) return;           // 두 손가락은 돌리기 · 확대
     const pt = pointAtPointer(ev);
     if (!pt) return;
     const tool = TOOLS[sculptState.tool] || TOOLS.push;
@@ -1506,11 +1545,17 @@ function bindSculpt() {
       if (pt.v === null) return;
       el.setPointerCapture(ev.pointerId);
       drawing = { before: R.drawStrokes(spec), pts: [] };
+      strokeBefore = {};
+      STROKE_KEYS.forEach((k) => { strokeBefore[k] = spec[k]; });
+      if (studio.holdHistory) studio.holdHistory(true);
       sculpting = { paint: true, angle: pt.angle, x: ev.clientX, y: ev.clientY };
       drawPush(pt);
       return;
     }
     el.setPointerCapture(ev.pointerId);
+    strokeBefore = {};
+    STROKE_KEYS.forEach((k) => { strokeBefore[k] = spec[k]; });
+    if (studio.holdHistory) studio.holdHistory(true);  // 한 번 그은 것이 되돌리기 한 칸이 되도록
     sculpting = { angle: pt.angle, x: ev.clientX, y: ev.clientY, moved: false };
     // 도안은 짚은 그 자리부터 바로 새겨집니다
     if (tool.grid && pt.v !== null) {
@@ -1546,7 +1591,11 @@ function bindSculpt() {
     }
 
     const dy = sculpting.y - ev.clientY;       // 위로 끌면 두껍게
-    if (Math.abs(dy) < 1) return;
+    /* 한 방향 도구(붙이기 · 깎기 · 각 세우기)는 위아래가 아니라 끈 거리만큼 밉니다.
+     * 그래야 옆으로 붓질하듯 그어도 그 자리가 계속 붙고 깎입니다. */
+    const oneWay = tool.addOnly || tool.carveOnly;
+    const step = oneWay ? Math.hypot(ev.clientX - sculpting.x, dy) : dy;
+    if (Math.abs(step) < 1) return;
     sculpting.y = ev.clientY;
     sculpting.x = ev.clientX;
     sculpting.moved = true;
@@ -1556,7 +1605,7 @@ function bindSculpt() {
     if (at === null || at === undefined) return;   // 아직 자리를 못 잡았으면 건너뜁니다
     sculpting.angle = at;
     // 끈 거리(px)만 넘기면 도구가 알아서 제 세기로 밀어 냅니다
-    sculptPush(at, dy);
+    sculptPush(at, step);
     studio.changed();
   });
 
@@ -1566,8 +1615,10 @@ function bindSculpt() {
     const wasPaint = sculpting.paint;
     sculpting = null;
     drawing = null;
+    strokeBefore = null;
     // 다 긋고 나서 한 번만 사양표·주문서에 알립니다
     if (wasPaint) studio.changed();
+    if (studio.holdHistory) studio.holdHistory(false);
   };
   el.addEventListener('pointerup', finish);
   el.addEventListener('pointercancel', finish);
@@ -1578,10 +1629,19 @@ function cursorForTool() {
   return (tool.grid || tool.paint) ? 'crosshair' : tool.click ? 'pointer' : 'ns-resize';
 }
 
-/** 다듬기 모드를 켜고 끈다. 켜면 화면 돌리기는 잠깐 멈춘다. */
+/** 다듬기 모드를 켜고 끈다.
+ * 예전에는 켜는 동안 화면 돌리기를 통째로 막아서, 반지 반대편을 손보려면 다듬기를
+ * 껐다 켜야 했습니다. 이제 왼쪽 버튼(한 손가락)은 다듬기, 오른쪽 버튼(두 손가락)은
+ * 돌리기로 나눠 다듬는 중에도 반지를 돌려 볼 수 있습니다. 자동 회전만 멈춥니다. */
 function setSculptMode(on) {
   sculptOn = !!on;
-  controls.enableRotate = !sculptOn;
+  controls.enableRotate = true;
+  controls.mouseButtons = sculptOn
+    ? { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE }
+    : { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+  controls.touches = sculptOn
+    ? { ONE: null, TWO: THREE.TOUCH.DOLLY_ROTATE }
+    : { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
   controls.autoRotate = sculptOn ? false : controls.autoRotate;
   renderer.domElement.style.cursor = sculptOn ? cursorForTool() : '';
   return sculptOn;
@@ -1629,6 +1689,7 @@ function rebuild() {
 
   buildStones(spec, ringGroup);
   ringGroup.rotation.x = -0.12;
+  ringGroup.rotation.z = viewTurn;
   scene.add(ringGroup);
 
   // 호수가 커져도 화면 밖으로 나가지 않도록
@@ -1671,6 +1732,12 @@ try {
     if (TOOLS[t]) sculptState.tool = t;
     if (sculptOn) renderer.domElement.style.cursor = cursorForTool();
     return sculptState.tool;
+  };
+  /* 반지를 바퀴처럼 제 축으로 돌립니다 (deg). 다듬을 자리를 위로 가져올 때 씁니다. */
+  studio.turnRing = (deg) => {
+    viewTurn = (viewTurn + (Number(deg) || 0) * Math.PI / 180) % (Math.PI * 2);
+    if (ringGroup) ringGroup.rotation.z = viewTurn;
+    return Math.round(viewTurn * 180 / Math.PI);
   };
   studio.setSculptSize = (v) => { sculptState.size = Math.max(0.4, Math.min(2.2, Number(v) || 1)); };
   studio.setSculptMirror = (on) => { sculptState.mirror = !!on; return sculptState.mirror; };
