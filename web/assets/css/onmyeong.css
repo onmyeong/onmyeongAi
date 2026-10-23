@@ -1075,3 +1075,9 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 .elem-geum { color: var(--geum); color: color-mix(in srgb, var(--ink) 16%, var(--geum)); }
 .elem-su   { color: var(--su);   color: color-mix(in srgb, var(--ink) 16%, var(--su)); }
 .elem-accent { color: var(--accent-ink); }
+
+/* ── 사업자 정보 (bizinfo.js) ───────────────────── */
+.site-foot .site-biz {
+  justify-content: flex-start; gap: 4px 14px; margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--line-soft); font-size: .76rem; line-height: 1.6;
+}
