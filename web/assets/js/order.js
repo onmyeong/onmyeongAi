@@ -176,7 +176,7 @@
       if (rv.some(function (v) { return v < -0.02; })) bits.push('살 깎기');
     }
     if (sp.sculptW || sp.sculptWa || sp.sculptWb) bits.push('폭');
-    if (sp.matte) bits.push('부분 무광');
+    if (sp.matte || sp.matteMap) bits.push('부분 무광');
     if (sp.engrave) bits.push('도안 새김');
     if (sp.stoneAt) bits.push('알 자리 지정');
     var st = R.starList(sp);
