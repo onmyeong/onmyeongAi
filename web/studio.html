@@ -113,7 +113,16 @@
     <div class="studio">
       <!-- 3D 뷰 -->
       <div>
+        <div class="stage-dock" id="stage-dock">
         <div class="stage-wrap">
+        <!-- 아래 옵션을 고치는 동안 반지가 화면 위(넓은 화면은 왼쪽 아래)에 따라붙습니다 -->
+        <div class="float-bar no-print" id="float-bar" aria-hidden="true">
+          <span class="float-price" id="float-price"></span>
+          <span class="float-btns">
+            <button class="btn btn-sm" type="button" id="float-up" title="원래 자리로">크게 보기</button>
+            <button class="btn btn-sm" type="button" id="float-close" title="따라오는 미리보기 닫기" aria-label="닫기">✕</button>
+          </span>
+        </div>
         <div id="stage" class="stage-bg is-hidden">
           <div class="stage-hint">드래그: 회전 · 휠: 확대 · 더블클릭: 시점 초기화</div>
         </div>
@@ -130,6 +139,7 @@
           </div>
           <div class="ref-measure-canvas" id="ref-canvas"></div>
           <p class="ref-measure-tip" id="ref-tip"></p>
+        </div>
         </div>
         </div>
         <div id="fallback" class="notice warn is-hidden">
@@ -285,7 +295,7 @@
           <div class="swatches" id="c-metal"></div>
         </div>
 
-        <div class="grid grid-2" style="gap:12px">
+        <div style="display:grid;gap:14px">
           <div class="field">
             <label for="c-texture">표면 느낌</label>
             <select id="c-texture"></select>
@@ -405,7 +415,7 @@
 
         <fieldset style="display:grid;gap:12px">
           <legend class="eyebrow" style="margin:0 0 4px">겉면 마감</legend>
-          <div class="grid grid-2" style="gap:12px">
+          <div style="display:grid;gap:12px">
             <div class="field">
               <label for="c-plating">겉면 색 (도금)</label>
               <select id="c-plating"></select>
@@ -430,6 +440,7 @@
           </div>
           <label class="checkline" for="c-oxidize">
             <input type="checkbox" id="c-oxidize">
+            <img class="opt-thumb" src="assets/img/opt/oxidize-on.webp" alt="" width="52" height="52" loading="lazy">
             <span><b id="oxidize-label">유화 마감</b><br>
               <span class="small" id="oxidize-note"></span></span>
           </label>
@@ -467,6 +478,22 @@
           <button class="btn" id="make-invite" type="button">짝 맞추기 초대장</button>
           <a class="btn is-hidden" id="back-step" href="#">앞 단계로</a>
           <button class="btn" id="copy-spec" type="button">사양 복사</button>
+          <button class="btn" id="paste-spec" type="button">사양 붙여넣기</button>
+          <button class="btn" id="pdf-spec" type="button">PDF 리포트 받기</button>
+        </div>
+
+        <!-- 다른 분 사양을 받아 오기 — 복사해 둔 글이나 링크를 여기에 붙여 넣습니다 -->
+        <div class="card is-hidden" id="paste-box" style="margin-top:4px">
+          <label for="paste-in" class="small"><b>복사해 둔 사양(또는 링크)을 붙여 넣어 주세요</b></label>
+          <textarea id="paste-in" rows="3" placeholder="길게 눌러 붙여넣기 · Ctrl+V"
+                    style="width:100%;margin-top:6px"></textarea>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn btn-sm btn-primary" type="button" id="paste-apply">이 사양으로 바꾸기</button>
+            <button class="btn btn-sm" type="button" id="paste-cancel">닫기</button>
+          </div>
+          <p class="small" id="paste-msg" style="margin:8px 0 0">
+            호수와 일주는 지금 분 것을 그대로 두고, 디자인·치수·원석·마감·각인을 가져옵니다.
+          </p>
         </div>
 
         <div class="card is-hidden" id="invite-make" style="margin-top:14px">
@@ -509,8 +536,10 @@
 <script src="assets/js/rings.js"></script>
 <script src="assets/js/saju.js"></script>
 <script src="assets/js/share.js"></script>
+<script src="assets/js/pdf-report.js"></script>
 <script src="assets/js/studio-ui.js"></script>
 <script src="assets/js/reference.js"></script>
+<script src="assets/js/studio-float.js"></script>
 <script type="module" src="assets/js/studio-3d.js"></script>
 <script src="assets/js/theme-preview.js"></script>
 </body>

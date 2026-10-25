@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><defs/><rect width="120" height="120" rx="14" fill="#f3efe6"/>
+<linearGradient id="m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a9ea5"/><stop offset=".35" stop-color="#e2e4e8"/><stop offset=".6" stop-color="#c3c7cc"/><stop offset="1" stop-color="#8e9298"/></linearGradient>
+<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 .35  0 0 0 0 .35  0 0 0 0 .35  1.4 0 0 0 -.62"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+<filter id="b" x="-50%" y="-300%" width="200%" height="700%"><feGaussianBlur stdDeviation="4"/></filter>
+<path d="M8,34 Q60,18 112,34 L112,92 Q60,76 8,92 Z" fill="url(#m)"/><path d="M8,34 Q60,18 112,34 L112,92 Q60,76 8,92 Z" fill="#fff" filter="url(#n)"/>
+<path d="M22,44 Q60,32 98,44" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" opacity=".75" filter="url(#b)"/><path d="M8,34 Q60,18 112,34 L112,92 Q60,76 8,92 Z" fill="none" stroke="#6b7078" stroke-width="1"/></svg>

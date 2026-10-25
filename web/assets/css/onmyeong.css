@@ -1075,3 +1075,53 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 .elem-geum { color: var(--geum); color: color-mix(in srgb, var(--ink) 16%, var(--geum)); }
 .elem-su   { color: var(--su);   color: color-mix(in srgb, var(--ink) 16%, var(--su)); }
 .elem-accent { color: var(--accent-ink); }
+
+/* ── 따라오는 미리보기 ──
+ * 아래 옵션을 고치느라 미리보기가 화면 밖으로 나가면, 같은 반지 화면이 작게 따라붙습니다.
+ * 좁은 화면은 맨 위에 가로 띠로, 넓은 화면은 비어 있는 왼쪽 칸에 붙어 따라옵니다. */
+.float-bar { display: none; }
+.stage-wrap.is-floating {
+  position: fixed; z-index: 45; margin: 0;
+  background: var(--paper); border-radius: var(--radius-lg);
+  box-shadow: 0 14px 34px rgba(30, 26, 20, .22);
+}
+.stage-wrap.is-floating #stage, .stage-wrap.is-floating #preview-2d {
+  aspect-ratio: auto; height: 100%; min-height: 0; box-shadow: none;
+}
+.stage-wrap.is-floating #preview-2d { padding: 8px; }
+.stage-wrap.is-floating .stage-hint { display: none; }
+.stage-wrap.float-top { left: 0; right: 0; z-index: 60; height: clamp(180px, 36vh, 340px); border-radius: 0 0 18px 18px; }
+.stage-wrap.float-top #stage, .stage-wrap.float-top #preview-2d { border-radius: 0 0 18px 18px; border-top: 0; }
+.stage-wrap.is-floating .float-bar {
+  display: flex; position: absolute; z-index: 2; left: 10px; right: 10px; bottom: 10px;
+  align-items: center; justify-content: space-between; gap: 8px; pointer-events: none;
+}
+.float-bar .btn { pointer-events: auto; padding: 4px 10px; background: rgba(255, 255, 255, .9); }
+.float-btns { display: flex; gap: 6px; }
+.float-price {
+  pointer-events: none; font-weight: 700; font-size: .86rem; color: var(--ink);
+  background: rgba(255, 255, 255, .9); border-radius: 999px; padding: 4px 10px;
+  max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media print { .stage-wrap.is-floating { position: static; box-shadow: none; } }
+
+/* ── 그림으로 고르기 (옵션마다 예시 그림) ── */
+.pick-hidden { display: none !important; }
+.opt-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.opt-pick.is-long { max-height: 312px; overflow-y: auto; padding: 2px; }
+.opt {
+  display: flex; align-items: center; gap: 8px; min-width: 0; text-align: left;
+  padding: 5px 8px 5px 5px; border: 1px solid var(--line-soft); border-radius: 12px;
+  background: var(--paper); color: var(--ink); font: inherit; cursor: pointer;
+}
+.opt img, .opt-thumb {
+  width: 52px; height: 52px; flex: none; border-radius: 9px; object-fit: cover; background: #ece5d6;
+}
+.opt span { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; word-break: keep-all; overflow-wrap: anywhere; }
+.opt b { font-size: .84rem; font-weight: 600; }
+.opt small { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+.opt:hover { border-color: var(--line); }
+.opt[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--cream-2); }
+.opt:disabled { opacity: .45; cursor: not-allowed; }
+.checkline .opt-thumb { align-self: center; }
+@media (max-width: 380px) { .opt-pick { grid-template-columns: minmax(0, 1fr); } }
