@@ -493,6 +493,25 @@
     if (list[0]) $('go-order').href = 'order.html?' + R.specToQuery(list[0].spec);
   }
 
+  /* PDF 리포트 — 지금 보고 있는 리포트를 A4 몇 장으로 정리해 내려받습니다 */
+  $('pdf-solo').addEventListener('click', function () {
+    if (!state.result) return;
+    ONM.pdfReport.download({
+      people: [{ ilju: state.result.record.id, name: state.nameA }],
+      seed: state.seed,
+      // 화면에서 고른 추천 조건 그대로 — 리포트에 실리는 반지가 화면과 같습니다
+      recommend: { mood: $('f-mood').value, volume: $('f-volume').value, metal: $('f-metal').value }
+    }, this);
+  });
+  $('pdf-couple').addEventListener('click', function () {
+    if (!state.result || !state.resultB) return;
+    ONM.pdfReport.download({
+      people: [{ ilju: state.result.record.id, name: state.nameA },
+               { ilju: state.resultB.record.id, name: state.nameB }],
+      seed: state.seed
+    }, this);
+  });
+
   ['f-mood', 'f-volume', 'f-metal', 'f-count'].forEach(function (id) {
     $(id).addEventListener('change', renderRings);
   });

@@ -1258,12 +1258,15 @@ function initScene() {
     controls.target.set(0, 0, 0);
   });
 
-  addEventListener('resize', () => {
-    if (!stage.clientWidth) return;
+  /* 미리보기 칸 크기가 바뀌면 (창 크기, 또는 따라오는 작은 화면으로 바뀔 때) 그림도 맞춥니다 */
+  const fit = () => {
+    if (!stage.clientWidth || !stage.clientHeight) return;
     camera.aspect = stage.clientWidth / stage.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(stage.clientWidth, stage.clientHeight);
-  });
+  };
+  addEventListener('resize', fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(stage);
 
   (function loop() {
     requestAnimationFrame(loop);

@@ -448,6 +448,16 @@
   $('s-sheet').addEventListener('click', function (e) {
     if (e.target === $('s-sheet')) $('s-sheet').classList.add('is-hidden');
   });
+  /* 상담한 내용을 PDF 로 — 손님께 파일로 드리거나 공방에 남겨 둘 때 */
+  $('s-pdf').addEventListener('click', function () {
+    if (!state.res) return;
+    var people = [{ ilju: state.res.id || (state.res.record && state.res.record.id), name: state.name }];
+    if (state.mode === 'pair' && state.resB) {
+      people.push({ ilju: state.resB.id || (state.resB.record && state.resB.record.id), name: state.name2 });
+    }
+    ONM.pdfReport.download({ people: people, seed: state.seed }, this);
+  });
+
   $('s-copy').addEventListener('click', function () {
     var b = $('s-copy');
     var done = function () { b.textContent = '복사했습니다'; setTimeout(function () { b.textContent = '링크 복사'; }, 1600); };

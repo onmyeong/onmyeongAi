@@ -145,6 +145,84 @@
       return '<option value="' + R.esc(e[0]) + '"' + (e[0] === value ? ' selected' : '') + '>' +
         R.esc(e[1]) + '</option>';
     }).join('');
+    if (PICKERS[el.id]) renderPicker(el);
+  }
+
+  /* ───────────── 그림으로 고르기 ─────────────
+   * '사포바', '베젤', '유화' 같은 말은 처음 듣는 분이 많습니다.
+   * 목록 대신 항목마다 예시 그림을 왼쪽에 붙인 칸으로 보여 줍니다.
+   * (속의 select 는 그대로 두고 값만 맞춰 바꾸므로 나머지 동작은 전과 같습니다)
+   * 그림은 assets/img/opt/ 에 있습니다 — 같은 이름의 실사진으로 바꿔 끼우면 그대로 쓰입니다. */
+  var OPT_IMG = 'assets/img/opt/';
+  function hexOf(c) { return String(c || '').replace('#', '').toLowerCase(); }
+  var PICKERS = {
+    'c-texture':    function (v) { return 'texture-' + (v === 'sandbar' ? 'sandbar-vertical' : v) + '.svg'; },
+    'c-grain':      function (v) { return 'texture-sandbar-' + v + '.svg'; },
+    'c-profile':    function (v) { return 'profile-' + v + '.svg'; },
+    'c-stonetype':  function (v) { return 'stonetype-' + v + '.webp'; },
+    'c-stone':      function (v) { return ONM.STONE_COLOR[v] ? 'stone-' + hexOf(ONM.STONE_COLOR[v]) + '.webp' : null; },
+    'c-stoneshape': function (v) { return 'shape-' + v + '.webp'; },
+    'c-cubic':      function (v) { var c = CONFIG.stones.cubic.colors[v]; return c ? 'cubic-' + hexOf(c) + '.webp' : null; },
+    'c-setting':    function (v) { return v === 'flush' ? 'stonetype-moissanite.webp' : 'setting-' + v + '.webp'; },
+    'c-plating':    function (v) { return 'plating-' + v + '.webp'; },
+    'c-epoxy':      function (v) { var c = CONFIG.epoxy.colors[v]; return 'epoxy-' + (v && c ? hexOf(c.color) : 'none') + '.webp'; },
+    'c-epoxycov':   function (v) { return 'epoxycov-' + v + '.webp'; }
+  };
+
+  /** '이름 — 설명' · '이름 (덧붙임)' 을 큰 글씨와 작은 글씨로 나눕니다 */
+  function splitLabel(t) {
+    var m = t.match(/^(.*?)\s+—\s+(.*)$/);
+    if (m) return [m[1], m[2]];
+    m = t.match(/^(.*\S)\s*\(([^()]*)\)$/);
+    if (m) return [m[1], m[2]];
+    return [t, ''];
+  }
+
+  function renderPicker(sel) {
+    var img = PICKERS[sel.id];
+    var box = sel._pick;
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'opt-pick';
+      box.setAttribute('role', 'radiogroup');
+      var lab = document.querySelector('label[for="' + sel.id + '"]');
+      if (lab) box.setAttribute('aria-label', lab.textContent);
+      sel.insertAdjacentElement('afterend', box);
+      sel.classList.add('pick-hidden');
+      sel._pick = box;
+      box.addEventListener('click', function (e) {
+        var b = e.target.closest('.opt');
+        if (!b || b.disabled || sel.disabled) return;
+        if (sel.value !== b.getAttribute('data-v')) {
+          sel.value = b.getAttribute('data-v');
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        syncPickers();
+      });
+    }
+    box.innerHTML = Array.prototype.map.call(sel.options, function (o) {
+      var src = img(o.value);
+      var t = splitLabel(o.textContent);
+      return '<button type="button" class="opt" role="radio" data-v="' + R.esc(o.value) + '">' +
+        (src ? '<img src="' + OPT_IMG + src + '" alt="" loading="lazy" width="52" height="52">' : '') +
+        '<span><b>' + R.esc(t[0]) + '</b>' + (t[1] ? '<small>' + R.esc(t[1]) + '</small>' : '') + '</span>' +
+      '</button>';
+    }).join('');
+    box.classList.toggle('is-long', sel.options.length > 12);
+    syncPicker(sel);
+  }
+
+  function syncPicker(sel) {
+    var box = sel._pick;
+    if (!box) return;
+    Array.prototype.forEach.call(box.querySelectorAll('.opt'), function (b) {
+      b.setAttribute('aria-checked', String(b.getAttribute('data-v') === sel.value));
+      b.disabled = sel.disabled;
+    });
+    box.classList.toggle('is-disabled', sel.disabled);
+  }
+  function syncPickers() {
+    Object.keys(PICKERS).forEach(function (id) { var el = $(id); if (el) syncPicker(el); });
   }
 
   function buildControls() {
@@ -886,7 +964,13 @@
       done.innerHTML = '<div class="preview-box stage-bg">' + R.ringSvg(specA, { size: 74 }) + '</div>' +
         '<span class="small">' + R.esc(invite.on && invite.from ? invite.from + ' 님' : '첫 번째 분') +
         '<br>' + R.esc(specA.modelName) + ' · ' +
-        specA.width + '×' + specA.thickness + 'mm</span>';
+        specA.width + '×' + specA.thickness + 'mm</span>' +
+        '<button class="btn btn-sm" type="button" id="copy-from-a">이 반지 그대로 가져오기</button>';
+      // 앞 분 반지를 똑같이 — 호수와 일주만 이 분 것으로 남깁니다
+      $('copy-from-a').addEventListener('click', function () {
+        adoptSpec(specA);
+        this.textContent = '똑같이 맞췄습니다 (호수는 그대로)';
+      });
     } else {
       done.classList.add('is-hidden');
       done.innerHTML = '';
@@ -924,6 +1008,7 @@
   }
 
   function syncPanel() {
+    syncPickers();
     syncStonePlace();
     var model = R.getModel(spec.modelId);
     var rec = spec.ilju ? ONM.ILJU[spec.ilju] : null;
@@ -1020,16 +1105,127 @@
     this.textContent = studio.toggleSpin() ? '회전 멈춤' : '회전 시작';
   });
 
+  /* ───────────── 사양 복사 · 붙여넣기 ─────────────
+   * 복사한 글에는 사양 한 줄과 이 화면 링크가 담깁니다.
+   * 붙여넣기는 그 링크에서 사양을 읽어 지금 화면에 그대로 옮깁니다 —
+   * 커플링이면 앞 분 반지를 뒷 분에게, 매장에서는 앞 손님 반지를 다음 손님에게. */
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+  // 클립보드 권한이 막힌 브라우저용 — 숨긴 글상자를 잠깐 골라 복사합니다
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
   $('copy-spec').addEventListener('click', function () {
     var btn = this;
     var text = R.describeSpec(spec) + '\n' + location.href;
-    var done = function (ok) {
+    copyText(text).then(function (ok) {
       btn.textContent = ok ? '복사했습니다' : '복사 실패';
       setTimeout(function () { btn.textContent = '사양 복사'; }, 2000);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
-    } else { done(false); }
+      // 복사가 막혔으면 붙여넣기 칸에 담아 두어 손으로라도 옮길 수 있게 합니다
+      if (!ok) openPaste(text, '자동 복사가 막혀 있어 여기에 담아 두었습니다. 글을 길게 눌러 복사해 주세요.');
+    });
+  });
+
+  /** 붙여 넣은 글(사양 한 줄 + 링크, 또는 링크만)에서 사양을 읽습니다 */
+  function specFromText(text) {
+    var found = null;
+    String(text || '').split(/\s+/).forEach(function (tok) {
+      if (tok.indexOf('modelId=') === -1) return;
+      var q = tok.indexOf('?') >= 0 ? tok.slice(tok.indexOf('?') + 1) : tok;
+      found = q.replace(/#.*$/, '');
+    });
+    return found ? R.specFromQuery(found) : null;
+  }
+
+  // 사람마다 다른 것 — 붙여 넣어도 지금 분 것을 그대로 둡니다
+  var OWN_KEYS = ['size', 'ilju', 'quantity', 'qty'];
+  /** 다른 사양을 지금 화면으로 옮깁니다 (되돌리기로 무를 수 있습니다) */
+  function adoptSpec(src) {
+    var o = JSON.parse(JSON.stringify(src));
+    Object.keys(o).forEach(function (k) { if (k.charAt(0) === '_') delete o[k]; });
+    OWN_KEYS.forEach(function (k) {
+      if (spec[k] !== undefined) o[k] = spec[k]; else delete o[k];
+    });
+    Object.keys(spec).forEach(function (k) { delete spec[k]; });
+    Object.keys(o).forEach(function (k) { spec[k] = o[k]; });
+    buildControls();
+    studio.changed();
+  }
+  studio.adoptSpec = adoptSpec;
+
+  function openPaste(prefill, msg) {
+    $('paste-box').classList.remove('is-hidden');
+    $('paste-in').value = prefill || '';
+    $('paste-msg').textContent = msg ||
+      '호수와 일주는 지금 분 것을 그대로 두고, 디자인·치수·원석·마감·각인을 가져옵니다.';
+    if (!prefill) $('paste-in').focus();
+  }
+  function closePaste() { $('paste-box').classList.add('is-hidden'); }
+
+  function applyPasted(text) {
+    var got = specFromText(text);
+    if (!got) {
+      openPaste(text, '사양을 찾지 못했습니다. "사양 복사"로 복사한 글이나 스튜디오 링크를 붙여 넣어 주세요.');
+      return false;
+    }
+    adoptSpec(got);
+    closePaste();
+    var btn = $('paste-spec');
+    btn.textContent = got.modelName + ' 사양으로 바꿨습니다';
+    setTimeout(function () { btn.textContent = '사양 붙여넣기'; }, 2600);
+    return true;
+  }
+
+  $('paste-spec').addEventListener('click', function () {
+    // 클립보드를 바로 읽을 수 있으면 한 번에, 아니면 붙여 넣을 칸을 엽니다
+    if (navigator.clipboard && navigator.clipboard.readText && window.isSecureContext) {
+      navigator.clipboard.readText().then(function (t) {
+        if (!specFromText(t)) openPaste(t && t.length < 4000 ? t : '');
+        else applyPasted(t);
+      }, function () { openPaste(); });
+    } else {
+      openPaste();
+    }
+  });
+  $('paste-apply').addEventListener('click', function () { applyPasted($('paste-in').value); });
+  $('paste-cancel').addEventListener('click', closePaste);
+  // 붙여 넣는 순간 바로 바꿔 줍니다 (버튼을 한 번 더 누를 필요 없이)
+  $('paste-in').addEventListener('paste', function () {
+    var el = this;
+    setTimeout(function () { if (specFromText(el.value)) applyPasted(el.value); }, 0);
+  });
+
+  /* PDF 리포트 — 맞춘 반지(지금 화면 그대로의 사진 · 사양 · 예상 금액)와 일주 리포트를 함께 */
+  $('pdf-spec').addEventListener('click', function () {
+    var shot = studio.ready3d && studio.snapshot ? studio.snapshot() : null;
+    var people = [], rings = [];
+    if (couple.on && couple.step === 'b' && specA) {
+      if (specA.ilju) people.push({ ilju: specA.ilju });
+      if (spec.ilju) people.push({ ilju: spec.ilju });
+      rings.push({ spec: specA, who: '첫 번째 분' + (specA.ilju ? ' · ' + specA.ilju : '') });
+      rings.push({ spec: spec, image: shot, who: '두 번째 분' + (spec.ilju ? ' · ' + spec.ilju : '') });
+    } else {
+      if (spec.ilju) people.push({ ilju: spec.ilju, name: Q.get('n') || '' });
+      rings.push({ spec: spec, image: shot });
+    }
+    ONM.pdfReport.download({ people: people, rings: rings }, this);
   });
 
   /* ───────────── 3D 로딩 감시 ─────────────
