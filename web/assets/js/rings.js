@@ -808,7 +808,8 @@
       starSize: 3,            // 새로 놓을 별 조각의 지름 (mm)
       draw: '',               // 검정 브러쉬로 그린 선들 (아래 DRAW 참고)
       drawSize: 0.8,          // 브러쉬 굵기 (mm)
-      matte: '',              // 부분 무광으로 칠한 자리
+      matte: '',              // 부분 무광으로 칠한 자리 (예전 방식 — 둘레만, 폭 전체)
+      matteMap: '',           // 부분 무광 — 짚은 자리만 (둘레 48 × 폭 8 격자)
       stoneHeight: 0,         // 돌을 얼마나 올리고 내릴지 (mm)
       stoneAngle: 0,          // 돌을 반지 둘레 어디에 앉힐지 (도). 0 = 손등 쪽 한가운데
       stoneCount: 1,          // 돌 개수. 2개 이상이면 둘레에 고르게 나눠 앉힙니다
@@ -934,6 +935,8 @@
     /* 살을 붙이면 붙인 만큼 은이 더 들어갑니다. 얼마나 붙였는지는 화면만으로
      * 무게를 잴 수 없으니, 금액은 상담에서 확정합니다. */
     if (hasAddedFlesh(spec)) pending.push('살 붙이기 중량');
+    // 폭을 넓혀도 은이 더 들어갑니다 — 이것도 상담에서 무게를 보고 정합니다
+    if (hasWidened(spec)) pending.push('폭 넓히기 중량');
     var setting = P.setting[spec.setting] || 0;
 
     /* 도금과 유화는 같이 못 하므로 둘 중 하나만 더해집니다 */
@@ -1120,7 +1123,14 @@
   /** 손으로 손댄 흔적이 하나라도 있는가 */
   function hasSculpt(spec) {
     return !!(spec.sculpt || spec.sculptW || spec.relief || spec.sculptWa || spec.sculptWb ||
-      spec.matte || spec.engrave || spec.stoneAt || spec.stars || spec.draw);
+      spec.matte || spec.matteMap || spec.engrave || spec.stoneAt || spec.stars || spec.draw);
+  }
+
+  /** 손으로 폭을 넓힌 자리가 한 군데라도 있는가 (가장자리 따로 · 예전 양쪽 함께) */
+  function hasWidened(spec) {
+    return ['sculptWa', 'sculptWb', 'sculptW'].some(function (k) {
+      return spec[k] && sculptRead(spec[k]).some(function (v) { return v > 0.02; });
+    });
   }
 
   /** 살을 덧붙인 자리가 한 군데라도 있는가 (중량이 늘어 상담에서 금액을 정합니다) */
@@ -1557,7 +1567,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'plateSize', 'backThickness', 'comfort', 'organic', 'sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'engrave', 'stoneAt', 'stars', 'draw',
+    'plateSize', 'backThickness', 'comfort', 'organic', 'sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'matteMap', 'engrave', 'stoneAt', 'stars', 'draw',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'reviewEvent', 'ilju', 'qty'];
 
@@ -1611,6 +1621,7 @@
     if (p.get('sculptWa')) spec.sculptWa = p.get('sculptWa').slice(0, SCULPT_N);
     if (p.get('sculptWb')) spec.sculptWb = p.get('sculptWb').slice(0, SCULPT_N);
     if (p.get('relief')) spec.relief = reliefWrite(reliefRead(p.get('relief').slice(0, RELIEF_N * 2)));
+    if (p.get('matteMap')) spec.matteMap = reliefWrite(reliefRead(p.get('matteMap').slice(0, RELIEF_N * 2)));
     if (p.get('matte')) spec.matte = p.get('matte').slice(0, SCULPT_N);
     if (p.get('engrave')) spec.engrave = p.get('engrave').slice(0, ENGRAVE_X * ENGRAVE_Y);
     if (p.has('stoneAt')) spec.stoneAt = p.get('stoneAt') || '';
@@ -1668,6 +1679,7 @@
     reliefRead: reliefRead,
     reliefWrite: reliefWrite,
     hasAddedFlesh: hasAddedFlesh,
+    hasWidened: hasWidened,
     stoneAngles: stoneAngles,
     starList: starList,
     starWrite: starWrite,
