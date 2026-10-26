@@ -1034,27 +1034,365 @@ function metalMaterial(s) {
 /* 온명이 쓰는 원석은 대부분 불투명한 카보숑입니다.
  * 투명 재질로 처리하면 작은 알에서 뒤쪽 금속이 비쳐 색이 사라지므로,
  * 맑은 보석 몇 가지만 살짝 투명하게 둡니다. */
-const CLEAR_STONES = ['아쿠아마린', '시트린', '가넷', '루비', '화이트 쿼츠', '플루오라이트', '페리도트'];
+/* ─────────────────── 원석 재질 ───────────────────
+ * 천연석은 돌마다 생김새가 다릅니다. 색 하나로 칠하면 플라스틱 구슬처럼 보여서,
+ * 돌마다 "어떤 성질의 돌인가(kind)"와 "속에 어떤 무늬가 있는가(pattern)"를 적어 두고
+ * 그에 맞게 그립니다.
+ *   opaque       빛이 거의 안 통하는 돌 — 표면 광택과 무늬가 주인공 (터쿼이즈, 라피스 …)
+ *   translucent  빛이 살짝 스미는 돌 — 속이 뿌옇게 밝습니다 (칼세도니, 아게이트 …)
+ *   clear        투명한 돌 — 속으로 빛이 들어가 색이 깊어집니다 (시트린, 가넷 …)
+ *   labradorite  보는 각도에 따라 푸른빛 · 금빛이 번쩍입니다
+ *   moonstone    안쪽에서 푸르스름한 빛이 떠오릅니다
+ *   opal         여러 색이 조각조각 비칩니다
+ *   pearl        진주 광택 */
+const STONE_LOOK = {
+  '우나카이트':            { kind: 'opaque', pattern: 'mottle', c2: '#c98476' },
+  '블랙 루틸 쿼츠':        { kind: 'clear', pattern: 'needles', base: '#eef0f2', c2: '#141416' },
+  '스노우플레이크 옵시디언': { kind: 'opaque', pattern: 'flakes', base: '#202024', c2: '#e2e2de' },
+  '라브라도라이트':        { kind: 'labradorite', pattern: 'streaks', base: '#4d5b64', c2: '#2e383f' },
+  '아이올라이트':          { kind: 'clear', ior: 1.54 },
+  '라리마':               { kind: 'opaque', pattern: 'web', c2: '#eef8fa' },
+  '시트린':               { kind: 'clear', ior: 1.55 },
+  '터쿼이즈':             { kind: 'opaque', pattern: 'matrix', c2: '#5e4c38' },
+  '오팔':                 { kind: 'opal', pattern: 'fire' },
+  '모스아게이트':          { kind: 'translucent', pattern: 'moss', base: '#dfe5d9', c2: '#3c6a33' },
+  '블루레이스 아게이트':    { kind: 'translucent', pattern: 'bands', c2: '#f2f6fb' },
+  '문스톤':               { kind: 'moonstone' },
+  '플루오라이트':          { kind: 'clear', pattern: 'bands', c2: '#a48fd0', ior: 1.43 },
+  '로즈 칼세도니':         { kind: 'translucent', pattern: 'cloud', c2: '#f3d3d5' },
+  '화이트 쿼츠':           { kind: 'translucent', pattern: 'cloud', c2: '#ffffff' },
+  '가넷':                 { kind: 'clear', ior: 1.76 },
+  '루비':                 { kind: 'clear', ior: 1.76 },
+  '커넬리언':             { kind: 'translucent', pattern: 'bands', c2: '#e39058' },
+  '핑크 토르말린':         { kind: 'clear', ior: 1.62 },
+  '스모키 쿼츠':           { kind: 'clear', ior: 1.55 },
+  '핑크 진주':             { kind: 'pearl' },
+  '아쿠아마린':            { kind: 'clear', ior: 1.57 },
+  '라피스라쥴리':          { kind: 'opaque', pattern: 'pyrite', c2: '#d9b45c' },
+  '카이나이트':            { kind: 'translucent', pattern: 'streaks', c2: '#9db3dd' },
+  '블랙 오닉스':           { kind: 'opaque' },
+  '에퍼타이트':            { kind: 'translucent', pattern: 'cloud', c2: '#8fd0cb' },
+  '페리도트':             { kind: 'clear', ior: 1.67 }
+};
+
+function lookOf(name) {
+  const n = (ONM.stoneName ? ONM.stoneName(name) : name) || '';
+  return STONE_LOOK[n] || { kind: 'opaque' };
+}
+
+/* 돌 속 무늬 — 위에서 내려다본 평면(지름 = 그림 한 장)에 그려 알 위에 덮습니다.
+ * 같은 돌은 같은 무늬가 나오도록 이름으로 씨앗을 정합니다. */
+const _patternCache = {};
+function stonePattern(name, look, baseHex) {
+  const key = name + '|' + baseHex;
+  if (_patternCache[key]) return _patternCache[key];
+  const N = 256;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = N;
+  const g = cv.getContext('2d');
+  let seed = 0;
+  for (let i = 0; i < key.length; i++) seed = (seed * 31 + key.charCodeAt(i)) >>> 0;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const c2 = look.c2 || '#ffffff';
+  g.fillStyle = baseHex;
+  g.fillRect(0, 0, N, N);
+  const blob = (x, y, r, color, a) => {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, color); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = a; g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
+  };
+  const wander = (x, y, steps, len, color, w, a) => {
+    g.strokeStyle = color; g.lineWidth = w; g.globalAlpha = a; g.lineCap = 'round';
+    let ang = rnd() * Math.PI * 2;
+    g.beginPath(); g.moveTo(x, y);
+    for (let i = 0; i < steps; i++) { ang += (rnd() - 0.5) * 1.1; x += Math.cos(ang) * len; y += Math.sin(ang) * len; g.lineTo(x, y); }
+    g.stroke(); g.globalAlpha = 1;
+  };
+  switch (look.pattern) {
+    case 'mottle':      // 우나카이트 — 초록 바탕에 분홍 장석이 얼룩덜룩
+      for (let i = 0; i < 26; i++) blob(rnd() * N, rnd() * N, 14 + rnd() * 34, c2, 0.55 + rnd() * 0.35);
+      for (let i = 0; i < 30; i++) blob(rnd() * N, rnd() * N, 6 + rnd() * 14, '#5f7445', 0.35);
+      break;
+    case 'needles':     // 블랙 루틸 — 맑은 수정 속에 검은 바늘
+      for (let i = 0; i < 26; i++) {
+        const x = rnd() * N, y = rnd() * N, a = rnd() * Math.PI, L = 30 + rnd() * 110;
+        g.strokeStyle = c2; g.globalAlpha = 0.55 + rnd() * 0.4; g.lineWidth = 0.8 + rnd() * 1.6;
+        g.beginPath(); g.moveTo(x - Math.cos(a) * L / 2, y - Math.sin(a) * L / 2);
+        g.lineTo(x + Math.cos(a) * L / 2, y + Math.sin(a) * L / 2); g.stroke();
+      }
+      g.globalAlpha = 1;
+      break;
+    case 'flakes':      // 스노우플레이크 옵시디언 — 검은 바탕에 흰 눈꽃
+      for (let i = 0; i < 16; i++) {
+        const x = rnd() * N, y = rnd() * N, r = 8 + rnd() * 16;
+        blob(x, y, r, c2, 0.75);
+        for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + rnd(); blob(x + Math.cos(a) * r * 0.7, y + Math.sin(a) * r * 0.7, r * 0.45, c2, 0.5); }
+      }
+      break;
+    case 'web':         // 라리마 — 하늘색 바탕에 흰 물결 그물
+      for (let i = 0; i < 34; i++) wander(rnd() * N, rnd() * N, 14, 9, c2, 2 + rnd() * 5, 0.45);
+      break;
+    case 'matrix':      // 터쿼이즈 — 갈색 모암 줄기가 거미줄처럼
+      for (let i = 0; i < 22; i++) wander(rnd() * N, rnd() * N, 10, 10, c2, 0.8 + rnd() * 1.4, 0.7);
+      for (let i = 0; i < 10; i++) blob(rnd() * N, rnd() * N, 20 + rnd() * 30, '#7fd3d0', 0.25);
+      break;
+    case 'moss':        // 모스 아게이트 — 맑은 바탕에 이끼 같은 초록 덩굴
+      for (let i = 0; i < 18; i++) {
+        const x = rnd() * N, y = rnd() * N;
+        for (let k = 0; k < 9; k++) blob(x + (rnd() - 0.5) * 50, y + (rnd() - 0.5) * 50, 4 + rnd() * 12, c2, 0.5);
+      }
+      break;
+    case 'bands': {     // 아게이트 · 커넬리언 · 플루오라이트 — 결이 겹겹이
+      const cx = N * (0.3 + rnd() * 0.4), cy = N * (0.3 + rnd() * 0.4);
+      for (let r = N; r > 4; r -= 7 + rnd() * 10) {
+        g.strokeStyle = c2; g.globalAlpha = 0.25 + rnd() * 0.35; g.lineWidth = 2 + rnd() * 5;
+        g.beginPath(); g.ellipse(cx, cy, r, r * (0.6 + rnd() * 0.3), rnd() * 0.4, 0, Math.PI * 2); g.stroke();
+      }
+      g.globalAlpha = 1;
+      break;
+    }
+    case 'streaks':     // 라브라도라이트 · 카이나이트 — 한 방향으로 결이 진 줄무늬
+      for (let i = 0; i < 40; i++) {
+        const y = rnd() * N;
+        g.strokeStyle = c2; g.globalAlpha = 0.2 + rnd() * 0.4; g.lineWidth = 2 + rnd() * 8;
+        g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(N * 0.3, y + (rnd() - 0.5) * 30, N * 0.7, y + (rnd() - 0.5) * 30, N, y + (rnd() - 0.5) * 20); g.stroke();
+      }
+      g.globalAlpha = 1;
+      break;
+    case 'pyrite':      // 라피스 — 짙은 남색에 금빛 황철석 점, 흰 방해석 줄
+      for (let i = 0; i < 8; i++) wander(rnd() * N, rnd() * N, 6, 12, '#d8dfe8', 2 + rnd() * 3, 0.35);
+      for (let i = 0; i < 70; i++) blob(rnd() * N, rnd() * N, 1.2 + rnd() * 3.2, c2, 0.95);
+      break;
+    case 'cloud':       // 칼세도니 · 수정 — 속이 구름처럼 뿌옇게
+      for (let i = 0; i < 24; i++) blob(rnd() * N, rnd() * N, 20 + rnd() * 50, c2, 0.25);
+      break;
+    case 'fire': {      // 오팔 — 여러 색 조각이 겹쳐 비칩니다
+      const fire = ['#7fd6c2', '#f2a6c8', '#a3c9ff', '#ffe08a', '#b6f0a0'];
+      for (let i = 0; i < 40; i++) blob(rnd() * N, rnd() * N, 10 + rnd() * 26, fire[i % fire.length], 0.45);
+      break;
+    }
+    default:
+      // 무늬가 없는 돌도 아주 엷은 결은 있습니다 — 완전히 고른 색은 인조석처럼 보여서
+      for (let i = 0; i < 14; i++) blob(rnd() * N, rnd() * N, 30 + rnd() * 50, '#ffffff', 0.06);
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  _patternCache[key] = tex;
+  return tex;
+}
+
+/** 위에서 내려다본 평면으로 무늬를 덮습니다 (구 그대로 감으면 꼭대기에서 무늬가 오므라듭니다) */
+function planarUV(geo, r) {
+  const p = geo.attributes.position;
+  const uv = new Float32Array(p.count * 2);
+  for (let i = 0; i < p.count; i++) {
+    uv[i * 2] = p.getX(i) / (2 * r) + 0.5;
+    uv[i * 2 + 1] = p.getZ(i) / (2 * r) + 0.5;
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return geo;
+}
+
+/* 면을 낸 알(모이사나이트 · 큐빅) — 라운드 브릴리언트 컷.
+ * 테이블(윗면) · 크라운 · 거들(허리) · 파빌리온(아래 원뿔)을 16면으로 깎고,
+ * 면마다 빛이 따로 튀도록 평평하게(flat) 그립니다. 비율은 실제 브릴리언트에 맞췄습니다
+ * (테이블 지름 57% · 크라운 높이 16% · 파빌리온 깊이 43%). */
+/* 면을 낸 보석이 반짝이는 건 면마다 주변의 밝은 점과 어두운 곳이 번갈아 비치기 때문입니다.
+ * 금속용 환경(부드러운 그라데이션)을 그대로 쓰면 면이 다 비슷하게 비쳐 밋밋한 원판처럼 보여서,
+ * 보석에만 어두운 바탕에 밝은 점이 흩뿌려진 환경을 따로 비춥니다 (보석 촬영 조명과 같은 원리). */
+let gemEnv = null;
+function sparkleEnvTexture() {
+  const W = 512, H = 256;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#3a3d44'); bg.addColorStop(0.5, '#15161a'); bg.addColorStop(1, '#2a2b30');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  let sd = 7;
+  const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const spot = (x, y, r, col, a) => {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, col); gr.addColorStop(0.35, col); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = a; g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  };
+  // 위쪽 넓은 조명판 몇 개 + 흩뿌린 작은 반짝임 + 무지갯빛 조금 (모이사나이트의 불꽃)
+  for (let i = 0; i < 6; i++) spot(rnd() * W, rnd() * H * 0.45, 26 + rnd() * 30, '#ffffff', 0.9);
+  for (let i = 0; i < 90; i++) spot(rnd() * W, rnd() * H, 2 + rnd() * 7, '#ffffff', 0.7 + rnd() * 0.3);
+  const fire = ['#ff6a5a', '#ffd36a', '#7cf0a0', '#6ab8ff', '#c88bff'];
+  for (let i = 0; i < 24; i++) spot(rnd() * W, rnd() * H, 3 + rnd() * 6, fire[i % fire.length], 0.75);
+  g.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(cv);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/* 브릴리언트 컷을 위에서 보면 테이블 너머로 아래 면들이 되비쳐 여덟 갈래 별 무늬가 보입니다.
+ * 화면의 투과 계산은 알 속에서 빛이 여러 번 꺾이는 것까지는 못 그리므로, 그 무늬를 그림으로 얹습니다. */
+let _brilliantMap = null;
+function brilliantPattern() {
+  if (_brilliantMap) return _brilliantMap;
+  const N = 256, c = N / 2;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = N;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#e9ecf1'; g.fillRect(0, 0, N, N);
+  // 16갈래 — 밝고 어두운 쐐기가 번갈아
+  for (let i = 0; i < 16; i++) {
+    const a0 = (i / 16) * Math.PI * 2, a1 = ((i + 1) / 16) * Math.PI * 2;
+    g.fillStyle = i % 2 ? '#ffffff' : '#9aa1ad';
+    g.beginPath(); g.moveTo(c, c); g.arc(c, c, c, a0, a1); g.closePath(); g.fill();
+  }
+  // 여덟 갈래 화살 — 가운데에서 뻗는 어두운 연 모양
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 16;
+    const tip = c * 0.62, side = c * 0.2;
+    g.fillStyle = 'rgba(70,76,88,0.75)';
+    g.beginPath();
+    g.moveTo(c, c);
+    g.lineTo(c + Math.cos(a - 0.22) * side * 1.6, c + Math.sin(a - 0.22) * side * 1.6);
+    g.lineTo(c + Math.cos(a) * tip, c + Math.sin(a) * tip);
+    g.lineTo(c + Math.cos(a + 0.22) * side * 1.6, c + Math.sin(a + 0.22) * side * 1.6);
+    g.closePath(); g.fill();
+  }
+  // 가운데 작은 팔각 테이블 반사 + 무지갯빛 조각 몇 개
+  g.fillStyle = 'rgba(255,255,255,0.85)';
+  g.beginPath();
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; g.lineTo(c + Math.cos(a) * c * 0.16, c + Math.sin(a) * c * 0.16); }
+  g.closePath(); g.fill();
+  const fire = ['#ff7a6a', '#ffd76a', '#86f0a6', '#78c0ff', '#cf96ff'];
+  for (let i = 0; i < 10; i++) {
+    const a = i * 2.39, r = c * (0.25 + (i % 4) * 0.15);
+    g.fillStyle = fire[i % fire.length]; g.globalAlpha = 0.55;
+    g.beginPath(); g.arc(c + Math.cos(a) * r, c + Math.sin(a) * r, 4 + (i % 3) * 2, 0, Math.PI * 2); g.fill();
+  }
+  g.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  _brilliantMap = tex;
+  return tex;
+}
+
+function brilliantGeometry(r) {
+  const pts = [
+    new THREE.Vector2(0.0001, -0.86 * r),       // 큘렛 (아래 뾰족한 끝)
+    new THREE.Vector2(r, -0.02 * r),            // 거들 아래
+    new THREE.Vector2(r, 0.02 * r),             // 거들 위
+    new THREE.Vector2(0.78 * r, 0.2 * r),       // 크라운 중간 (스타 · 베젤 면)
+    new THREE.Vector2(0.57 * r, 0.32 * r),      // 테이블 가장자리
+    new THREE.Vector2(0.0001, 0.32 * r)         // 테이블 가운데
+  ];
+  return planarUV(new THREE.LatheGeometry(pts, 16), r);
+}
+
+function facetedMaterial(spec) {
+  const moissanite = spec.stoneType === 'moissanite';
+  const hex = moissanite ? '#ffffff' : (R.stoneColorOf(spec) || '#ffffff');
+  const c = new THREE.Color(hex);
+  const dark = c.getHSL({}).l < 0.2;                 // 오닉스처럼 아주 짙은 큐빅은 빛을 못 통과시킵니다
+  /* 작은 알은 실제로도 속을 들여다보기보다 면에 비친 빛으로 반짝여 보입니다.
+   * 그래서 투과는 약하게, 면 반사를 강하게 둡니다 (색 있는 큐빅은 그 색이 반사에 묻어납니다). */
+  return new THREE.MeshPhysicalMaterial({
+    color: moissanite ? 0xffffff : c,
+    map: dark ? null : brilliantPattern(),
+    metalness: dark ? 0.1 : (moissanite ? 0.55 : 0.4),
+    roughness: 0,
+    flatShading: true,
+    envMap: gemEnv || null,
+    envMapIntensity: moissanite ? 3.2 : 2.4,
+    transmission: dark ? 0 : 0.35,
+    thickness: R.stoneMm(spec) * 0.6,
+    ior: moissanite ? 2.65 : 2.15,
+    dispersion: moissanite ? 1.2 : 0.4,             // 빛이 무지개로 갈라지는 정도 (모이사나이트가 가장 강함)
+    attenuationColor: c,
+    attenuationDistance: moissanite ? 100 : R.stoneMm(spec) * 0.5,
+    iridescence: moissanite ? 0.35 : 0.1,
+    specularIntensity: 1,
+    clearcoat: 1,
+    clearcoatRoughness: 0
+  });
+}
 
 function stoneMaterial(spec) {
-  const c = new THREE.Color(R.stoneColorOf(spec) || '#7a8b9c');
-  // 모이사나이트는 무색 투명, 천연석은 대부분 불투명한 캐보션
-  /* 작은 알을 투명하게 두면 뒤쪽 금속이 비쳐 새까맣게 죽습니다.
-   * 3mm 미만은 실제로도 거의 불투명하게 보이므로 투과를 끕니다. */
+  if (spec.stoneType !== 'natural') return facetedMaterial(spec);
+  const name = spec.stone || '';
+  const look = lookOf(name);
+  const base = look.base || R.stoneColorOf(spec) || '#7a8b9c';
+  const c = new THREE.Color(base);
+  const map = stonePattern(name, look, base);
   const mm = R.stoneMm(spec);
-  const clear = (spec.stoneType === 'moissanite' || CLEAR_STONES.indexOf(spec.stone) !== -1) && mm >= 3;
-  return new THREE.MeshPhysicalMaterial({
-    color: c,
-    metalness: 0,
-    roughness: 0.05,
-    transmission: clear ? (spec.stoneType === 'moissanite' ? 0.55 : 0.35) : 0,
-    thickness: clear ? 1.4 : 0,
-    iridescence: spec.stoneType === 'moissanite' ? 0.25 : 0,
-    ior: 1.72,
-    envMapIntensity: 1.1,
-    clearcoat: 1,
-    clearcoatRoughness: 0.03
-  });
+  /* 작은 알을 투명하게 두면 뒤쪽 금속이 비쳐 새까맣게 죽습니다.
+   * 3mm 미만은 실제로도 거의 불투명하게 보이므로 투과를 줄입니다. */
+  const small = mm < 3;
+  const common = { map: map, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.15 };
+  switch (look.kind) {
+    case 'clear':
+      return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        color: new THREE.Color(0xffffff).lerp(c, 0.45),
+        roughness: 0.02,
+        transmission: small ? 0.3 : 0.9,
+        thickness: mm * 0.5,
+        ior: look.ior || 1.55,
+        attenuationColor: c,
+        attenuationDistance: mm * 1.4,
+        // 투명한 돌은 바닥의 금속 받침이 거울처럼 빛을 되돌려 속이 밝게 떠오릅니다
+        emissive: c, emissiveIntensity: 0.12,
+        specularIntensity: 1,
+        envMapIntensity: 1.5
+      }));
+    case 'translucent':
+      return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        color: 0xffffff,
+        roughness: 0.16,
+        transmission: small ? 0.12 : 0.38,
+        thickness: mm * 0.8,
+        ior: 1.54,
+        attenuationColor: c,
+        attenuationDistance: mm * 0.6,
+        sheen: 0.4, sheenColor: c, sheenRoughness: 0.6
+      }));
+    case 'labradorite':
+      return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        color: 0xffffff,
+        roughness: 0.14,
+        iridescence: 1,
+        iridescenceIOR: 1.9,
+        iridescenceThicknessRange: [260, 820]
+      }));
+    case 'moonstone':
+      return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        color: 0xf2f4fa,
+        roughness: 0.2,
+        transmission: small ? 0.15 : 0.5,
+        thickness: mm * 0.8,
+        ior: 1.52,
+        sheen: 1, sheenColor: new THREE.Color('#9cc3ff'), sheenRoughness: 0.35
+      }));
+    case 'opal':
+      return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        color: 0xffffff,
+        roughness: 0.12,
+        transmission: small ? 0.1 : 0.25,
+        thickness: mm * 0.6,
+        iridescence: 0.9,
+        iridescenceThicknessRange: [300, 1100]
+      }));
+    case 'pearl':
+      return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        color: 0xffffff,
+        roughness: 0.32,
+        clearcoat: 0.6, clearcoatRoughness: 0.2,
+        sheen: 1, sheenColor: new THREE.Color('#ffd9e2'), sheenRoughness: 0.3,
+        iridescence: 0.35
+      }));
+    default:          // opaque — 표면을 곱게 갈아 낸 광택
+      return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        color: 0xffffff,
+        roughness: 0.1,
+        specularIntensity: 0.8
+      }));
+  }
 }
 
 /* ─────────────────── 원석 · 세팅 ─────────────────── */
@@ -1099,7 +1437,7 @@ function buildStone(s, group) {
       const ax0 = oval0 ? ((acr0 ? ov0.h : ov0.w) / 2) / gemR : 1;
       const az0 = oval0 ? ((acr0 ? ov0.w : ov0.h) / 2) / gemR : 1;
       const dome = new THREE.Mesh(
-        new THREE.SphereGeometry(gemR, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+        planarUV(new THREE.SphereGeometry(gemR, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), gemR), mat);
       dome.scale.set(ax0, 0.72, az0);
       dome.position.set(0, girdle - gemR * 0.1, 0);
       group.add(dome);
@@ -1110,15 +1448,9 @@ function buildStone(s, group) {
       seatDisc.position.set(0, girdle - gemR * 0.36 - up, 0);
       group.add(seatDisc);
     } else {
-      const pavilion = new THREE.Mesh(new THREE.ConeGeometry(gemR, gemR * 1.2, 8), mat);
-      pavilion.position.set(0, girdle - gemR * 0.6, 0);
-      pavilion.rotation.x = Math.PI;               // 뾰족한 쪽이 아래로
-      group.add(pavilion);
-
-      const crown = new THREE.Mesh(
-        new THREE.CylinderGeometry(gemR * 0.58, gemR, gemR * 0.44, 8), mat);
-      crown.position.set(0, girdle + gemR * 0.22, 0);
-      group.add(crown);
+      const gem = new THREE.Mesh(brilliantGeometry(gemR), mat);
+      gem.position.set(0, girdle, 0);
+      group.add(gem);
     }
 
     // 발(프롱)은 원석 허리를 아래에서 물어주는 높이까지만 올라온다
@@ -1140,18 +1472,23 @@ function buildStone(s, group) {
 
     /* 우물 벽 — 위가 넓고 아래가 좁은 깔때기.
      * 바닥을 막아 두지 않으면 안이 그대로 비쳐 구멍을 뚫어 놓은 것처럼 보입니다. */
+    // 위는 열어 두어야 알이 보이고, 아래는 막아야 구멍처럼 비치지 않습니다
+    const wellMat = metalMat.clone();
+    wellMat.side = THREE.DoubleSide;
     const well = new THREE.Mesh(
-      new THREE.CylinderGeometry(wellR, gemR * 0.88, wellDepth + up * 2, 40, 1, false), metalMat);
+      new THREE.CylinderGeometry(wellR, gemR * 0.88, wellDepth + up * 2, 40, 1, true), wellMat);
     well.position.set(0, topR - wellDepth / 2 + lift - up, 0);
     group.add(well);
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(gemR * 0.9, 40), metalMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, topR - wellDepth + lift - up * 2, 0);
+    group.add(floor);
 
     /* 알 — 우물 안에 앉되 윗면이 반지 면과 거의 같은 높이에 오게.
      * 너무 내리면 알은 안 보이고 우물만 남아 구멍처럼 읽힙니다. */
-    const gemH = gemR * 0.55;
-    const gem = new THREE.Mesh(
-      new THREE.SphereGeometry(gemR, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-    gem.scale.y = gemH / gemR;
-    gem.position.set(0, topR + lift - gemH * 0.55, 0);
+    // 면을 낸 알을 우물에 앉힙니다 — 테이블(윗면)이 반지 면과 거의 같은 높이
+    const gem = new THREE.Mesh(brilliantGeometry(gemR * 0.92), mat);
+    gem.position.set(0, topR + lift - gemR * 0.92 * 0.32 + gemR * 0.04, 0);
     group.add(gem);
 
   } else {
@@ -1169,7 +1506,7 @@ function buildStone(s, group) {
     const sz = oval ? ((across ? ov.w : ov.h) / 2) / size : 1;
     const seat = s.setting === 'seat';
 
-    const gem = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+    const gem = new THREE.Mesh(planarUV(new THREE.SphereGeometry(size, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), size), mat);
     gem.scale.set(sx, seat ? 0.5 : 0.62, sz);
     // 심기는 자리를 파고 앉히므로 베젤보다 확실히 낮습니다
     gem.position.set(0, topR - size * (seat ? 0.42 : 0.16) + lift, 0);
@@ -1265,6 +1602,10 @@ function initScene() {
   const envTex = studioEnvTexture();
   scene.environment = pmrem.fromEquirectangular(envTex).texture;
   envTex.dispose();
+  // 보석만 비추는 반짝이 환경 — 아래 sparkleEnvTexture 참고
+  const sparkle = sparkleEnvTexture();
+  gemEnv = pmrem.fromEquirectangular(sparkle).texture;
+  sparkle.dispose();
 
   camera = new THREE.PerspectiveCamera(34, stage.clientWidth / stage.clientHeight, 1, 500);
   camera.position.copy(DEFAULT_CAM);

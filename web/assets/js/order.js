@@ -253,6 +253,9 @@
         out.push('', '※ 컬러큐빅은 색을 상담에서 함께 정합니다. 위 색상은 희망 색상입니다.');
       }
       if (spec.oxidize || specB.oxidize) out.push('', '※ ' + CONFIG.oxidize.note);
+      if ((spec.plating && spec.plating !== 'none') || (specB.plating && specB.plating !== 'none')) {
+        out.push('', '※ ' + CONFIG.platingNote);
+      }
       var memoC = $('o-memo').value.trim();
       if (memoC) out.push('', '요청사항  : ' + memoC);
       var whenC = $('o-when').value;
@@ -312,6 +315,7 @@
       lines.push('', '※ 컬러큐빅은 색과 크기를 상담에서 함께 정합니다. 위 색상은 희망 색상입니다.');
     }
     if (spec.oxidize) lines.push('', '※ ' + CONFIG.oxidize.note);
+    if (spec.plating && spec.plating !== 'none') lines.push('', '※ ' + CONFIG.platingNote);
     var memo = $('o-memo').value.trim();
     if (memo) lines.push('', '요청사항  : ' + memo);
     var when = $('o-when').value;

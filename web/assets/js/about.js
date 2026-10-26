@@ -68,7 +68,7 @@
   $('as-title').textContent = '사이즈 조정 — 받아 보시고 ' + (as.days || 30) + '일 이내 무료';
   $('as-lead').textContent = as.lead || '';
   $('as-note').textContent = as.note || '';
-  $('as-limits').textContent = as.limits || '';
+  $('as-limits').textContent = (as.limits || '') + (CONFIG.platingNote ? ' ' + CONFIG.platingNote : '');
   /* ── 사진 띠 넘기기 ──
    * 한 번에 보이는 만큼씩 옮깁니다. 끝에 닿으면 그쪽 화살표를 감춥니다. */
   (function () {

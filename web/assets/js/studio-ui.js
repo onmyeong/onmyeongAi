@@ -252,8 +252,12 @@
 
     // 천연석 — 내 일주 추천을 위로
     var rec = spec.ilju && ONM.ILJU[spec.ilju];
-    var mine = rec ? rec.stones.map(function (x) { return x[0]; }) : [];
-    var all = Object.keys(ONM.STONE_COLOR).filter(function (x) { return mine.indexOf(x) === -1; });
+    var canon = ONM.stoneName || function (x) { return x; };
+    var alias = ONM.STONE_ALIAS || {};
+    // 같은 돌을 다르게 적은 이름은 한 번만 — 예전 링크의 이름은 대표 이름으로 맞춥니다
+    if (spec.stone) spec.stone = canon(spec.stone);
+    var mine = rec ? rec.stones.map(function (x) { return canon(x[0]); }) : [];
+    var all = Object.keys(ONM.STONE_COLOR).filter(function (x) { return !alias[x] && mine.indexOf(x) === -1; });
     fillSelect($('c-stone'),
       mine.map(function (x) { return [x, x + ' — 내 일주 추천']; })
         .concat(all.map(function (x) { return [x, x]; })),
@@ -318,15 +322,26 @@
   }
 
   /* 도금과 유화는 같이 못 합니다. 하나를 고르면 다른 하나를 잠급니다. */
+  /* 도금은 유화 · 색 채우기와 같이 못 합니다 (도금층 위아래로 올리면 서로 상합니다).
+   * 하나를 고르면 다른 쪽을 잠그고 왜 잠겼는지 알려 줍니다. */
   function refreshFinishFields() {
     var plated = spec.plating && spec.plating !== 'none';
     $('c-oxidize').disabled = plated;
-    $('c-plating').disabled = !!spec.oxidize;
+    $('c-epoxy').disabled = plated;
+    $('c-plating').disabled = !!spec.oxidize || !!spec.epoxy;
 
     var msg = '';
-    if (plated) msg = '도금과 유화는 같이 할 수 없습니다. 유화를 하시려면 도금을 "도금 없이"로 바꿔 주세요.';
+    if (plated) msg = '도금은 유화 · 색 채우기와 같이 할 수 없습니다. 유화나 색 채우기를 하시려면 도금을 "도금 없이"로 바꿔 주세요.';
+    else if (spec.oxidize && spec.epoxy) msg = '유화와 색 채우기를 고르셔서 도금은 잠겼습니다. 도금을 하시려면 두 가지를 먼저 꺼 주세요.';
     else if (spec.oxidize) msg = '유화를 고르셔서 도금은 잠겼습니다. 도금을 하시려면 유화를 먼저 꺼 주세요.';
+    else if (spec.epoxy) msg = '색 채우기를 고르셔서 도금은 잠겼습니다. 도금을 하시려면 색 채우기를 "채우지 않음"으로 바꿔 주세요.';
     $('finish-conflict').textContent = msg;
+    // 도금을 고르면 벗겨짐 · 사이즈 조정 안내를 바로 아래에
+    var note = $('plating-note');
+    if (note) {
+      note.textContent = plated ? (CONFIG.platingNote || '') : '';
+      note.classList.toggle('is-hidden', !plated);
+    }
   }
 
   /* 색을 채우려면 채울 홈이 있어야 한다.
@@ -397,7 +412,7 @@
       }
       fillSelect($('c-stonesize'), kind.sizes.map(function (z) {
         return [String(z.mm), z.label + ' — ' + z.hint +
-          (z.price ? ' (+' + z.price.toLocaleString('ko-KR') + '원)' : '')];
+          (z.price ? ' (+' + z.price.toLocaleString('ko-KR') + '원)' : z.price === null ? ' (값은 상담)' : '')];
       }), String(spec.stoneSize));
     }
 
@@ -693,8 +708,11 @@
       spec[key] = this.value;
       if (key === 'texture' || key === 'profile') refreshTextureFields();
       if (key === 'plating') {
-        // 도금을 고르면 유화는 꺼집니다
-        if (spec.plating !== 'none') { spec.oxidize = false; $('c-oxidize').checked = false; }
+        // 도금을 고르면 유화와 색 채우기는 꺼집니다
+        if (spec.plating !== 'none') {
+          spec.oxidize = false; $('c-oxidize').checked = false;
+          spec.epoxy = ''; $('c-epoxy').value = '';
+        }
         refreshFinishFields();
       }
       refreshEpoxyNote();
@@ -755,6 +773,8 @@
 
   $('c-epoxy').addEventListener('change', function () {
     spec.epoxy = this.value;
+    if (spec.epoxy) { spec.plating = 'none'; $('c-plating').value = 'none'; }
+    refreshFinishFields();
     refreshEpoxyNote();
     studio.changed();
   });
