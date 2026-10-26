@@ -280,6 +280,9 @@ function widthScaleAt(s, th) {
   return Math.max(0.25, k);
 }
 
+const WAVE_PICKED = 0.4;     // 옆모양을 웨이브로 고른 디자인의 물결 깊이 (두께 대비)
+const WAVE_N = 6;            // 한 바퀴에 들어가는 물결 수
+const FACETS_PICKED = 8;     // 옆모양을 패싯으로 고른 디자인의 면 수
 const MIN_WALL = 0.28;   // mm — 이보다 얇아지면 면이 겹쳐 뚫린 것처럼 보입니다
 
 /* 내경 굴림 — 안쪽 면의 양 가장자리를 둥글게 깎아 끼고 뺄 때 걸리지 않게 합니다.
@@ -367,7 +370,12 @@ function buildBand(s, model) {
   const plateY = innerR + t * 1.5;
 
   const taper = model ? model.taper : 0;
+  /* 물결(웨이브) — 둘레를 돌며 두께가 오르내려 옆에서 보면 윗선이 물결칩니다.
+   * 물결이 없는 디자인(수선 등)에서 옆모양을 '웨이브'로 고르면 아무 변화가 없어
+   * 둥근 면과 구분이 안 됐습니다. 그래서 고른 경우에는 눈에 보일 만큼 물결을 줍니다.
+   * (원래 웨이브인 디자인은 디자인에 정해진 물결 그대로) */
   const wave = model ? model.wave : 0;
+  const pickedWave = s.profile === 'wave' && model && model.profile !== 'wave';
   // 넓은 면을 비스듬히 쓸어 깎은 디자인 (그 디자인만 가집니다)
   const sweep = model ? (model.sweep || 0) : 0;
   /* 무늬는 한 바퀴에 "정수 개"가 들어가야 이음매에서 어긋나지 않습니다.
@@ -385,7 +393,11 @@ function buildBand(s, model) {
   const CELL = 0.5;                                  // 면 하나의 크기 (mm)
   const cellsAround = Math.max(24, Math.round(Math.PI * 2 * (innerR + t) / CELL));
   const twist = model ? model.twist : 0;
-  const facets = (s.profile === 'facet' && model) ? model.facets : 0;
+  /* 패싯 — 둘레를 평평한 면 여러 장으로 깎은 모양. 면 수가 없는 디자인에서 고르면 8면으로 깎습니다
+   * (예전에는 면 수가 0이라 둥근 면과 똑같아 보였습니다) */
+  const facets = (s.profile === 'facet' && model) ? (model.facets || FACETS_PICKED) : 0;
+  // 원래 패싯인 디자인은 디자인에 정해진 모양 그대로, 다른 디자인에서 고른 패싯만 평평한 면으로
+  const planarFacets = facets > 0 && model && model.profile !== 'facet';
 
   /* 한 바퀴를 SEG 줄로 나눕니다. 예전에는 마지막에 첫 줄과 똑같은 줄을 하나 더 두었는데,
    * 그러면 이음매에서 법선이 끊겨 그 자리만 검게 뜨거나 면이 비어 보였습니다.
@@ -422,7 +434,9 @@ function buildBand(s, model) {
     }
 
     // 웨이브는 안쪽으로만 들어가므로 최대 두께는 그대로 유지된다
-    const uScale = (1 - wave * 0.3 * (0.5 + 0.5 * Math.sin(3 * th))) * tRatio;
+    let uScale = (1 - wave * 0.3 * (0.5 + 0.5 * Math.sin(3 * th))) * tRatio;
+    // 고른 웨이브 — 한 바퀴에 여섯 번 잔물결이 오르내립니다 (바깥으로 솟지 않고 안쪽으로만 내려앉습니다)
+    if (pickedWave) uScale *= 1 - WAVE_PICKED * (0.5 + 0.5 * Math.sin(WAVE_N * th));
 
     /* 물길 — 밴드가 옆으로 굽이치며 돌아갑니다.
      * 폭을 늘였다 줄이는 게 아니라 단면을 통째로 옆으로 밀어야 띠가 뱀처럼 흐릅니다. */
@@ -467,7 +481,12 @@ function buildBand(s, model) {
       if (p.outer) {
         let u = p.u * uScale;
         // 각진 면(패싯)은 모서리가 가장 두꺼워지므로, 모서리가 정확히 두께에 닿게 맞춘다
-        if (facets > 0) u *= facetR * Math.cos(Math.PI / facets);
+        if (facets > 0 && planarFacets) {
+          /* 고른 패싯 — 바깥 면을 진짜 평평한 판 여러 장으로 깎습니다.
+           * 모서리는 원래 두께 그대로, 면 가운데로 갈수록 평평하게 물러납니다 (벽은 남깁니다). */
+          const outer = (innerR + u) * Math.cos(Math.PI / facets) * facetR;
+          u = Math.max(Math.min(u, MIN_WALL + 0.25), outer - innerR);
+        } else if (facets > 0) u *= facetR * Math.cos(Math.PI / facets);
         // 살 붙이기 · 깎기 — 짚은 자리만 도톰해지거나 얇아집니다 (최대 ±55%)
         if (reliefGrid) {
           const r = Math.max(-1, Math.min(1, reliefAt(reliefGrid, th, profile[j].v / Math.max(0.001, s.width))));
