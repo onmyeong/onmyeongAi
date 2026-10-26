@@ -1633,7 +1633,7 @@
     if (p.get('grain') && GRAIN_LABEL[p.get('grain')]) spec.grain = p.get('grain');
     if (p.get('profile')) spec.profile = p.get('profile');
     if (p.get('setting')) spec.setting = p.get('setting');
-    if (p.has('stone')) spec.stone = p.get('stone') || null;
+    if (p.has('stone')) spec.stone = p.get('stone') ? (ONM.stoneName ? ONM.stoneName(p.get('stone')) : p.get('stone')) : null;
     /* 주소에 긴 각인이 실려 와도 제한을 넘기지 않게 여기서 잘라 둡니다.
      * 입력칸의 maxlength 는 사람이 칠 때만 막아 주기 때문입니다. */
     if (p.get('engraving')) spec.engraving = p.get('engraving').slice(0, engraveMax());
