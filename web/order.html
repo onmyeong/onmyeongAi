@@ -166,12 +166,24 @@
 
           <div class="step" id="step-store">
             <h3>네이버 스마트스토어에서 결제</h3>
-            <p class="small" style="margin:0 0 10px">
+            <p class="small" style="margin:0 0 10px" id="store-help">
               네이버페이로 바로 결제되고, 배송·교환·환불은 스토어 정책을 따릅니다.
               버튼을 누르면 사양서가 복사되니 주문 시 <b>구매자 요청사항</b>에 붙여 넣어 주세요.
             </p>
             <div class="btn-row">
               <button class="btn btn-primary" type="button" id="go-store">사양서 복사하고 스토어 열기</button>
+            </div>
+            <div class="order-code is-hidden" id="order-code-box" role="status">
+              <p class="small" style="margin:0">내 주문코드</p>
+              <p class="order-code-value" id="order-code-value">ONM-00000</p>
+              <p class="small" style="margin:0 0 12px">
+                복사해 두었어요. 스토어에서 결제할 때 <b>배송메모</b> 칸에 이 코드만 붙여 넣어 주세요.
+                고르신 사양은 온명이 이 코드로 그대로 확인합니다.
+              </p>
+              <div class="btn-row">
+                <button class="btn btn-primary" type="button" id="go-store-now">스토어에서 결제하기</button>
+                <button class="btn" type="button" id="copy-code">코드 다시 복사</button>
+              </div>
             </div>
           </div>
 

@@ -1125,3 +1125,14 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 .opt:disabled { opacity: .45; cursor: not-allowed; }
 .checkline .opt-thumb { align-self: center; }
 @media (max-width: 380px) { .opt-pick { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── 주문코드 (스마트스토어 결제 전 안내) ─────────────── */
+.order-code {
+  margin-top: 14px; padding: 16px 18px; border-radius: 14px;
+  background: var(--green-tint); border: 1px solid var(--green-soft);
+}
+.order-code-value {
+  margin: 4px 0 8px; font-size: 1.9rem; font-weight: 700; letter-spacing: .08em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink, #222);
+  user-select: all;
+}
