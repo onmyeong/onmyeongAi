@@ -38,7 +38,7 @@
        * 사장님은 lookup.html 에서 그 코드로 사양서 전체를 다시 봅니다.
        * 비워 두면 예전처럼 사양서 전체를 복사합니다.
        * 예: 'https://script.google.com/macros/s/AKfy.../exec' */
-      orderCodeApi: '',
+      orderCodeApi: 'https://script.google.com/macros/s/AKfycbyX9GLEHkzINo2K2ERfVBExkGmEmV6jooh0166S46H4fPSJz_hY5uvzaTTUt6PZMk-4BQ/exec',
 
       kakao: '',
       instagram: '',
