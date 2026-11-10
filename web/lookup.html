@@ -78,7 +78,8 @@
         store.set('onm-admin-key', key); $('key-row').classList.add('is-hidden');
         $('out').textContent = d.sheet; $('out').classList.remove('is-hidden');
         $('copy').classList.remove('is-hidden');
-        if (d.link) { $('studio').href = d.link; $('studio').classList.remove('is-hidden'); }
+        var st = d.studio || d.link;
+        if (st) { $('studio').href = st; $('studio').classList.remove('is-hidden'); }
         say(code + ' · 저장 시각 ' + new Date(d.at).toLocaleString('ko-KR'));
       })
       .catch(function () { say('불러오지 못했어요. 인터넷 연결이나 Apps Script 배포 설정을 확인해 주세요.', true); });
