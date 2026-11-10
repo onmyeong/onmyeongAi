@@ -162,7 +162,8 @@
     $('o-size2').disabled = qty < 2;
     sync();
   });
-  ['o-name', 'o-contact', 'o-channel', 'o-when', 'o-memo'].forEach(function (id) {
+  ['o-name', 'o-when', 'o-memo'].forEach(function (id) {
+    if (!$(id)) return;
     $(id).addEventListener('input', sync);
     $(id).addEventListener('change', sync);
   });
@@ -241,6 +242,7 @@
         '작성일 : ' + new Date().toLocaleDateString('ko-KR'),
         ''
       ];
+      if ($('o-name').value.trim()) out.splice(2, 0, '주문자 : ' + $('o-name').value.trim());
       out = out.concat(sheetBlock(spec, spec.size, '첫 번째 분 반지'), ['']);
       out = out.concat(sheetBlock(specB, size2, '두 번째 분 반지'), ['']);
       out.push(
@@ -272,6 +274,7 @@
       '작성일 : ' + new Date().toLocaleDateString('ko-KR'),
       ''
     ];
+    if ($('o-name').value.trim()) lines.splice(2, 0, '주문자 : ' + $('o-name').value.trim());
     if (rec) lines.push('일주       : ' + rec.id + ' (' + rec.hanja + ') · ' + ONM.iljuPhrase(rec));
     lines.push(
       '디자인     : ' + model.name + ' (' + R.FAMILIES[model.family].label + ')',
@@ -596,7 +599,6 @@
 
   function validate() {
     if (!$('o-name').value.trim()) return '성함 또는 닉네임을 입력해 주세요.';
-    if (!$('o-contact').value.trim()) return '연락처를 입력해 주세요.';
     if (!$('o-agree').checked) return '개인정보 수집·이용 동의가 필요합니다.';
     return null;
   }
@@ -623,8 +625,8 @@
         link: studioLink(),
         contact: {
           name: $('o-name').value.trim(),
-          channel: $('o-channel').value,
-          value: $('o-contact').value.trim(),
+          channel: 'naver-talk',
+          value: '',
           preferredDate: $('o-when').value || null,
           pickup: $('o-pickup') ? $('o-pickup').value : 'ship'
         },
@@ -645,8 +647,7 @@
       }).then(function (r) {
         if (r.ok && r.body && r.body.ok) {
           message('주문서를 보냈습니다. 접수번호 ' + (r.body.orderNo || '-') +
-            ' · 담당자가 ' + $('o-channel').options[$('o-channel').selectedIndex].text +
-            '(으)로 연락드립니다.', '');
+            ' · 네이버 톡톡으로 연락드립니다.', '');
           btn.textContent = '접수 완료';
           return;
         }
