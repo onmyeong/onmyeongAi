@@ -162,7 +162,8 @@
     $('o-size2').disabled = qty < 2;
     sync();
   });
-  ['o-name', 'o-contact', 'o-channel', 'o-when', 'o-memo'].forEach(function (id) {
+  ['o-name', 'o-phone', 'o-when', 'o-memo'].forEach(function (id) {
+    if (!$(id)) return;
     $(id).addEventListener('input', sync);
     $(id).addEventListener('change', sync);
   });
@@ -241,6 +242,8 @@
         '작성일 : ' + new Date().toLocaleDateString('ko-KR'),
         ''
       ];
+      if ($('o-name').value.trim()) out.splice(2, 0, '주문자 : ' + $('o-name').value.trim() +
+        ($('o-phone').value.trim() ? ' · ' + $('o-phone').value.trim() : ''));
       out = out.concat(sheetBlock(spec, spec.size, '첫 번째 분 반지'), ['']);
       out = out.concat(sheetBlock(specB, size2, '두 번째 분 반지'), ['']);
       out.push(
@@ -272,6 +275,8 @@
       '작성일 : ' + new Date().toLocaleDateString('ko-KR'),
       ''
     ];
+    if ($('o-name').value.trim()) lines.splice(2, 0, '주문자 : ' + $('o-name').value.trim() +
+      ($('o-phone').value.trim() ? ' · ' + $('o-phone').value.trim() : ''));
     if (rec) lines.push('일주       : ' + rec.id + ' (' + rec.hanja + ') · ' + ONM.iljuPhrase(rec));
     lines.push(
       '디자인     : ' + model.name + ' (' + R.FAMILIES[model.family].label + ')',
@@ -507,7 +512,9 @@
   }
 
   function saveCode(code, sheet) {
-    var body = JSON.stringify({ code: code, sheet: sheet, link: studioLink(), at: new Date().toISOString() });
+    var lookup = location.origin + location.pathname.replace(/order\.html$/, 'lookup.html') + '?code=' + code;
+    var body = JSON.stringify({ code: code, sheet: sheet, link: lookup, studio: studioLink(),
+      name: $('o-name').value.trim(), phone: $('o-phone').value.trim(), at: new Date().toISOString() });
     // Apps Script 는 단순 요청(text/plain)만 받으면 따로 허락 절차 없이 바로 저장된다
     try {
       return fetch(codeApi, { method: 'POST', mode: 'no-cors', keepalive: true,
@@ -550,6 +557,13 @@
           message('사양서를 자동으로 복사하지 못했습니다. 오른쪽 "사양서 복사" 버튼을 눌러 직접 복사한 뒤 스토어에서 붙여 넣어 주세요.', 'warn');
           openStore();
         });
+        return;
+      }
+
+      var err = validate();
+      if (err) {
+        message(err, 'warn');
+        $('order-msg').scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
 
@@ -596,7 +610,7 @@
 
   function validate() {
     if (!$('o-name').value.trim()) return '성함 또는 닉네임을 입력해 주세요.';
-    if (!$('o-contact').value.trim()) return '연락처를 입력해 주세요.';
+    if ($('o-phone').value.replace(/[^0-9]/g, '').length < 9) return '휴대폰 번호를 입력해 주세요.';
     if (!$('o-agree').checked) return '개인정보 수집·이용 동의가 필요합니다.';
     return null;
   }
@@ -623,8 +637,8 @@
         link: studioLink(),
         contact: {
           name: $('o-name').value.trim(),
-          channel: $('o-channel').value,
-          value: $('o-contact').value.trim(),
+          channel: 'phone',
+          value: $('o-phone').value.trim(),
           preferredDate: $('o-when').value || null,
           pickup: $('o-pickup') ? $('o-pickup').value : 'ship'
         },
@@ -645,8 +659,7 @@
       }).then(function (r) {
         if (r.ok && r.body && r.body.ok) {
           message('주문서를 보냈습니다. 접수번호 ' + (r.body.orderNo || '-') +
-            ' · 담당자가 ' + $('o-channel').options[$('o-channel').selectedIndex].text +
-            '(으)로 연락드립니다.', '');
+            ' · 네이버 톡톡으로 연락드립니다.', '');
           btn.textContent = '접수 완료';
           return;
         }
