@@ -40,6 +40,10 @@
        * 예: 'https://script.google.com/macros/s/AKfy.../exec' */
       orderCodeApi: 'https://script.google.com/macros/s/AKfycbyX9GLEHkzINo2K2ERfVBExkGmEmV6jooh0166S46H4fPSJz_hY5uvzaTTUt6PZMk-4BQ/exec',
 
+      /* 네이버 톡톡 주소. 주문코드를 받은 손님이 이 톡톡으로 코드를 보내 상담하고,
+       * 사장님이 금액을 확정해 전용 결제창 링크를 보내 드립니다. */
+      talk: 'https://talk.naver.com/profile/w52qac6',
+
       kakao: '',
       instagram: '',
       email: 'onmyeong2026@naver.com',

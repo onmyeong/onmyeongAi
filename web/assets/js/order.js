@@ -127,12 +127,13 @@
     var o = CONFIG.order, html = '';
     /* 온명은 네이버 플레이스(톡톡) 문의가 가장 빠릅니다 — 그래서 맨 앞에 둡니다. */
     var place = (CONFIG.studio && CONFIG.studio.mapUrl) || '';
-    if (place) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(place) + '">네이버 플레이스로 문의</a>';
+    if (o.talk) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(o.talk) + '">네이버 톡톡으로 상담</a>';
+    else if (place) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(place) + '">네이버 플레이스로 문의</a>';
     if (o.kakao) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(o.kakao) + '">카카오톡 채널</a>';
     if (o.instagram) html += '<a class="btn" target="_blank" rel="noopener" href="' + esc(o.instagram) + '">인스타그램 DM</a>';
     if (o.email) html += '<a class="btn" id="mail-link" href="#">이메일로 보내기</a>';
     $('talk-buttons').innerHTML = html || '<span class="small">상담 채널이 아직 설정되지 않았습니다. config.js에서 추가해 주세요.</span>';
-    if (!o.smartstore) $('step-store').classList.add('is-hidden');
+    if (!o.smartstore && !(o.orderCodeApi && o.talk)) $('step-store').classList.add('is-hidden');
     probeOrderApi();
   })();
 
@@ -516,9 +517,21 @@
 
   function openStore() { window.open(storeUrl, '_blank', 'noopener'); }
 
+  var talkUrl = CONFIG.order.talk || '';
+  var viaTalk = !!(codeApi && talkUrl);   // 코드 → 톡톡 상담 → 전용 결제창 링크
+
   if (codeApi && $('store-help')) {
-    $('store-help').innerHTML = '네이버페이로 바로 결제되고, 배송·교환·환불은 스토어 정책을 따릅니다. ' +
-      '버튼을 누르면 <b>짧은 주문코드</b>가 만들어져요. 결제할 때 <b>배송메모</b>에 그 코드만 붙여 넣으면 됩니다.';
+    if (viaTalk) {
+      $('step-store-title').textContent = '주문코드로 상담 · 결제';
+      $('store-help').innerHTML = '버튼을 누르면 <b>주문코드</b>가 만들어져요. <b>네이버 톡톡</b>으로 코드만 보내 주시면 ' +
+        '온명이 사양을 확인하고 최종 금액을 정해 <b>네이버페이 결제 링크</b>를 보내 드립니다.';
+      $('code-help').innerHTML = '복사해 두었어요. 아래 버튼으로 톡톡을 열고 <b>이 코드만 붙여 넣어 보내 주세요.</b> ' +
+        '고르신 사양은 온명이 코드로 그대로 확인합니다.';
+      $('go-store-now').textContent = '네이버 톡톡으로 코드 보내기';
+    } else {
+      $('store-help').innerHTML = '네이버페이로 바로 결제되고, 배송·교환·환불은 스토어 정책을 따릅니다. ' +
+        '버튼을 누르면 <b>짧은 주문코드</b>가 만들어져요. 결제할 때 <b>배송메모</b>에 그 코드만 붙여 넣으면 됩니다.';
+    }
     $('go-store').textContent = '주문코드 받기';
   }
 
@@ -562,7 +575,8 @@
   });
   if ($('go-store-now')) $('go-store-now').addEventListener('click', function () {
     if (lastCode) copy(lastCode).catch(function () {});
-    openStore();
+    if (viaTalk) window.open(talkUrl, '_blank', 'noopener');
+    else openStore();
   });
 
   /* ───────────── 직접 접수 ───────────── */
