@@ -490,21 +490,80 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   });
 
-  /* ───────────── 스마트스토어 ───────────── */
+  /* ───────────── 스마트스토어 ─────────────
+   * orderCodeApi 가 있으면: 짧은 주문코드를 만들어 사양서를 구글 시트에 맡기고,
+   *   손님에게는 코드만 복사해 준다. (배송메모 칸이 짧아도 잘리지 않게)
+   * 없으면: 예전처럼 사양서 전체를 복사한다. */
+  var storeUrl = CONFIG.order.customProduct || CONFIG.order.smartstore;
+  var codeApi = CONFIG.order.orderCodeApi || '';
+  var CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';   // 헷갈리는 0/O, 1/I 는 뺐다
+
+  function newCode() {
+    var out = '', buf = new Uint32Array(5);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    for (var i = 0; i < buf.length; i++) out += CODE_CHARS[buf[i] % CODE_CHARS.length];
+    return 'ONM-' + out;
+  }
+
+  function saveCode(code, sheet) {
+    var body = JSON.stringify({ code: code, sheet: sheet, link: studioLink(), at: new Date().toISOString() });
+    // Apps Script 는 단순 요청(text/plain)만 받으면 따로 허락 절차 없이 바로 저장된다
+    try {
+      return fetch(codeApi, { method: 'POST', mode: 'no-cors', keepalive: true,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body });
+    } catch (e) { return Promise.reject(e); }
+  }
+
+  function openStore() { window.open(storeUrl, '_blank', 'noopener'); }
+
+  if (codeApi && $('store-help')) {
+    $('store-help').innerHTML = '네이버페이로 바로 결제되고, 배송·교환·환불은 스토어 정책을 따릅니다. ' +
+      '버튼을 누르면 <b>짧은 주문코드</b>가 만들어져요. 결제할 때 <b>배송메모</b>에 그 코드만 붙여 넣으면 됩니다.';
+    $('go-store').textContent = '주문코드 받기';
+  }
+
   var storeBtn = $('go-store');
+  var lastCode = null, lastSheet = null;
   if (storeBtn) {
     storeBtn.addEventListener('click', function () {
       var b = this;
-      var open = function () { window.open(CONFIG.order.smartstore, '_blank', 'noopener'); };
-      copy(currentSheet()).then(function () {
-        flash(b, '사양서 복사 완료 — 스토어로 이동합니다');
-        open();
-      }, function () {
-        message('사양서를 자동으로 복사하지 못했습니다. 오른쪽 "사양서 복사" 버튼을 눌러 직접 복사한 뒤 스토어에서 붙여 넣어 주세요.', 'warn');
-        open();
-      });
+      var sheet = currentSheet();
+
+      if (!codeApi) {   // 예전 방식
+        copy(sheet).then(function () {
+          flash(b, '사양서 복사 완료 — 스토어로 이동합니다');
+          openStore();
+        }, function () {
+          message('사양서를 자동으로 복사하지 못했습니다. 오른쪽 "사양서 복사" 버튼을 눌러 직접 복사한 뒤 스토어에서 붙여 넣어 주세요.', 'warn');
+          openStore();
+        });
+        return;
+      }
+
+      // 사양을 바꾸지 않고 다시 누르면 같은 코드를 그대로 쓴다
+      if (!lastCode || lastSheet !== sheet) {
+        lastCode = newCode(); lastSheet = sheet;
+        saveCode(lastCode, '주문코드 : ' + lastCode + '\n\n' + sheet).catch(function () {
+          message('주문코드를 저장하지 못했어요. 오른쪽 "사양서 복사"로 사양서를 복사해 배송메모에 붙여 넣어 주세요.', 'warn');
+        });
+        try { localStorage.setItem('onm-last-order-code', lastCode); } catch (e) { /* 개인 브라우징 */ }
+      }
+      $('order-code-value').textContent = lastCode;
+      $('order-code-box').classList.remove('is-hidden');
+      copy(lastCode).then(function () { flash(b, '주문코드를 복사했어요'); },
+        function () { flash(b, '코드를 길게 눌러 복사해 주세요'); });
+      $('order-code-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   }
+  if ($('copy-code')) $('copy-code').addEventListener('click', function () {
+    var b = this;
+    copy(lastCode || '').then(function () { flash(b, '복사했어요'); },
+      function () { flash(b, '코드를 길게 눌러 복사해 주세요'); });
+  });
+  if ($('go-store-now')) $('go-store-now').addEventListener('click', function () {
+    if (lastCode) copy(lastCode).catch(function () {});
+    openStore();
+  });
 
   /* ───────────── 직접 접수 ───────────── */
   function message(text, kind) {

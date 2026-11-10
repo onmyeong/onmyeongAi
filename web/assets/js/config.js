@@ -28,6 +28,18 @@
       smartstore: 'https://smartstore.naver.com/onmyeong',
       smartstoreLabel: '네이버 스마트스토어',
 
+      /* 커스텀 반지를 결제하는 스마트스토어 상품 주소.
+       * 넣으면 "스토어에서 결제" 버튼이 스토어 첫 화면 대신 이 상품을 바로 엽니다.
+       * 예: 'https://smartstore.naver.com/onmyeong/products/1234567890' */
+      customProduct: '',
+
+      /* 주문코드 저장소 (구글 시트 + Apps Script 웹 앱 주소).
+       * 넣으면 손님은 긴 사양서 대신 ONM-XXXXX 같은 짧은 코드만 배송메모에 붙여 넣고,
+       * 사장님은 lookup.html 에서 그 코드로 사양서 전체를 다시 봅니다.
+       * 비워 두면 예전처럼 사양서 전체를 복사합니다.
+       * 예: 'https://script.google.com/macros/s/AKfy.../exec' */
+      orderCodeApi: '',
+
       kakao: '',
       instagram: '',
       email: 'onmyeong2026@naver.com',

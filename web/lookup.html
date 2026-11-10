@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>온명 · 주문코드 조회</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+<style>
+  .lk { max-width: 720px; margin: 48px auto; padding: 0 16px; }
+  .lk input { width: 100%; font-size: 1.2rem; padding: 12px 14px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box; }
+  .lk #code { text-transform: uppercase; letter-spacing: .08em; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .lk pre { white-space: pre-wrap; word-break: break-all; background: #f7f6f2; border-radius: 12px; padding: 18px; font-size: .92rem; line-height: 1.6; }
+  .lk .row { display: grid; gap: 10px; margin: 14px 0; }
+</style>
+</head>
+<body>
+<main class="lk">
+  <p class="eyebrow">온명 · 사장님용</p>
+  <h1 style="margin:4px 0 8px">주문코드 조회</h1>
+  <p class="small">스마트스토어 주문의 배송메모에 적힌 코드(ONM-XXXXX)를 넣으면 손님이 고른 사양서가 그대로 나옵니다.</p>
+
+  <div class="row">
+    <label for="code">주문코드</label>
+    <input id="code" placeholder="ONM-XXXXX" autocomplete="off">
+  </div>
+  <div class="row" id="key-row">
+    <label for="key">조회 비밀번호 <span class="small">(Apps Script 에 적은 ADMIN_KEY · 한 번 넣으면 이 기기에 기억해요)</span></label>
+    <input id="key" type="password" autocomplete="off">
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="go" type="button">조회하기</button>
+    <button class="btn is-hidden" id="copy" type="button">사양서 복사</button>
+    <a class="btn is-hidden" id="studio" target="_blank" rel="noopener">스튜디오에서 열기</a>
+  </div>
+  <div id="msg" class="notice is-hidden" role="status"></div>
+  <pre id="out" class="is-hidden"></pre>
+</main>
+
+<script src="assets/js/config.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var CONFIG = (window.ONMYEONG && window.ONMYEONG.CONFIG) || {};
+  var api = (CONFIG.order && CONFIG.order.orderCodeApi) || '';
+  var store = { get: function (k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
+                set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+  $('key').value = store.get('onm-admin-key');
+  if ($('key').value) $('key-row').classList.add('is-hidden');
+  var q = new URLSearchParams(location.search).get('code');
+  if (q) $('code').value = q;
+
+  function say(text, warn) {
+    $('msg').textContent = text;
+    $('msg').className = 'notice' + (warn ? ' warn' : '');
+  }
+
+  function lookup() {
+    var code = $('code').value.trim().toUpperCase().replace(/\s+/g, '');
+    if (code && code.indexOf('ONM-') !== 0) code = 'ONM-' + code;
+    var key = $('key').value.trim();
+    $('out').classList.add('is-hidden'); $('copy').classList.add('is-hidden'); $('studio').classList.add('is-hidden');
+    if (!api) return say('config.js 의 orderCodeApi 가 비어 있어요. Apps Script 주소를 먼저 넣어 주세요.', true);
+    if (!/^ONM-[2-9A-HJ-NP-Z]{5}$/.test(code)) return say('코드 모양이 달라요. ONM- 뒤에 5글자예요.', true);
+    if (!key) { $('key-row').classList.remove('is-hidden'); return say('조회 비밀번호를 넣어 주세요.', true); }
+    say('찾는 중...');
+    fetch(api + '?code=' + encodeURIComponent(code) + '&key=' + encodeURIComponent(key))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) {
+          if (d.error === 'key') { $('key-row').classList.remove('is-hidden'); return say('비밀번호가 맞지 않아요.', true); }
+          return say('이 코드로 저장된 사양서가 없어요. 손님이 코드를 잘못 적었을 수 있으니 톡톡으로 확인해 주세요.', true);
+        }
+        store.set('onm-admin-key', key); $('key-row').classList.add('is-hidden');
+        $('out').textContent = d.sheet; $('out').classList.remove('is-hidden');
+        $('copy').classList.remove('is-hidden');
+        if (d.link) { $('studio').href = d.link; $('studio').classList.remove('is-hidden'); }
+        say(code + ' · 저장 시각 ' + new Date(d.at).toLocaleString('ko-KR'));
+      })
+      .catch(function () { say('불러오지 못했어요. 인터넷 연결이나 Apps Script 배포 설정을 확인해 주세요.', true); });
+  }
+
+  $('go').addEventListener('click', lookup);
+  $('code').addEventListener('keydown', function (e) { if (e.key === 'Enter') lookup(); });
+  $('copy').addEventListener('click', function () {
+    navigator.clipboard.writeText($('out').textContent).then(function () { say('사양서를 복사했어요.'); });
+  });
+  if (q) lookup();
+})();
+</script>
+</body>
+</html>
