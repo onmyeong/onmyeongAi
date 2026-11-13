@@ -1049,7 +1049,7 @@ const STONE_LOOK = {
   '우나카이트':            { kind: 'opaque', pattern: 'mottle', c2: '#c98476' },
   '블랙 루틸 쿼츠':        { kind: 'clear', pattern: 'needles', base: '#eef0f2', c2: '#141416' },
   '스노우플레이크 옵시디언': { kind: 'opaque', pattern: 'flakes', base: '#202024', c2: '#e2e2de' },
-  '레브라도라이트':        { kind: 'labradorite', pattern: 'schiller', base: '#30383b', c2: '#3f9fe6' },
+  '라브라도라이트':        { kind: 'labradorite', pattern: 'schiller', base: '#30383b', c2: '#3f9fe6' },
   '아이올라이트':          { kind: 'clear', ior: 1.54 },
   '라리마':               { kind: 'opaque', pattern: 'web', c2: '#eef8fa' },
   '시트린':               { kind: 'clear', ior: 1.55 },
@@ -1151,7 +1151,7 @@ function stonePattern(name, look, baseHex) {
       g.globalAlpha = 1;
       break;
     }
-    case 'schiller': {  // 레브라도라이트 — 짙은 회색 돌 속에서 한쪽으로 푸른빛(가끔 청록 · 금빛)이 번쩍
+    case 'schiller': {  // 라브라도라이트 — 짙은 회색 돌 속에서 한쪽으로 푸른빛(가끔 청록 · 금빛)이 번쩍
       // 바탕의 거친 결 — 어두운 회녹색 줄기가 비스듬히
       for (let i = 0; i < 26; i++) {
         const y = rnd() * N;
@@ -1167,7 +1167,7 @@ function stonePattern(name, look, baseHex) {
       blob(-N * 0.22, N * 0.1, N * 0.16, '#4fb7a8', 0.6);
       blob(N * 0.28, N * 0.12, N * 0.12, '#d8b65a', 0.45);
       g.restore();
-      // 빛 위로 지나가는 가는 쌍정 줄 — 레브라도라이트 특유의 평행한 결
+      // 빛 위로 지나가는 가는 쌍정 줄 — 라브라도라이트 특유의 평행한 결
       for (let i = 0; i < 40; i++) {
         const y = rnd() * N;
         g.strokeStyle = '#1e2427'; g.globalAlpha = 0.12 + rnd() * 0.18; g.lineWidth = 0.8 + rnd() * 1.6;
