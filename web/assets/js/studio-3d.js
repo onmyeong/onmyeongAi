@@ -1049,7 +1049,7 @@ const STONE_LOOK = {
   '우나카이트':            { kind: 'opaque', pattern: 'mottle', c2: '#c98476' },
   '블랙 루틸 쿼츠':        { kind: 'clear', pattern: 'needles', base: '#eef0f2', c2: '#141416' },
   '스노우플레이크 옵시디언': { kind: 'opaque', pattern: 'flakes', base: '#202024', c2: '#e2e2de' },
-  '라브라도라이트':        { kind: 'labradorite', pattern: 'streaks', base: '#4d5b64', c2: '#2e383f' },
+  '레브라도라이트':        { kind: 'labradorite', pattern: 'schiller', base: '#30383b', c2: '#3f9fe6' },
   '아이올라이트':          { kind: 'clear', ior: 1.54 },
   '라리마':               { kind: 'opaque', pattern: 'web', c2: '#eef8fa' },
   '시트린':               { kind: 'clear', ior: 1.55 },
@@ -1151,7 +1151,32 @@ function stonePattern(name, look, baseHex) {
       g.globalAlpha = 1;
       break;
     }
-    case 'streaks':     // 라브라도라이트 · 카이나이트 — 한 방향으로 결이 진 줄무늬
+    case 'schiller': {  // 레브라도라이트 — 짙은 회색 돌 속에서 한쪽으로 푸른빛(가끔 청록 · 금빛)이 번쩍
+      // 바탕의 거친 결 — 어두운 회녹색 줄기가 비스듬히
+      for (let i = 0; i < 26; i++) {
+        const y = rnd() * N;
+        g.strokeStyle = rnd() > 0.5 ? '#2a3033' : '#545c5e'; g.globalAlpha = 0.35 + rnd() * 0.35; g.lineWidth = 3 + rnd() * 10;
+        g.beginPath(); g.moveTo(-10, y); g.lineTo(N + 10, y - N * 0.35 + (rnd() - 0.5) * 20); g.stroke();
+      }
+      g.globalAlpha = 1;
+      // 빛이 이는 판 — 큰 푸른 덩어리 하나에 청록 · 금빛이 가장자리로 번집니다
+      const fx = N * (0.35 + rnd() * 0.3), fy = N * (0.35 + rnd() * 0.3);
+      g.save(); g.translate(fx, fy); g.rotate(-0.33); g.scale(1.6, 0.8);
+      blob(0, 0, N * 0.42, c2, 0.9);
+      blob(N * 0.1, -N * 0.06, N * 0.24, '#8fd4f2', 0.7);
+      blob(-N * 0.22, N * 0.1, N * 0.16, '#4fb7a8', 0.6);
+      blob(N * 0.28, N * 0.12, N * 0.12, '#d8b65a', 0.45);
+      g.restore();
+      // 빛 위로 지나가는 가는 쌍정 줄 — 레브라도라이트 특유의 평행한 결
+      for (let i = 0; i < 40; i++) {
+        const y = rnd() * N;
+        g.strokeStyle = '#1e2427'; g.globalAlpha = 0.12 + rnd() * 0.18; g.lineWidth = 0.8 + rnd() * 1.6;
+        g.beginPath(); g.moveTo(-10, y); g.lineTo(N + 10, y - N * 0.35); g.stroke();
+      }
+      g.globalAlpha = 1;
+      break;
+    }
+    case 'streaks':     // 카이나이트 — 한 방향으로 결이 진 줄무늬
       for (let i = 0; i < 40; i++) {
         const y = rnd() * N;
         g.strokeStyle = c2; g.globalAlpha = 0.2 + rnd() * 0.4; g.lineWidth = 2 + rnd() * 8;
@@ -1354,11 +1379,14 @@ function stoneMaterial(spec) {
       }));
     case 'labradorite':
       return new THREE.MeshPhysicalMaterial(Object.assign(common, {
+        // 무늬에 빛이 이미 그려져 있으므로, 보는 각도에 따른 번쩍임은 살짝만 더합니다
         color: 0xffffff,
-        roughness: 0.14,
-        iridescence: 1,
-        iridescenceIOR: 1.9,
-        iridescenceThicknessRange: [260, 820]
+        roughness: 0.12,
+        // 푸른 빛판은 돌 속에서 스스로 빛나듯 떠오릅니다 — 무늬의 밝은 자리(빛판)만 은은하게 밝혀 줍니다
+        emissive: new THREE.Color('#3d8fe0'), emissiveMap: map, emissiveIntensity: 0.55,
+        iridescence: 0.45,
+        iridescenceIOR: 1.6,
+        iridescenceThicknessRange: [380, 560]
       }));
     case 'moonstone':
       return new THREE.MeshPhysicalMaterial(Object.assign(common, {

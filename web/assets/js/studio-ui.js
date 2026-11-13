@@ -257,7 +257,8 @@
     // 같은 돌을 다르게 적은 이름은 한 번만 — 예전 링크의 이름은 대표 이름으로 맞춥니다
     if (spec.stone) spec.stone = canon(spec.stone);
     var mine = rec ? rec.stones.map(function (x) { return canon(x[0]); }) : [];
-    var all = Object.keys(ONM.STONE_COLOR).filter(function (x) { return !alias[x] && mine.indexOf(x) === -1; });
+    var hidden = ONM.STONE_HIDDEN || {};
+    var all = Object.keys(ONM.STONE_COLOR).filter(function (x) { return !alias[x] && !hidden[x] && mine.indexOf(x) === -1; });
     fillSelect($('c-stone'),
       mine.map(function (x) { return [x, x + ' — 내 일주 추천']; })
         .concat(all.map(function (x) { return [x, x]; })),
