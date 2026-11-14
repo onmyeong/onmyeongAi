@@ -327,12 +327,14 @@
    * 하나를 고르면 다른 쪽을 잠그고 왜 잠겼는지 알려 줍니다. */
   function refreshFinishFields() {
     var plated = spec.plating && spec.plating !== 'none';
+    var natural = spec.stoneType === 'natural';   // 천연석이 물린 반지는 도금하지 않습니다
     $('c-oxidize').disabled = plated;
     $('c-epoxy').disabled = plated;
-    $('c-plating').disabled = !!spec.oxidize || !!spec.epoxy;
+    $('c-plating').disabled = natural || !!spec.oxidize || !!spec.epoxy;
 
     var msg = '';
-    if (plated) msg = '도금은 유화 · 색 채우기와 같이 할 수 없습니다. 유화나 색 채우기를 하시려면 도금을 "도금 없이"로 바꿔 주세요.';
+    if (natural) msg = '천연석이 물린 반지는 도금할 수 없습니다. 도금을 하시려면 원석을 "원석 없이"나 다른 종류로 바꿔 주세요.';
+    else if (plated) msg = '도금은 유화 · 색 채우기와 같이 할 수 없습니다. 유화나 색 채우기를 하시려면 도금을 "도금 없이"로 바꿔 주세요.';
     else if (spec.oxidize && spec.epoxy) msg = '유화와 색 채우기를 고르셔서 도금은 잠겼습니다. 도금을 하시려면 두 가지를 먼저 꺼 주세요.';
     else if (spec.oxidize) msg = '유화를 고르셔서 도금은 잠겼습니다. 도금을 하시려면 유화를 먼저 꺼 주세요.';
     else if (spec.epoxy) msg = '색 채우기를 고르셔서 도금은 잠겼습니다. 도금을 하시려면 색 채우기를 "채우지 않음"으로 바꿔 주세요.';
@@ -725,12 +727,16 @@
     spec.stoneType = this.value;
     if (spec.stoneType === 'natural' && !spec.stone) spec.stone = $('c-stone').value;
     if (spec.stoneType === 'cubic' && !spec.cubicColor) spec.cubicColor = $('c-cubic').value;
+    if (spec.stoneType === 'natural' && spec.plating && spec.plating !== 'none') {
+      spec.plating = 'none'; $('c-plating').value = 'none';   // 천연석은 도금 불가
+    }
     if (spec.stoneType === 'moissanite' || spec.stoneType === 'cubic') {
       // 종류마다 고를 수 있는 크기가 달라서, 없는 크기면 가운데 값으로 되돌린다
       var sizes = CONFIG.stones[spec.stoneType].sizes.map(function (z) { return z.mm; });
       if (sizes.indexOf(Number(spec.stoneSize)) === -1) spec.stoneSize = sizes[Math.min(1, sizes.length - 1)];
     }
     refreshStoneFields();
+    refreshFinishFields();
     studio.changed();
   });
 
