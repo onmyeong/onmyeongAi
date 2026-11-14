@@ -1190,9 +1190,11 @@
     return '원석 없이';
   }
 
-  /** 도금과 유화는 같이 못 합니다. 둘 중 하나만 남기고 정리합니다. */
+  /** 도금과 유화는 같이 못 합니다. 둘 중 하나만 남기고 정리합니다.
+   *  천연석이 물린 반지도 도금하지 않습니다. */
   function normalizeFinish(spec) {
     if (spec.oxidize && spec.plating && spec.plating !== 'none') spec.plating = 'none';
+    if (spec.stoneType === 'natural' && spec.plating && spec.plating !== 'none') spec.plating = 'none';
     return spec;
   }
 
