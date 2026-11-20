@@ -1248,3 +1248,12 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 .fx-sheet-page .two { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
 .fx-sheet-page footer { margin-top: 5mm; padding-top: 3mm; border-top: 1px solid #D3D6D1; font-size: 7pt; color: #626A6D; text-align: center; }
 .point-list b { white-space: nowrap; }
+
+/* 상단 메뉴 — 기간 한정 메뉴(2027 신년운세)에 붙는 NEW 표시.
+ * 행사가 끝나면 각 페이지 메뉴에서 해당 줄만 지우면 됩니다. */
+.site-nav a.nav-new { position: relative; }
+.site-nav a.nav-new::after {
+  content: 'NEW'; position: absolute; top: -6px; right: -4px;
+  font-size: .56rem; font-weight: 700; letter-spacing: .04em; line-height: 1;
+  padding: 2px 5px; border-radius: 999px; background: var(--hwa); color: #fff;
+}
