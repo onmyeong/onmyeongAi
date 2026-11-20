@@ -488,12 +488,17 @@
       '<div class="pillars">' + cols.map(function (c) {
         var p = c[1];
         if (!p) return '<div class="none"><span>' + c[0] + '주</span><i class="ico"></i><b>시각 모름</b></div>';
-        // 동물 아이콘이 먼저 — 그 아래에 한자와 한글
-        var rec = ONM.ILJU[p.id];
-        var bg = rec && ONM.zodiacColor ? ONM.zodiacColor(rec).solid : '#364D50';
-        return '<div' + (p.role === '일주' ? ' class="me"' : '') + '><span>' + c[0] + '주' + (p.role === '일주' ? ' · 나' : '') + '</span>' +
-          '<i class="ico" style="background:' + bg + '">' + (ONM.zodiacSvg ? ONM.zodiacSvg(p.branch) : '') + '</i>' +
-          '<b>' + p.hanja + '</b><em>' + p.id + ' · ' + p.animal + '</em></div>';
+        // 일주(나)만 동물 아이콘 + 한자 · 한글, 나머지 기둥은 한자 두 글자 + 한글
+        if (p.role === '일주') {
+          var rec = ONM.ILJU[p.id];
+          var bg = rec && ONM.zodiacColor ? ONM.zodiacColor(rec).solid : '#364D50';
+          return '<div class="me"><span>일주 · 나</span>' +
+            '<i class="ico" style="background:' + bg + '">' + (ONM.zodiacSvg ? ONM.zodiacSvg(p.branch) : '') + '</i>' +
+            '<b>' + p.hanja + '</b><em>' + p.id + ' · ' + p.animal + '</em></div>';
+        }
+        return '<div><span>' + c[0] + '주</span>' +
+          '<strong class="hj">' + p.hanja[0] + '<br>' + p.hanja[1] + '</strong>' +
+          '<em>' + p.id + '</em></div>';
       }).join('') + '</div>' +
       '<h2>' + esc(f.story.title) + '</h2>' +
       '<p>' + esc(firstTwo) + '</p>' +
