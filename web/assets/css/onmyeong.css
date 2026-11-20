@@ -1301,6 +1301,7 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 .onm-btn-kakao { background: #FEE500; color: #191919; }
 .onm-btn-naver { background: #03C75A; color: #fff; }
 .onm-btn-kakao:disabled, .onm-btn-naver:disabled { opacity: .6; cursor: default; }
+.onm-btn-open { display: flex; width: 100%; align-items: center; justify-content: center; border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 12px; padding: 13px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; font-family: inherit; }
 
 /* 리뷰 */
 .rv-bokchae { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }

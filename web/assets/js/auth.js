@@ -111,6 +111,41 @@
     return M.client.auth.signOut().then(function () { M.user = null; M.profile = null; emit(); });
   };
 
+  /* ───────────── 앱 안 브라우저 → 크롬·사파리로 열기 ───────────── */
+  var UA = global.navigator.userAgent || '';
+  var IS_IOS = /iPhone|iPad|iPod/i.test(UA) || (/Macintosh/.test(UA) && 'ontouchend' in doc);
+  var IS_ANDROID = /Android/i.test(UA);
+  var IS_KAKAO = /KAKAOTALK/i.test(UA);
+  // 인스타·페북·카톡·네이버·라인 등 앱 안에서 연 화면인지
+  var IN_APP = (IS_IOS || IS_ANDROID) && (
+    /KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|NAVER\(inapp|Line\/|DaumApps|everytimeApp|Whale\/.*inapp|; wv\)/i.test(UA) ||
+    (IS_IOS && !/Safari\//.test(UA)));
+  M.inApp = IN_APP;
+
+  M.openExternal = function () {
+    var url = global.location.href.split('#')[0];
+    if (IS_KAKAO) { global.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
+    if (IS_ANDROID) {
+      global.location.href = 'intent://' + url.replace(/^https?:\/\//, '') +
+        '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+      return;
+    }
+    if (IS_IOS) {
+      // iOS 17 이상: 사파리로 바로 열기. 안 되면 링크 복사 안내
+      global.location.href = 'x-safari-' + url;
+      global.setTimeout(function () {
+        var done = function () { alertCopy(); };
+        if (global.navigator.clipboard && global.navigator.clipboard.writeText) {
+          global.navigator.clipboard.writeText(url).then(done, done);
+        } else { done(); }
+      }, 1200);
+    }
+  };
+  function alertCopy() {
+    var tip = doc.querySelector('#onm-login .onm-open-tip');
+    if (tip) tip.textContent = '링크를 복사했어요. 오른쪽 위(또는 아래) ··· 버튼 → "Safari로 열기"를 누르거나, 사파리에 붙여넣어 주세요.';
+  }
+
   /** 로그인 창 — 이유(why)를 한 줄 띄울 수 있습니다 */
   M.login = function (why) {
     var box = doc.getElementById('onm-login');
@@ -131,12 +166,17 @@
             '<span aria-hidden="true">💬</span> 카카오로 시작하기</button>' +
           (cfg.providers && cfg.providers.indexOf('naver') !== -1
             ? '<button type="button" class="onm-btn-naver" data-provider="naver"><b>N</b> 네이버로 시작하기</button>' : '') +
+          (IN_APP
+            ? '<button type="button" class="onm-btn-open">' + (IS_IOS ? '사파리로 열기' : '크롬으로 열기') + '</button>' +
+              '<p class="small onm-open-tip" style="margin:6px 0 0">앱 안에서는 로그인이 풀릴 수 있어요. ' +
+              (IS_IOS ? '사파리' : '크롬') + '에서 열면 로그인이 그대로 유지돼요.</p>' : '') +
           '<p class="small" style="margin:16px 0 0">로그인하면 닉네임과 이메일을 받아 회원 정보로 씁니다. ' +
             '<a href="privacy.html">개인정보처리방침</a></p>' +
         '</div>';
       doc.body.appendChild(box);
       box.addEventListener('click', function (e) {
         if (e.target === box || e.target.closest('.onm-modal-x')) box.classList.remove('open');
+        if (e.target.closest('.onm-btn-open')) { M.openExternal(); return; }
         var b = e.target.closest('[data-provider]');
         if (b) { b.disabled = true; b.textContent = '이동하는 중…'; M.signIn(b.getAttribute('data-provider')); }
       });
