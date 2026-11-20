@@ -78,7 +78,11 @@
       box.style.setProperty('--accent-ink', c.ink);
       box.style.setProperty('--accent-tint', c.tint);
     }
-    $('fx-seal').innerHTML = ONM.zodiacSvg ? ONM.zodiacSvg('미', { label: '2027 정미년 — 양' }) : '';
+    // 큰 도장은 내 일주 동물(병인이면 호랑이), 2027년의 양은 제목 옆 작은 도장으로
+    if (ONM.zodiacSvg) {
+      $('fx-seal').innerHTML = ONM.zodiacSvg(day.branch, { label: day.animal + ' — ' + day.id + ' 일주' });
+      $('fx-year-seal').innerHTML = ONM.zodiacSvg('미', { label: '2027 정미년 — 붉은 양' });
+    }
     $('fx-person').textContent = state.name ? state.name + ' 님의 2027년' : '나의 2027년';
     $('fx-day').textContent = day.id + ' (' + day.hanja + ') 일주';
     $('fx-day-sub').textContent = rec && ONM.iljuPhrase ? ONM.iljuPhrase(rec) : '';
