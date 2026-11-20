@@ -1257,3 +1257,36 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
   font-size: .56rem; font-weight: 700; letter-spacing: .04em; line-height: 1;
   padding: 2px 5px; border-radius: 999px; background: var(--hwa); color: #fff;
 }
+
+/* 신년운세 — 쉬운 버전 */
+.fx-line { font-family: var(--serif); font-size: clamp(1.5rem, 3.2vw, 2.1rem); line-height: 1.35; margin: 4px 0 10px; }
+.fx-tags .badge { font-size: .84rem; color: var(--accent-ink, var(--green-deep)); border-color: var(--accent); background: var(--accent-tint); }
+.fx-quick { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; font-size: .92rem; color: var(--muted); }
+.fx-quick b { color: var(--ink); margin-left: 4px; }
+.fx-star-card h3 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fx-stars { margin-left: auto; color: var(--accent); letter-spacing: 2px; font-size: 1.05rem; }
+
+.fx-weather { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.fx-wx { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px; border-radius: var(--radius); background: var(--paper); border: 1px solid var(--line-soft); text-align: center; }
+.fx-wx b { font-family: var(--serif); font-size: 1rem; }
+.fx-wx-ico { font-size: 1.9rem; line-height: 1.1; }
+.fx-wx-key { font-size: .78rem; color: var(--body); }
+.fx-wx.sun { background: #FBF3E2; border-color: #EBD9AE; }
+.fx-wx.rain { background: #EEF1F5; border-color: #D5DCE5; }
+
+.fx-more { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--paper); }
+.fx-more > summary { cursor: pointer; list-style: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 16px; text-align: center; }
+.fx-more > summary::-webkit-details-marker { display: none; }
+.fx-more > summary b { font-size: 1.05rem; }
+.fx-more > summary b::after { content: ' ▾'; color: var(--muted); }
+.fx-more[open] > summary b::after { content: ' ▴'; }
+.fx-more-body { padding: 4px 22px 26px; }
+.fx-sheet-page .tags { text-align: center; color: #626A6D; margin: 0 0 1.5mm; }
+
+@media (max-width: 720px) {
+  .fx-weather { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fx-more-body { padding: 4px 12px 20px; }
+}
+@media print { .fx-more-body { display: block !important; } }
+.fx-cwx { font-size: 1.15rem; }
+.fx-line { text-wrap: balance; }
