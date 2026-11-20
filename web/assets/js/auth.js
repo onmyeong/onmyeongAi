@@ -30,9 +30,13 @@
     listeners: []
   };
 
+  /* 로그인 방식: implicit
+   * 휴대폰에서는 카카오톡 앱이나 인스타·카톡 안의 브라우저를 거쳐 돌아오면서 브라우저가 바뀌는 일이 잦습니다.
+   * PKCE 방식은 출발한 브라우저에 남긴 값이 있어야 해서 이때 로그인이 풀립니다.
+   * implicit 방식은 돌아온 주소 하나만으로 로그인이 끝나 어느 브라우저로 돌아와도 됩니다. */
   if (M.enabled) {
     M.client = global.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' }
     });
   }
 
