@@ -111,36 +111,6 @@
     return M.client.auth.signOut().then(function () { M.user = null; M.profile = null; emit(); });
   };
 
-  /* ───────────── 인스타·카톡 안의 브라우저 ─────────────
-   * 인스타그램 안에서 연 페이지는 카카오 로그인 뒤 다른 브라우저로 돌아가 버려
-   * 로그인이 이어지지 않습니다. 그래서 바깥 브라우저로 여는 길을 먼저 안내합니다. */
-  var UA = global.navigator ? global.navigator.userAgent : '';
-  var INAPP = /Instagram|FBAN|FBAV|FB_IAB|KAKAOTALK|NAVER\(inapp|Line\/|DaumApps|everytimeApp|Threads/i.test(UA);
-  var ANDROID = /Android/i.test(UA);
-  M.inApp = INAPP;
-
-  function externalHref(url) {
-    if (/KAKAOTALK/i.test(UA)) return 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
-    if (ANDROID) {
-      var u = new URL(url);
-      return 'intent://' + u.host + u.pathname + u.search + u.hash + '#Intent;scheme=https;package=com.android.chrome;end';
-    }
-    return null;   // 아이폰 인스타는 화면으로 직접 여는 방법이 없어 안내만 합니다
-  }
-
-  function inAppHtml() {
-    var url = global.location.href.split('#')[0];
-    var href = externalHref(url);
-    return '<div class="notice warn" style="text-align:left;margin:0 0 14px">' +
-      '<b>인스타·카톡 안에서는 로그인이 이어지지 않아요.</b><br>' +
-      (href
-        ? '아래 버튼으로 바깥 브라우저에서 열고 로그인해 주세요.'
-        : '오른쪽 위 <b>···</b> 버튼을 누르고 <b>"외부 브라우저에서 열기"</b>(또는 Safari로 열기)를 눌러 주세요.') +
-      '</div>' +
-      (href ? '<a class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px" href="' + esc(href) + '">바깥 브라우저로 열기</a>' : '') +
-      '<button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:6px" data-copy="' + esc(url) + '">주소 복사하기</button>';
-  }
-
   /** 로그인 창 — 이유(why)를 한 줄 띄울 수 있습니다 */
   M.login = function (why) {
     var box = doc.getElementById('onm-login');
@@ -157,7 +127,6 @@
           '<p class="eyebrow" style="margin:0">ONMYEONG</p>' +
           '<h2 id="onm-login-title" style="margin:6px 0 8px">로그인</h2>' +
           '<p class="small onm-login-why" style="margin:0 0 18px"></p>' +
-          (INAPP ? inAppHtml() : '') +
           '<button type="button" class="onm-btn-kakao" data-provider="kakao">' +
             '<span aria-hidden="true">💬</span> 카카오로 시작하기</button>' +
           (cfg.providers && cfg.providers.indexOf('naver') !== -1
@@ -168,14 +137,6 @@
       doc.body.appendChild(box);
       box.addEventListener('click', function (e) {
         if (e.target === box || e.target.closest('.onm-modal-x')) box.classList.remove('open');
-        var cp = e.target.closest('[data-copy]');
-        if (cp) {
-          var link = cp.getAttribute('data-copy');
-          (global.navigator.clipboard ? global.navigator.clipboard.writeText(link) : Promise.reject()).then(function () {
-            cp.textContent = '복사했어요 — 브라우저 주소창에 붙여 넣으세요';
-          }, function () { global.prompt('주소를 복사해 주세요', link); });
-          return;
-        }
         var b = e.target.closest('[data-provider]');
         if (b) { b.disabled = true; b.textContent = '이동하는 중…'; M.signIn(b.getAttribute('data-provider')); }
       });
