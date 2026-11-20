@@ -8,6 +8,21 @@
   'use strict';
 
   var CONFIG = {
+    /* ── 회원 (Supabase) ───────────────────────────────────────
+     * supabaseKey 는 공개용(publishable) 키라 여기 두어도 안전합니다.
+     * 비밀키(secret / service_role)는 절대 이 파일에 넣지 마세요. */
+    member: {
+      supabaseUrl: 'https://ugmmusbfxrmsdortxfdv.supabase.co',
+      supabaseKey: 'sb_publishable_6WGEzSaZ1aDdWkLe0bmj3g_je6DWnf2',
+      providers: ['kakao'],          // 네이버를 붙이면 'naver' 추가
+      event: {
+        id: '2027-couple-ring',
+        open: true,
+        title: '신년운세 보고 커플링 받자',
+        desc: '리뷰를 남기고 신년운세 스토리나 게시물을 인증하면 추첨으로 3팀에게 커플링 원데이 클래스를 드려요.'
+      }
+    },
+
     brand: {
       name: 'ONMYEONG',
       nameKo: '온명',

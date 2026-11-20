@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온명 반지공방 · 관리자</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+<link rel="stylesheet" href="assets/css/themes.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="온명 홈"><b>ONMYEONG</b><span>온명 반지공방</span></a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="./">일주 리포트</a>
+      <a href="fortune.html" class="nav-new">2027 신년운세</a>
+      <a href="studio.html">반지 스튜디오</a>
+      <a href="order.html">커스텀 주문</a>
+      <a href="pair.html">궁합 보기</a>
+      <a href="reviews.html">리뷰</a>
+      <a href="about.html">공방 소개</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Admin</p>
+      <h1>관리자 화면</h1>
+      <div class="card is-hidden" id="ad-deny" style="margin-top:16px"><p style="margin:0">관리자만 볼 수 있는 화면이에요. 대표님 계정으로 로그인해 주세요.</p></div>
+
+      <div id="ad-body" class="is-hidden" style="margin-top:16px">
+        <div class="ad-tabs rv-tabs" role="tablist">
+          <button type="button" data-tab="events" aria-pressed="true">이벤트 신청</button>
+          <button type="button" data-tab="orders" aria-pressed="false">주문 · 제작</button>
+          <button type="button" data-tab="as" aria-pressed="false">A/S</button>
+          <button type="button" data-tab="reviews" aria-pressed="false">리뷰</button>
+          <button type="button" data-tab="members" aria-pressed="false">회원</button>
+        </div>
+
+        <div class="card ad-pane" data-pane="events">
+          <div class="mp-row"><h3 style="margin:0">이벤트 신청 <span class="small" id="ad-ev-count"></span></h3>
+            <button class="btn btn-sm" type="button" id="ad-ev-pick">무작위로 3팀 뽑아 보기</button></div>
+          <p class="small" id="ad-ev-picked" style="margin:6px 0 0"></p>
+          <div class="ad-wrap"><table class="ad-table"><thead><tr><th>번호</th><th>회원</th><th>리뷰</th><th>인증</th><th>신청일</th><th>상태</th></tr></thead><tbody id="ad-ev"></tbody></table></div>
+        </div>
+
+        <div class="card ad-pane is-hidden" data-pane="orders">
+          <h3 style="margin-top:0">새 주문 등록</h3>
+          <div class="grid grid-4" style="align-items:end">
+            <div class="field"><label for="od-user">회원 <span class="small">(닉네임·이메일로 찾기)</span></label><input id="od-user" list="od-users" placeholder="회원이 아니면 비워 두세요"><datalist id="od-users"></datalist></div>
+            <div class="field"><label for="od-name">주문자 이름</label><input id="od-name" type="text"></div>
+            <div class="field"><label for="od-contact">연락처</label><input id="od-contact" type="text"></div>
+            <div class="field"><label for="od-title">반지 이름 *</label><input id="od-title" type="text" placeholder="예: 파랑 커플링"></div>
+            <div class="field"><label for="od-kind">종류</label><select id="od-kind"><option>원데이 클래스</option><option>주문제작</option><option>은점토</option><option>오리지널 라인</option></select></div>
+            <div class="field"><label for="od-size">호수</label><input id="od-size" type="text" placeholder="12"></div>
+            <div class="field"><label for="od-engr">각인</label><input id="od-engr" type="text"></div>
+            <div class="field"><label for="od-date">방문일</label><input id="od-date" type="date"></div>
+          </div>
+          <div class="field" style="margin-top:10px"><label for="od-memo">손님에게 보이는 메모</label><input id="od-memo" type="text" placeholder="예: 12월 2일 주물 맡겼어요"></div>
+          <p class="notice warn is-hidden" id="od-error" style="margin-top:10px"></p>
+          <div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" type="button" id="od-add">등록</button></div>
+          <h3 style="margin-top:26px">주문 목록</h3>
+          <div class="ad-wrap"><table class="ad-table"><thead><tr><th>반지</th><th>손님</th><th>정보</th><th>진행</th><th>메모</th><th></th></tr></thead><tbody id="ad-od"></tbody></table></div>
+        </div>
+
+        <div class="card ad-pane is-hidden" data-pane="as">
+          <h3 style="margin-top:0">A/S 신청</h3>
+          <div class="ad-wrap"><table class="ad-table"><thead><tr><th>신청일</th><th>회원</th><th>반지</th><th>내용</th><th>상태</th></tr></thead><tbody id="ad-as"></tbody></table></div>
+        </div>
+
+        <div class="card ad-pane is-hidden" data-pane="reviews">
+          <h3 style="margin-top:0">리뷰 <span class="small">숨기면 목록에서 바로 사라져요</span></h3>
+          <div class="ad-wrap"><table class="ad-table"><thead><tr><th>작성일</th><th>회원</th><th>별점</th><th>내용</th><th>공개</th></tr></thead><tbody id="ad-rv"></tbody></table></div>
+        </div>
+
+        <div class="card ad-pane is-hidden" data-pane="members">
+          <h3 style="margin-top:0">회원 <span class="small" id="ad-mb-count"></span></h3>
+          <div class="ad-wrap"><table class="ad-table"><thead><tr><th>가입일</th><th>닉네임</th><th>이메일</th><th>일주</th><th>커플</th></tr></thead><tbody id="ad-mb"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>© ONMYEONG · 온명 반지공방 · <a href="refund.html">환불 정책</a> · <a href="privacy.html">개인정보처리방침</a></span>
+    <span>사주 해석은 전통 명리 자료를 바탕으로 한 참고용 콘텐츠입니다.</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/vendor/supabase/supabase.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>
