@@ -563,7 +563,7 @@
         '무광인데도 빛이 잘게 부서지고, 가장자리까지 거칠게 남겨 원석 덩어리 같은 느낌을 줍니다.' },
 
     { id: 'onm-window', name: '들숨', family: 'signature', profile: 'round', texture: 'soft', setting: 'none',
-      width: [7, 9, 12], thickness: [1.8, 2.4, 3.2], wave: 0.15, twist: 0, taper: 0, facets: 0,
+      width: [7, 9, 12], thickness: [1.3, 1.7, 2.6], wave: 0.15, twist: 0, taper: 0, facets: 0,
       elements: ['목', '토'], moods: ['시그니처', '선물'],
       tags: ['개성', '여유', '감성', '자유', '편안', '자연스러운 질감'],
       preset: { organic: 0.6, holes: 'h_o_-38_0.08_5.5,h_o_8_-0.1_5,h_c_48_0.08_3.5' },
