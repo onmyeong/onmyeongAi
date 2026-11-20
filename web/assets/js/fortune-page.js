@@ -383,7 +383,7 @@
     return out;
   }
 
-  function storyCard(f, name) {
+  function storyCard(f, name, icon) {
     var W = 1080, H = 1920;
     var c = document.createElement('canvas'); c.width = W; c.height = H;
     var x = c.getContext('2d');
@@ -397,9 +397,10 @@
     x.textAlign = 'center';
     x.fillStyle = '#626A6D'; x.font = '600 30px ' + SANS; x.fillText('2027 丁未年 · 붉은 양의 해', W / 2, 190);
     x.fillStyle = '#252D30'; x.font = '700 64px ' + SERIF; x.fillText(name ? name + ' 님의 2027' : '나의 2027', W / 2, 290);
-    // 일주 도장
+    // 일주 도장 — 일주 리포트와 같은 십이지 아이콘 (병인이면 호랑이)
     x.fillStyle = col.solid; x.beginPath(); x.arc(W / 2, 470, 120, 0, Math.PI * 2); x.fill();
-    x.fillStyle = '#fff'; x.font = '700 92px ' + SERIF; x.fillText(day.hanja, W / 2, 500);
+    if (icon) x.drawImage(icon, W / 2 - 92, 470 - 92, 184, 184);
+    else { x.fillStyle = '#fff'; x.font = '700 92px ' + SERIF; x.fillText(day.hanja, W / 2, 500); }
     x.fillStyle = '#252D30'; x.font = '600 40px ' + SERIF; x.fillText(day.id + ' 일주' + (rec && ONM.iljuPhrase ? ' · ' + ONM.iljuPhrase(rec) : ''), W / 2, 670);
     // 한 해 제목
     // 마지막 줄에 한두 글자만 남지 않도록 글자 크기를 조금씩 줄여 봅니다
@@ -437,12 +438,24 @@
     return new Promise(function (res) { c.toBlob(res, 'image/png'); });
   }
 
+  /** 흰색 십이지 아이콘 — 캔바 원본 파일이 있으면 그것, 없으면 코드로 그린 아이콘 */
+  function storyIcon(branch) {
+    var SH = ONM.share;
+    if (!SH || !SH.tintedZodiac) return Promise.resolve(null);
+    return SH.tintedZodiac(branch, '#ffffff', 312).then(function (img) {
+      if (img || !ONM.zodiacSvg) return img;
+      var svg = ONM.zodiacSvg(branch, { size: 312, stroke: 2.4 }).replace('currentColor', '#ffffff');
+      return SH.loadImage(SH.svgToUrl(svg, 312)).catch(function () { return null; });
+    }).catch(function () { return null; });
+  }
+
   $('fx-story').addEventListener('click', function () {
     if (!state.f) return;
     var btn = this, label = btn.textContent;
     btn.textContent = '카드를 만드는 중…';
     var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-    ready.then(function () { return storyCard(state.f, state.name); }).then(function (blob) {
+    ready.then(function () { return storyIcon(state.f.saju.pillars.day.branch); })
+      .then(function (icon) { return storyCard(state.f, state.name, icon); }).then(function (blob) {
       if (!blob) throw new Error('fail');
       var box = $('fx-story-box');
       box.innerHTML = '<img alt="2027 신년운세 스토리 카드" style="max-width:280px" src="' + URL.createObjectURL(blob) + '">' +
