@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온명 반지공방 · 2027 정미년 신년운세</title>
+<meta name="description" content="생년월일과 태어난 시각으로 사주 여덟 글자를 세우고, 2027 정미년(붉은 양의 해) 한 해의 흐름과 열두 달 운세, 행운의 색과 원석까지 읽어 드립니다.">
+<meta property="og:title" content="2027 정미년 신년운세 · 온명 반지공방">
+<meta property="og:description" content="사주 여덟 글자로 읽는 나의 2027년. 열두 달 흐름과 행운의 원석까지.">
+<meta property="og:locale" content="ko_KR">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+<link rel="stylesheet" href="assets/css/themes.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="온명 홈"><b>ONMYEONG</b><span>온명 반지공방</span></a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="./">일주 리포트</a>
+      <a href="fortune.html" aria-current="page">2027 신년운세</a>
+      <a href="studio.html">반지 스튜디오</a>
+      <a href="order.html">커스텀 주문</a>
+      <a href="pair.html">궁합 보기</a>
+      <a href="about.html">공방 소개</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ─────────────── 입력 ─────────────── -->
+  <section id="input">
+    <div class="wrap">
+      <p class="eyebrow">2027 New Year Fortune · 丁未年</p>
+      <h1>2027 정미년, 붉은 양의 해.<br>사주 여덟 글자로 읽는 나의 한 해.</h1>
+      <p class="lead">
+        일주 리포트가 태어난 <b>날</b> 하나를 읽었다면, 신년운세는 태어난 <b>해 · 달 · 날 · 시</b>
+        네 기둥 여덟 글자를 모두 세워 읽습니다. 내 사주의 힘과 균형을 먼저 보고,
+        2027년의 정(丁)과 미(未)가 그 사주에 어떻게 들어오는지, 열두 달은 어떻게 흐르는지 풀어 드립니다.
+      </p>
+
+      <form id="fx-form" class="card" novalidate style="margin-top:24px">
+        <div class="grid grid-4" style="align-items:end">
+          <div class="field">
+            <label for="fx-name">이름 <span class="small">(선택)</span></label>
+            <input id="fx-name" type="text" maxlength="12" placeholder="지민" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="fx-y">태어난 해 (양력)</label>
+            <input id="fx-y" type="number" inputmode="numeric" placeholder="1995" min="1900" max="2100" required>
+          </div>
+          <div class="field">
+            <label for="fx-m">월</label>
+            <input id="fx-m" type="number" inputmode="numeric" placeholder="7" min="1" max="12" required>
+          </div>
+          <div class="field">
+            <label for="fx-d">일</label>
+            <input id="fx-d" type="number" inputmode="numeric" placeholder="21" min="1" max="31" required>
+          </div>
+          <div class="field">
+            <label for="fx-h">태어난 시각</label>
+            <select id="fx-h"><option value="">모름 / 기억나지 않음</option></select>
+          </div>
+          <div class="field">
+            <label for="fx-min">분 <span class="small">(알면)</span></label>
+            <input id="fx-min" type="number" inputmode="numeric" placeholder="30" min="0" max="59">
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:18px">
+          <button class="btn btn-primary" type="submit">2027 신년운세 보기</button>
+        </div>
+        <p class="small" style="margin-top:14px">
+          ※ <b>양력 생년월일</b> 기준입니다. 해와 달의 경계는 1월 1일이 아니라 <b>입춘과 절기</b>로 나눕니다.
+          그래서 1월이나 2월 초에 태어나셨다면 띠가 달력과 다를 수 있습니다.
+        </p>
+        <p class="small" style="margin-top:6px">
+          ※ 태어난 시각을 넣으면 여덟 글자, 모르면 시주를 뺀 여섯 글자로 풉니다. 밤 11시 이후 출생은 다음 날로 봅니다.
+          넣으신 생일은 이 브라우저에서만 쓰이고 어디에도 저장되지 않습니다.
+        </p>
+        <div id="fx-error" class="notice warn is-hidden" role="alert"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ─────────────── 결과 ─────────────── -->
+  <div id="fx-report" class="is-hidden">
+    <hr class="divider">
+
+    <section>
+      <div class="wrap">
+        <div class="card ilju-hero">
+          <div>
+            <div class="ilju-seal" id="fx-seal"></div>
+            <div class="ilju-title">
+              <span class="eyebrow" id="fx-person">2027 정미년</span>
+              <b id="fx-day">병인 일주</b>
+              <span id="fx-day-sub"></span>
+            </div>
+          </div>
+          <div>
+            <p class="eyebrow">2027 · 丁未 · 붉은 양의 해</p>
+            <h2 id="fx-title"></h2>
+            <p class="lead" id="fx-overall"></p>
+            <div class="fx-score" id="fx-score" style="margin-top:14px"></div>
+          </div>
+        </div>
+        <div id="fx-notes"></div>
+      </div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Four Pillars</p>
+          <h2>나의 사주 여덟 글자</h2>
+          <p class="lead">오른쪽부터 태어난 해 · 달 · 날 · 시입니다. 가운데 굵게 표시한 날의 천간이 '나'입니다.</p>
+        </div>
+        <div class="card">
+          <div class="fx-pillars" id="fx-pillars"></div>
+        </div>
+        <div class="grid grid-2" style="margin-top:16px">
+          <div class="card">
+            <h3>오행 분포</h3>
+            <div id="fx-elems"></div>
+          </div>
+          <div class="card tone-green">
+            <h3 id="fx-strength-title">사주의 힘</h3>
+            <p id="fx-strength" style="margin:0 0 12px"></p>
+            <p class="eyebrow" style="margin-bottom:4px">보태면 좋은 기운</p>
+            <p id="fx-fav" style="margin:0"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">2027 Meets Your Saju</p>
+          <h2>2027년이 내 사주에 들어오는 방식</h2>
+        </div>
+        <div class="grid grid-3" id="fx-meet"></div>
+        <div class="card" style="margin-top:16px">
+          <h3>원국과 정미(丁未)의 만남</h3>
+          <ul class="point-list" id="fx-rel"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">By Area</p>
+          <h2>분야별 2027 운세</h2>
+        </div>
+        <div class="grid grid-2x2" id="fx-areas"></div>
+        <div class="card tone-blue" style="margin-top:16px">
+          <h3>몸과 컨디션</h3>
+          <p id="fx-health" style="margin:0"></p>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Month by Month</p>
+          <h2>열두 달 흐름</h2>
+          <p class="lead">달의 경계는 절기입니다. 2027년 입춘(2월 4일)부터 2028년 입춘 전날까지를 2027년으로 봅니다.</p>
+        </div>
+        <div class="card">
+          <div class="fx-months" id="fx-months"></div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Lucky Charms</p>
+          <h2>2027 행운의 기운</h2>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="fx-lucky" id="fx-lucky"></div>
+          </div>
+          <div class="card">
+            <h3>행운의 원석</h3>
+            <div id="fx-stones"></div>
+            <p class="small" style="margin:12px 0 0" id="fx-ring"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="wrap center">
+        <div class="card" style="padding-block:34px">
+          <p class="eyebrow">ONMYEONG</p>
+          <h2 style="max-width:36ch;margin-inline:auto" id="fx-closing">한 해의 기운을 손끝에 두세요.</h2>
+          <div class="btn-row no-print" style="justify-content:center;margin-top:20px">
+            <a class="btn btn-primary" id="fx-go-ring" href="./">이 사주에 어울리는 반지 보기</a>
+            <button class="btn" type="button" id="fx-copy">결과 링크 복사</button>
+            <button class="btn" type="button" onclick="window.print()">인쇄</button>
+          </div>
+          <p class="small" style="margin-top:18px">
+            신년운세는 사주 여덟 글자와 2027년 세운(歲運)의 관계만 본 것으로, 대운(大運)은 반영하지 않았습니다.
+            전통 명리 자료를 바탕으로 한 참고용 콘텐츠로 봐 주세요.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>© ONMYEONG · 온명 반지공방 · <a href="refund.html">환불 정책</a></span>
+    <span>사주 해석은 전통 명리 자료를 바탕으로 한 참고용 콘텐츠입니다.</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/ilju-data.js"></script>
+<script src="assets/js/zodiac.js"></script>
+<script src="assets/js/stones.js"></script>
+<script src="assets/js/saju.js"></script>
+<script src="assets/js/saju-full.js"></script>
+<script src="assets/js/fortune-2027.js"></script>
+<script src="assets/js/fortune-page.js"></script>
+</body>
+</html>

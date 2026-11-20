@@ -1136,3 +1136,59 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink, #222);
   user-select: all;
 }
+
+/* ── 2027 신년운세 ─────────────────────────────────────── */
+.fx-score { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fx-score .small:first-child { margin-right: 4px; }
+.fx-score .small:last-child { margin-left: 6px; }
+.fx-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--accent); background: transparent; display: inline-block; }
+.fx-dot.on { background: var(--accent); }
+.fx-dot.half { background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); }
+.fx-dot.sm { width: 10px; height: 10px; }
+
+.fx-pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; text-align: center; }
+.fx-col { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: var(--radius); background: var(--paper-2); }
+.fx-col.me { background: var(--accent-tint); outline: 2px solid var(--accent); }
+.fx-col.empty { opacity: .55; }
+.fx-role { font-size: .78rem; color: var(--muted); letter-spacing: .08em; }
+.fx-god { font-size: .76rem; color: var(--body); }
+.fx-char { width: 100%; max-width: 92px; aspect-ratio: 1; border-radius: var(--radius); display: grid; place-content: center; gap: 2px;
+  background: var(--paper); border: 1px solid var(--line); font-family: var(--serif); }
+.fx-char b { font-size: 2rem; line-height: 1; }
+.fx-char span { font-size: .72rem; font-family: var(--sans); color: var(--muted); }
+.fx-char.mok b { color: var(--mok); } .fx-char.hwa b { color: var(--hwa); } .fx-char.to b { color: var(--to); }
+.fx-char.geum b { color: var(--geum); } .fx-char.su b { color: var(--su); }
+.fx-char.mok { border-color: color-mix(in srgb, var(--mok) 35%, var(--paper)); }
+.fx-char.hwa { border-color: color-mix(in srgb, var(--hwa) 35%, var(--paper)); }
+.fx-char.to { border-color: color-mix(in srgb, var(--to) 35%, var(--paper)); }
+.fx-char.geum { border-color: color-mix(in srgb, var(--geum) 35%, var(--paper)); }
+.fx-char.su { border-color: color-mix(in srgb, var(--su) 35%, var(--paper)); }
+.fx-col.me .fx-char:first-of-type { box-shadow: 0 0 0 2px var(--accent); }
+
+.fx-bar { display: grid; grid-template-columns: 74px 1fr 78px; align-items: center; gap: 10px; margin: 8px 0; }
+.fx-track { height: 10px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
+.fx-track i { display: block; height: 100%; border-radius: 999px; }
+.fx-track i.mok { background: var(--mok); } .fx-track i.hwa { background: var(--hwa); } .fx-track i.to { background: var(--to); }
+.fx-track i.geum { background: var(--geum); } .fx-track i.su { background: var(--su); }
+
+.fx-months { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+.fx-month { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+.fx-mhead { display: flex; align-items: baseline; gap: 8px; }
+.fx-mhead b { font-family: var(--serif); font-size: 1.1rem; }
+.fx-mpillar { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.fx-mscore { display: flex; gap: 4px; align-items: center; }
+.fx-mline { grid-column: 1 / -1; margin: 2px 0 0; font-size: .92rem; }
+
+.fx-dl { display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px; margin: 0; }
+.fx-dl dt { color: var(--muted); font-size: .86rem; }
+.fx-dl dd { margin: 0; }
+
+.fx-promo { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-top: 18px; }
+.fx-promo p { margin: 4px 0 0; }
+
+@media (max-width: 720px) {
+  .fx-pillars { gap: 6px; }
+  .fx-char b { font-size: 1.5rem; }
+  .fx-months { grid-template-columns: 1fr; }
+  .fx-bar { grid-template-columns: 64px 1fr 70px; }
+}
