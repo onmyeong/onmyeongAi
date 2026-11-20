@@ -51,7 +51,25 @@
 
   M.onChange = function (fn) { M.listeners.push(fn); };
 
+  /* 로그인에서 돌아왔는데 실패했다면, 주소에 실린 이유를 화면 위쪽에 보여 줍니다 */
+  function showAuthError() {
+    var u, msg;
+    try { u = new URL(global.location.href); } catch (e) { return; }
+    var h = new URLSearchParams((u.hash || '').replace(/^#/, ''));
+    msg = u.searchParams.get('error_description') || h.get('error_description') ||
+      u.searchParams.get('error') || h.get('error');
+    if (!msg) return;
+    var bar = doc.createElement('div');
+    bar.className = 'notice warn';
+    bar.style.cssText = 'margin:0;border-radius:0;text-align:center';
+    bar.textContent = '로그인하지 못했어요 — ' + decodeURIComponent(msg.replace(/\+/g, ' '));
+    doc.body.insertBefore(bar, doc.body.firstChild);
+    ['error', 'error_code', 'error_description'].forEach(function (k) { u.searchParams.delete(k); });
+    global.history.replaceState(null, '', u.pathname + (u.search || ''));
+  }
+
   M.ready = !M.enabled ? Promise.resolve(null) : M.client.auth.getSession().then(function (r) {
+    if (r.error) M.lastError = r.error.message;
     M.user = r.data && r.data.session ? r.data.session.user : null;
     return loadProfile();
   }).then(function () {
@@ -63,9 +81,10 @@
         global.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
       }
     } catch (e) { /* 무시 */ }
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', showAuthError); else showAuthError();
     emit();
     return M.user;
-  }).catch(function () { emit(); return null; });
+  }).catch(function () { showAuthError(); emit(); return null; });
 
   if (M.enabled) {
     M.client.auth.onAuthStateChange(function (event, session) {
