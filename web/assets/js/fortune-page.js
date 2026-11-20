@@ -401,7 +401,8 @@
     x.fillStyle = col.solid; x.beginPath(); x.arc(W / 2, 470, 120, 0, Math.PI * 2); x.fill();
     if (icon) x.drawImage(icon, W / 2 - 92, 470 - 92, 184, 184);
     else { x.fillStyle = '#fff'; x.font = '700 92px ' + SERIF; x.fillText(day.hanja, W / 2, 500); }
-    x.fillStyle = '#252D30'; x.font = '600 40px ' + SERIF; x.fillText(day.id + ' 일주' + (rec && ONM.iljuPhrase ? ' · ' + ONM.iljuPhrase(rec) : ''), W / 2, 670);
+    x.fillStyle = '#252D30'; x.font = '700 44px ' + SERIF; x.fillText(day.hanja + '  ' + day.id + ' 일주', W / 2, 660);
+    if (rec && ONM.iljuPhrase) { x.fillStyle = '#626A6D'; x.font = '500 32px ' + SANS; x.fillText(ONM.iljuPhrase(rec), W / 2, 712); }
     // 한 해 제목
     // 마지막 줄에 한두 글자만 남지 않도록 글자 크기를 조금씩 줄여 봅니다
     var size = 62, lines;
@@ -411,7 +412,7 @@
       size -= 4;
     } while (size >= 46 && lines.length > 1 && lines[lines.length - 1].length <= 2);
     x.fillStyle = col.ink || '#252D30';
-    var y = 800;
+    var y = 830;
     lines.forEach(function (l) { x.fillText(l, W / 2, y); y += Math.round((size + 4) * 1.3); });
     // 점수
     y += 20;
@@ -486,7 +487,13 @@
       '<p class="sub">' + esc(s.pillars.day.id + '(' + s.pillars.day.hanja + ') 일주') + '</p>' +
       '<div class="pillars">' + cols.map(function (c) {
         var p = c[1];
-        return '<div><span>' + c[0] + '주</span><b>' + (p ? p.hanja[0] : '·') + '</b><b>' + (p ? p.hanja[1] : '·') + '</b></div>';
+        if (!p) return '<div class="none"><span>' + c[0] + '주</span><i class="ico"></i><b>시각 모름</b></div>';
+        // 동물 아이콘이 먼저 — 그 아래에 한자와 한글
+        var rec = ONM.ILJU[p.id];
+        var bg = rec && ONM.zodiacColor ? ONM.zodiacColor(rec).solid : '#364D50';
+        return '<div' + (p.role === '일주' ? ' class="me"' : '') + '><span>' + c[0] + '주' + (p.role === '일주' ? ' · 나' : '') + '</span>' +
+          '<i class="ico" style="background:' + bg + '">' + (ONM.zodiacSvg ? ONM.zodiacSvg(p.branch) : '') + '</i>' +
+          '<b>' + p.hanja + '</b><em>' + p.id + ' · ' + p.animal + '</em></div>';
       }).join('') + '</div>' +
       '<h2>' + esc(f.story.title) + '</h2>' +
       '<p>' + esc(firstTwo) + '</p>' +

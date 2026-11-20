@@ -1225,9 +1225,16 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 .fx-sheet-page h1 { font-family: var(--serif); font-size: 18pt; margin: 5mm 0 0; text-align: center; }
 .fx-sheet-page .sub { text-align: center; margin: 1mm 0 4mm; color: #626A6D; }
 .fx-sheet-page .pillars { display: flex; justify-content: center; gap: 4mm; margin-bottom: 4mm; }
-.fx-sheet-page .pillars div { display: flex; flex-direction: column; align-items: center; border: 1px solid #D3D6D1; border-radius: 3mm; padding: 2mm 3mm; min-width: 14mm; }
+.fx-sheet-page .pillars div { display: flex; flex-direction: column; align-items: center; gap: 1mm; border: 1px solid #D3D6D1; border-radius: 3mm; padding: 2mm 2.5mm; min-width: 21mm; }
+.fx-sheet-page .pillars div.me { border-color: #252D30; border-width: 1.5px; }
+.fx-sheet-page .pillars div.none { opacity: .5; }
 .fx-sheet-page .pillars span { font-size: 7pt; color: #626A6D; }
-.fx-sheet-page .pillars b { font-family: var(--serif); font-size: 15pt; line-height: 1.2; }
+.fx-sheet-page .pillars .ico { width: 13mm; height: 13mm; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #E3E5E1;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.fx-sheet-page .pillars .ico > svg, .fx-sheet-page .pillars .ico > .zodiac-img { width: 70%; height: 70%; }
+.fx-sheet-page .pillars .ico .zodiac-img { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.fx-sheet-page .pillars b { font-family: var(--serif); font-size: 11pt; line-height: 1.2; }
+.fx-sheet-page .pillars em { font-style: normal; font-size: 7pt; color: #465054; }
 .fx-sheet-page h2 { font-family: var(--serif); font-size: 13pt; margin: 3mm 0 1mm; text-align: center; }
 .fx-sheet-page h3 { font-size: 8.5pt; margin: 3mm 0 .5mm; color: #364D50; letter-spacing: .04em; }
 .fx-sheet-page p { margin: 0; }
