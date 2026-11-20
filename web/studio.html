@@ -177,6 +177,8 @@
             <button class="btn btn-sm" type="button" data-tool="erase" aria-pressed="false">도안 지우기</button>
             <button class="btn btn-sm" type="button" data-tool="stone" aria-pressed="false">알 놓기</button>
             <button class="btn btn-sm" type="button" data-tool="star" aria-pressed="false">별 조각</button>
+            <button class="btn btn-sm" type="button" data-tool="pierce" aria-pressed="false">구멍 뚫기</button>
+            <button class="btn btn-sm" type="button" data-tool="dent" aria-pressed="false">움푹 파기</button>
             <button class="btn btn-sm" type="button" data-tool="draw" aria-pressed="false">그리기</button>
             <button class="btn btn-sm" type="button" data-tool="unpaint" aria-pressed="false">그린 선 지우기</button>
           </div>
@@ -189,6 +191,21 @@
             <p class="small" style="margin:2px 0 0">
               반지 위에 그대로 그으면 검정으로 칠해집니다. 파는 것이 아니라 겉면에 입히는 그림이라,
               글씨나 그림을 자유롭게 그릴 수 있습니다.
+            </p>
+          </div>
+          <div class="field is-hidden" id="f-hole" style="margin-top:12px">
+            <label for="c-holesize">모양과 크기 — 새로 낼 자리</label>
+            <div class="tool-row" id="hole-shape" style="margin-bottom:8px">
+              <button class="btn btn-sm" type="button" data-shape="circle" aria-pressed="false">원형</button>
+              <button class="btn btn-sm" type="button" data-shape="oval" aria-pressed="true">타원형</button>
+            </div>
+            <div class="slider-row">
+              <input id="c-holesize" type="range" min="1.5" max="9" step="0.5" value="4">
+              <output id="o-holesize">4.0 mm</output>
+            </div>
+            <p class="small" style="margin:2px 0 0">
+              반지를 짚으면 그 자리에 생기고, 이미 낸 자리를 다시 짚으면 메워집니다.
+              타원은 둘레를 따라 길게 눕고, 폭이 좁으면 가장자리 살을 남기도록 알아서 줄어듭니다.
             </p>
           </div>
           <div class="field is-hidden" id="f-starsize" style="margin-top:12px">

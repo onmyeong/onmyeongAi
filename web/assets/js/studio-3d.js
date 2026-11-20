@@ -350,7 +350,8 @@ function signetHull(innerR, t, size) {
   return fn;
 }
 const ENGRAVE_DEPTH = 0.3;  // 도안을 가장 깊게 팠을 때의 깊이 (두께 대비)
-const STAR_DEPTH = 0.3;   // 별 조각 한가운데의 깊이 (두께 대비)
+const STAR_DEPTH = 0.3;
+const DENT_DEPTH = 0.5;  // 움푹 파기 가장 깊은 곳 (두께 대비)   // 별 조각 한가운데의 깊이 (두께 대비)
 const EPOXY_HALF = 0.075;  // 홈 하나의 폭(반지 폭 대비 절반값) — 실물처럼 가늘게
 const EPOXY_DEPTH = 0.2;   // 홈 깊이 (두께 대비)
 
@@ -362,6 +363,157 @@ function epoxyArc(s, th) {
   let d = Math.abs(th - Math.PI / 2);
   if (d > Math.PI) d = Math.PI * 2 - d;
   return d <= Math.PI * ratio;
+}
+
+/* ─────────────────── 구멍 뚫기 ───────────────────
+ * 밴드 그물(둘레 SEG 줄 × 단면 P 점)에 진짜 구멍을 냅니다.
+ *  1) 구멍 테두리에 걸친 점들을 테두리(타원) 위로 옮겨 윤곽을 매끈하게 하고
+ *  2) 구멍 안쪽 삼각형을 걷어 낸 뒤
+ *  3) 바깥 면 테두리와 안쪽 면 테두리를 벽으로 이어 막습니다.
+ * 바깥 면 점과 안쪽 면 점은 같은 (둘레, 폭) 자리에 짝지어 있어서 벽이 정확히 맞물립니다.
+ * 좌표: i = 둘레 줄 번호, k = 폭 칸 번호(0 ~ n). 안쪽 면 j = k, 바깥 면 j = 2n+1-k. */
+function pierceHoles(o) {
+  const { pierces, pos, uv, depth, SEG, P, Rref, width } = o;
+  const n = P / 2 - 1;
+  const N = SEG * P;
+  const orig = pos.slice();
+  const pi = new Float32Array(N), pk = new Float32Array(N);
+  const snapped = new Uint8Array(N);
+  for (let i = 0; i < SEG; i++) for (let j = 0; j < P; j++) {
+    pi[i * P + j] = i;
+    pk[i * P + j] = j <= n ? j : 2 * n + 1 - j;
+  }
+  const H = pierces.map((h) => ({
+    ic: ((h.rad / (Math.PI * 2)) * SEG % SEG + SEG) % SEG,
+    kc: (h.v + 0.5) * n,
+    ai: h.a / Rref / (Math.PI * 2) * SEG,
+    bk: h.b / width * n
+  }));
+  const wrapD = (d) => { d %= SEG; if (d > SEG / 2) d -= SEG; else if (d < -SEG / 2) d += SEG; return d; };
+  const eOf = (h, i, k) => Math.hypot(wrapD(i - h.ic) / h.ai, (k - h.kc) / h.bk);
+  const idxOf = (i, j) => (((i % SEG) + SEG) % SEG) * P + j;
+
+  // 그물 위 임의 자리의 점 (원래 위치를 겹선형으로 읽음)
+  function surf(outer, iF, kF, out) {
+    iF = ((iF % SEG) + SEG) % SEG;
+    const i0 = Math.floor(iF), fi = iF - i0, i1 = (i0 + 1) % SEG;
+    kF = Math.max(0, Math.min(n, kF));
+    const k0 = Math.min(n - 1, Math.floor(kF)), fk = kF - k0, k1 = k0 + 1;
+    const jj = (k) => outer ? 2 * n + 1 - k : k;
+    for (let c = 0; c < 3; c++) {
+      const a = orig[(i0 * P + jj(k0)) * 3 + c], b = orig[(i0 * P + jj(k1)) * 3 + c];
+      const d = orig[(i1 * P + jj(k0)) * 3 + c], e = orig[(i1 * P + jj(k1)) * 3 + c];
+      out[c] = (a * (1 - fk) + b * fk) * (1 - fi) + (d * (1 - fk) + e * fk) * fi;
+    }
+    return out;
+  }
+
+  // 1) 테두리에 걸친 점을 타원 위로
+  const tmp = [0, 0, 0];
+  H.forEach((h) => {
+    const ri = Math.ceil(h.ai) + 2;
+    for (let di = -ri; di <= ri; di++) {
+      const i = Math.round(h.ic) + di;
+      for (let k = 0; k <= n; k++) {
+        const e = eOf(h, i, k);
+        if (e >= 1) continue;
+        // 대각선 이웃까지 봅니다 — 삼각형이 대각선으로 이어져 있어서입니다
+        let edge = false;
+        for (let a = -1; a <= 1 && !edge; a++) for (let c = -1; c <= 1; c++) {
+          if ((a || c) && k + c >= 0 && k + c <= n && eOf(h, i + a, k + c) >= 1) { edge = true; break; }
+        }
+        if (!edge || e < 1e-4) continue;
+        const iN = h.ic + wrapD(i - h.ic) / e, kN = h.kc + (k - h.kc) / e;
+        [false, true].forEach((outer) => {
+          const v = idxOf(i, outer ? 2 * n + 1 - k : k);
+          surf(outer, iN, kN, tmp);
+          pos[v * 3] = tmp[0]; pos[v * 3 + 1] = tmp[1]; pos[v * 3 + 2] = tmp[2];
+          pi[v] = iN; pk[v] = kN; snapped[v] = 1;
+        });
+      }
+    }
+  });
+
+  // 2) 구멍 안 삼각형 걷어 내기 — 세 꼭짓점 평균 자리가 타원 안이면 뺍니다
+  function inside(a, b, c) {
+    for (let q = 0; q < H.length; q++) {
+      const h = H[q];
+      const di = (wrapD(pi[a] - h.ic) + wrapD(pi[b] - h.ic) + wrapD(pi[c] - h.ic)) / 3;
+      const dk = (pk[a] + pk[b] + pk[c]) / 3 - h.kc;
+      if (Math.hypot(di / h.ai, dk / h.bk) < 0.999) return true;
+    }
+    return false;
+  }
+  const isOuter = (v) => (v % P) > n;
+  function filter(arr) {
+    const keep = [];
+    for (let f = 0; f < arr.length; f += 3) {
+      const a = arr[f], b = arr[f + 1], c = arr[f + 2];
+      const same = isOuter(a) === isOuter(b) && isOuter(b) === isOuter(c);
+      if (same && inside(a, b, c)) continue;
+      keep.push(a, b, c);
+    }
+    return keep;
+  }
+  const plain = filter(o.plain), matte = filter(o.matte);
+
+  // 3) 바깥 면 테두리 변 찾기 (한 삼각형에만 속한 변)
+  const count = new Map();
+  [plain, matte].forEach((arr) => {
+    for (let f = 0; f < arr.length; f += 3) {
+      const t3 = [arr[f], arr[f + 1], arr[f + 2]];
+      if (!isOuter(t3[0]) || !isOuter(t3[1]) || !isOuter(t3[2])) continue;
+      for (let e = 0; e < 3; e++) {
+        const a = t3[e], b = t3[(e + 1) % 3];
+        if (!snapped[a] || !snapped[b]) continue;
+        const key = a < b ? a * N + b : b * N + a;
+        const c = count.get(key);
+        count.set(key, c ? { n: c.n + 1, a, b } : { n: 1, a, b });
+      }
+    }
+  });
+  const walls = [];
+  count.forEach((c) => { if (c.n === 1) walls.push([c.a, c.b]); });
+
+  const extra = walls.length * 4;
+  const pos2 = new Float32Array((N + extra) * 3); pos2.set(pos);
+  const uv2 = new Float32Array((N + extra) * 2); uv2.set(uv);
+  const depth2 = new Float32Array(N + extra); depth2.set(depth);
+  let nv = N;
+  const inner = (v) => Math.floor(v / P) * P + (2 * n + 1 - (v % P));
+  const cOut = [0, 0, 0], cIn = [0, 0, 0];
+  /* 벽 점은 이웃 벽끼리 나눠 써야 구멍 둘레가 매끈하게 빛납니다.
+   * (겉면과는 따로 두어 테두리 모서리는 또렷하게 남깁니다) */
+  const copyOf = new Map();
+  const wallVert = (v) => {
+    let id = copyOf.get(v);
+    if (id !== undefined) return id;
+    id = nv++;
+    pos2[id * 3] = pos[v * 3]; pos2[id * 3 + 1] = pos[v * 3 + 1]; pos2[id * 3 + 2] = pos[v * 3 + 2];
+    uv2[id * 2] = uv[v * 2]; uv2[id * 2 + 1] = uv[v * 2 + 1];
+    copyOf.set(v, id);
+    return id;
+  };
+  walls.forEach(([a, b]) => {
+    const quad = [b, a, inner(a), inner(b)];
+    const ids = quad.map(wallVert);
+    // 벽의 앞면이 구멍 가운데를 보도록 감는 방향을 맞춥니다
+    const P0 = quad.map((v) => [pos[v * 3], pos[v * 3 + 1], pos[v * 3 + 2]]);
+    const ux = P0[1][0] - P0[0][0], uy = P0[1][1] - P0[0][1], uz = P0[1][2] - P0[0][2];
+    const vx = P0[2][0] - P0[0][0], vy = P0[2][1] - P0[0][1], vz = P0[2][2] - P0[0][2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    // 이 벽이 속한 구멍의 가운데 (두 면 사이 한가운데)
+    let best = H[0], bd = Infinity;
+    H.forEach((h) => { const d = eOf(h, pi[a], pk[a]); if (Math.abs(d - 1) < bd) { bd = Math.abs(d - 1); best = h; } });
+    surf(true, best.ic, best.kc, cOut); surf(false, best.ic, best.kc, cIn);
+    const mx = (P0[0][0] + P0[1][0] + P0[2][0] + P0[3][0]) / 4;
+    const my = (P0[0][1] + P0[1][1] + P0[2][1] + P0[3][1]) / 4;
+    const mz = (P0[0][2] + P0[1][2] + P0[2][2] + P0[3][2]) / 4;
+    const tx = (cOut[0] + cIn[0]) / 2 - mx, ty = (cOut[1] + cIn[1]) / 2 - my, tz = (cOut[2] + cIn[2]) / 2 - mz;
+    if (nx * tx + ny * ty + nz * tz >= 0) plain.push(ids[0], ids[1], ids[2], ids[0], ids[2], ids[3]);
+    else plain.push(ids[0], ids[2], ids[1], ids[0], ids[3], ids[2]);
+  });
+  return { pos: pos2.subarray(0, nv * 3), uv: uv2.subarray(0, nv * 2), depth: depth2.subarray(0, nv), plain, matte };
 }
 
 function buildBand(s, model) {
@@ -379,7 +531,7 @@ function buildBand(s, model) {
   // 결이 잔 무늬는 줄이 성기면 계단처럼 끊겨 보입니다
   const bandDense = bandKind === 'bark' || bandKind === 'block' || bandKind === 'rope' || bandKind === 'hammer' ||
     (model && (model.shoulder === 'tick' || model.band === 'stud'));
-  const fine = !!s.engrave || !!s.stars || sparkle || !!bandKind || !!(model && model.shoulder);
+  const fine = !!s.engrave || !!s.stars || !!s.holes || sparkle || !!bandKind || !!(model && model.shoulder);
   const SEG = (sparkle || bandDense) ? 720 : fine ? 560 : 320;
   const profile = makeProfile(s, sparkle ? 54 : fine ? 46 : PROFILE_STEPS);
   const P = profile.length;
@@ -396,6 +548,17 @@ function buildBand(s, model) {
     rad: Math.PI / 2 + (Number(st.angle) || 0) * Math.PI / 180,
     size: st.size
   }));
+  /* 구멍 · 움푹 파기 — 둘레 방향 반지름 a, 폭 방향 반지름 b (mm).
+   * 타원은 둘레를 따라 길게 눕습니다. 가장자리에는 0.45mm 이상 살을 남깁니다. */
+  const holes = R.holeList(s).map((h) => {
+    const a = h.size / 2;
+    let b = h.shape === 'circle' ? a : a * 0.62;
+    const room = (0.5 - Math.abs(h.v)) * s.width - 0.45;
+    b = Math.max(0.3, Math.min(b, room));
+    return { kind: h.kind, rad: Math.PI / 2 + h.angle * Math.PI / 180, v: h.v, a, b };
+  });
+  const dents = holes.filter((h) => h.kind === 'dent');
+  const pierces = holes.filter((h) => h.kind === 'pierce');
   const isSignet = s.profile === 'signet';
   const plateSize = Math.max(0.5, Math.min(1.5, Number(s.plateSize) || 1));
   // 판 바깥면이 놓일 높이 — 이 높이에 평평하게 맞춥니다
@@ -542,6 +705,18 @@ function buildBand(s, model) {
               u -= cut;
               carved += cut;
             }
+          }
+        }
+        /* 움푹 파기 — 숟가락으로 떠낸 듯 가운데가 가장 깊고 둘레로 부드럽게 올라옵니다.
+         * 바닥은 두께의 반 이상 남겨 반지가 힘을 받습니다. */
+        if (dents.length) {
+          const vN = profile[j].v / Math.max(0.001, s.width);
+          for (let q = 0; q < dents.length; q++) {
+            const h = dents[q];
+            let dth = th - h.rad;
+            if (dth > Math.PI) dth -= Math.PI * 2; else if (dth < -Math.PI) dth += Math.PI * 2;
+            const e = Math.hypot(dth * (innerR + t) / h.a, (vN - h.v) * s.width / h.b);
+            if (e < 1) u -= DENT_DEPTH * t * tRatio * (0.5 + 0.5 * Math.cos(Math.PI * e));
           }
         }
         /* 손으로 그린 도안 — 그 자리만 파고 들어갑니다.
@@ -813,18 +988,25 @@ function buildBand(s, model) {
       box.push(a, b, c, b, d, c);
     }
   }
+  let posOut = pos, uvOut = uv, depthOut = depth;
+  if (pierces.length) {
+    const cut = pierceHoles({ pierces, pos, uv, depth, plain, matte, SEG, P, Rref: innerR + t / 2, width: s.width });
+    posOut = cut.pos; uvOut = cut.uv; depthOut = cut.depth;
+    plain.length = 0; for (let q = 0; q < cut.plain.length; q++) plain.push(cut.plain[q]);
+    matte.length = 0; for (let q = 0; q < cut.matte.length; q++) matte.push(cut.matte[q]);
+  }
   const idx = plain.concat(matte);
 
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geo.setAttribute('position', new THREE.BufferAttribute(posOut, 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvOut, 2));
   geo.setIndex(idx);
   geo.computeVertexNormals();
 
   // 가장 깊게 파인 곳을 1로 두고 0~1로 정규화해 둔다
   let maxCarve = 0;
-  for (let i = 0; i < depth.length; i++) if (depth[i] > maxCarve) maxCarve = depth[i];
-  geo.userData.depth = depth;
+  for (let i = 0; i < depthOut.length; i++) if (depthOut[i] > maxCarve) maxCarve = depthOut[i];
+  geo.userData.depth = depthOut;
   geo.userData.maxCarve = maxCarve;
   // 0번 무리 = 원래 마감, 1번 무리 = 손으로 칠한 부분 무광
   geo.addGroup(0, plain.length, 0);
@@ -1715,7 +1897,7 @@ let viewTurn = 0;
 // 지금 화면을 짚고 있는 손가락(포인터)들 — 두 손가락이 닿으면 붓질 대신 돌리기로 넘깁니다
 const activePointers = new Set();
 // 붓질을 시작할 때의 다듬기 값 — 두 번째 손가락이 닿으면 이걸로 되돌립니다
-const STROKE_KEYS = ['sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'matteMap', 'engrave', 'draw', 'stars', 'stoneAt'];
+const STROKE_KEYS = ['sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'matteMap', 'engrave', 'draw', 'stars', 'holes', 'stoneAt'];
 let strokeBefore = null;
 let sculpting = null;
 
@@ -1744,6 +1926,8 @@ const TOOLS = {
   // 아래 둘은 짚는 도구입니다 — 짚은 자리에 놓이고, 놓인 것을 다시 짚으면 빠집니다
   stone:   { click: true, label: '알 놓기' },
   star:    { click: true, label: '별 조각', star: true },
+  pierce:  { click: true, label: '구멍 뚫기', hole: 'pierce' },
+  dent:    { click: true, label: '움푹 파기', hole: 'dent' },
   // 그리기는 파지 않습니다 — 겉면에 검게 칠하는 층입니다
   draw:    { paint: true, label: '그리기' },
   unpaint: { click: true, label: '그린 선 지우기', wipeDraw: true }
@@ -2010,6 +2194,30 @@ function starToggle(angle) {
   return true;
 }
 
+/** 짚은 자리에 구멍(뚫기 · 파기)을 내거나, 이미 낸 자리를 짚으면 메웁니다 */
+function holeToggle(pt, kind) {
+  if (pt.v === null) return false;              // 반지를 정확히 짚었을 때만
+  const deg = Math.round(fold((pt.angle - Math.PI / 2) * 180 / Math.PI));
+  const innerR = R.sizeToInnerDiameter(spec.size) / 2;
+  const R0 = innerR + spec.thickness;
+  const list = R.holeList(spec);
+  for (let i = 0; i < list.length; i++) {
+    const h = list[i];
+    const dx = fold(h.angle - deg) * Math.PI / 180 * R0;
+    const dy = (h.v - pt.v) * spec.width;
+    if (Math.hypot(dx, dy) < Math.max(1.2, h.size / 2)) {
+      list.splice(i, 1);
+      spec.holes = R.holeWrite(list);
+      return true;
+    }
+  }
+  if (list.length >= 12) return false;
+  list.push({ kind, shape: spec.holeShape === 'circle' ? 'circle' : 'oval', angle: deg,
+    v: Math.max(-0.4, Math.min(0.4, pt.v)), size: Number(spec.holeSize) || 4 });
+  spec.holes = R.holeWrite(list);
+  return true;
+}
+
 /** 짚은 자리에 알을 놓거나, 이미 놓인 알을 뺍니다 */
 function stoneToggle(angle) {
   const deg = Math.round(fold((angle - Math.PI / 2) * 180 / Math.PI));
@@ -2065,6 +2273,7 @@ function bindSculpt() {
     // 알 놓기 · 별 조각 · 그린 선 지우기는 끌지 않고 한 번 짚는 도구입니다
     if (tool.click) {
       const done = tool.wipeDraw ? drawErase(pt)
+        : tool.hole ? holeToggle(pt, tool.hole)
         : tool.star ? starToggle(pt.angle) : stoneToggle(pt.angle);
       if (done) studio.changed();
       return;
@@ -2263,6 +2472,7 @@ try {
     });
     spec.stoneAt = '';
     spec.stars = '';
+    spec.holes = '';
     spec.draw = '';
     studio.changed();
   };

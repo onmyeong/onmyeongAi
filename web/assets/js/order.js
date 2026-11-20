@@ -186,6 +186,14 @@
       bits.push('별 조각 ' + st.length + '개 ' +
         st.map(function (x) { return x.size.toFixed(1); }).join('·') + 'mm');
     }
+    // 디자인에 원래 있는 구멍·파기는 손댄 것으로 치지 않습니다
+    var mdl = R.getModel(sp.modelId);
+    if (sp.holes && !(mdl && mdl.preset && mdl.preset.holes === sp.holes)) {
+      var hl = R.holeList(sp);
+      var np = hl.filter(function (x) { return x.kind === 'pierce'; }).length;
+      if (np) bits.push('구멍 ' + np + '개');
+      if (hl.length - np) bits.push('움푹 파기 ' + (hl.length - np) + '곳');
+    }
     var dr = R.drawStrokes(sp);
     if (dr.length) bits.push('손으로 그린 그림 ' + dr.length + '획');
     return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';
