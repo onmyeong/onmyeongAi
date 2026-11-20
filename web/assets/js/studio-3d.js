@@ -317,6 +317,38 @@ function signetSwell(th, size) {
   const t = 1 - d / reach;
   return t * t * (3 - 2 * t);        // 어깨가 부드럽게 솟아오르도록
 }
+
+/* 인장 옆모습 — 판과 밴드를 '고무줄로 감싼' 모양(볼록 껍질)으로 잇습니다.
+ * 판은 평평한 윗면, 판 모서리에서 밴드까지는 곧은 어깨선이 비스듬히 내려와
+ * 머리만 얹은 것처럼 끊기지 않고 옆면이 자연스럽게 이어집니다.
+ * 돌려주는 값: 각도 th 에서 바깥면까지의 반지름 */
+function signetHull(innerR, t, size) {
+  const Rb = innerR + t;                                       // 뒤쪽 밴드 바깥 반지름
+  const plateY = innerR + t * 1.7;                             // 판 윗면 높이
+  const hw = innerR * 0.62 * size;                             // 판 너비의 절반
+  const dC = Math.hypot(hw, plateY);
+  const phiC = Math.atan2(plateY, hw);                         // 오른쪽 판 모서리 각
+  const phiT = phiC - Math.acos(Math.min(1, Rb / dC));         // 어깨선이 밴드에 닿는 각
+  const T = [Rb * Math.cos(phiT), Rb * Math.sin(phiT)];
+  const C = [hw, plateY];
+  function onLine(th, A, B) {
+    const dx = Math.cos(th), dy = Math.sin(th);
+    const ex = B[0] - A[0], ey = B[1] - A[1];
+    return (A[0] * ey - A[1] * ex) / (dx * ey - dy * ex);
+  }
+  const fn = function (th) {
+    let a = ((th % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    if (a > Math.PI * 1.5) return Rb;
+    if (a > Math.PI / 2) a = Math.PI - a;                      // 좌우 대칭
+    if (a < phiT) return Rb;
+    // 판 모서리는 칼처럼 세우지 않고 아주 살짝 굴립니다 (부드러운 최솟값)
+    const rl = onLine(a, T, C), rp = plateY / Math.sin(a), k = 0.18;
+    const m = Math.min(rl, rp);
+    return m - k * Math.log(Math.exp(-(rl - m) / k) + Math.exp(-(rp - m) / k));
+  };
+  fn.Rb = Rb; fn.plateY = plateY;
+  return fn;
+}
 const ENGRAVE_DEPTH = 0.3;  // 도안을 가장 깊게 팠을 때의 깊이 (두께 대비)
 const STAR_DEPTH = 0.3;   // 별 조각 한가운데의 깊이 (두께 대비)
 const EPOXY_HALF = 0.075;  // 홈 하나의 폭(반지 폭 대비 절반값) — 실물처럼 가늘게
@@ -367,7 +399,7 @@ function buildBand(s, model) {
   const isSignet = s.profile === 'signet';
   const plateSize = Math.max(0.5, Math.min(1.5, Number(s.plateSize) || 1));
   // 판 바깥면이 놓일 높이 — 이 높이에 평평하게 맞춥니다
-  const plateY = innerR + t * 1.5;
+  const hull = isSignet ? signetHull(innerR, t, plateSize) : null;
 
   const taper = model ? model.taper : 0;
   /* 물결(웨이브) — 둘레를 돌며 두께가 오르내려 옆에서 보면 윗선이 물결칩니다.
@@ -427,10 +459,15 @@ function buildBand(s, model) {
 
     /* 인장이면 손등 쪽만 어깨가 부풀어 판이 됩니다.
      * 뒤쪽은 가늘게 지나가므로 낀 느낌이 가볍습니다. */
-    const swell = isSignet ? signetSwell(th, plateSize) : 0;
-    if (swell > 0) {
-      wScale *= 1 + 0.95 * swell * plateSize;   // 판이 옆으로 넓어지고
-      tRatio *= 1 + 0.5 * swell;                // 두께도 같이 오릅니다
+    /* 판 쪽으로 갈수록 바깥면이 껍질을 따라 두꺼워지고, 폭도 같은 비율로 부드럽게 넓어집니다 */
+    let swell = 0;
+    if (hull) {
+      const ext = hull(th) - innerR;                       // 이 자리 바깥면까지의 두께
+      const grow = ext / t;                                // 밴드 대비 몇 배
+      tRatio *= grow;
+      swell = Math.min(1, (ext - t) / Math.max(0.01, hull.plateY - innerR - t));
+      const sw = swell * swell * (3 - 2 * swell);
+      wScale *= 1 + 0.9 * sw * plateSize;
     }
 
     // 웨이브는 안쪽으로만 들어가므로 최대 두께는 그대로 유지된다
@@ -736,17 +773,6 @@ function buildBand(s, model) {
           radius -= cut;
           carved += cut;
         }
-        /* 판은 원호를 따라 휘지 않고 한 평면 위에 평평하게 놓입니다.
-         * 각도 th 에서 그 평면까지의 거리는 plateY / sin(th) 입니다. */
-        if (swell > 0.02) {
-          const sn = Math.sin(th);
-          if (sn > 0.28) {
-            const flatR = plateY / sn;
-            const k = swell * 0.9;
-            radius = radius * (1 - k) + Math.min(flatR, radius * 1.9) * k;
-          }
-        }
-
         // 벽이 0이 되면 안쪽 면과 바깥 면이 겹쳐 반지가 뚫려 보입니다.
         // 내경을 굴린 만큼 안쪽 면이 바깥으로 나와 있으므로 그 위로 벽을 남깁니다.
         if (radius < innerR + rel + MIN_WALL) radius = innerR + rel + MIN_WALL;
