@@ -348,6 +348,9 @@
     coupleCard: coupleCard,
     lineCard: lineCard,
     download: download,
-    toFile: toFile
+    toFile: toFile,
+    tintedZodiac: tintedZodiac,
+    loadImage: loadImage,
+    svgToUrl: svgToUrl
   };
 })(typeof window !== 'undefined' ? window : globalThis);

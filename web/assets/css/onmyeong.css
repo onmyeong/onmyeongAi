@@ -1136,3 +1136,115 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--ink, #222);
   user-select: all;
 }
+
+/* ── 2027 신년운세 ─────────────────────────────────────── */
+.fx-score { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fx-score .small:first-child { margin-right: 4px; }
+.fx-score .small:last-child { margin-left: 6px; }
+.fx-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--accent); background: transparent; display: inline-block; }
+.fx-dot.on { background: var(--accent); }
+.fx-dot.half { background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); }
+.fx-dot.sm { width: 10px; height: 10px; }
+
+.fx-pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; text-align: center; }
+.fx-col { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: var(--radius); background: var(--paper-2); }
+.fx-col.me { background: var(--accent-tint); outline: 2px solid var(--accent); }
+.fx-col.empty { opacity: .55; }
+.fx-role { font-size: .78rem; color: var(--muted); letter-spacing: .08em; }
+.fx-god { font-size: .76rem; color: var(--body); }
+.fx-char { width: 100%; max-width: 92px; aspect-ratio: 1; border-radius: var(--radius); display: grid; place-content: center; gap: 2px;
+  background: var(--paper); border: 1px solid var(--line); font-family: var(--serif); }
+.fx-char b { font-size: 2rem; line-height: 1; }
+.fx-char span { font-size: .72rem; font-family: var(--sans); color: var(--muted); }
+.fx-char.mok b { color: var(--mok); } .fx-char.hwa b { color: var(--hwa); } .fx-char.to b { color: var(--to); }
+.fx-char.geum b { color: var(--geum); } .fx-char.su b { color: var(--su); }
+.fx-char.mok { border-color: color-mix(in srgb, var(--mok) 35%, var(--paper)); }
+.fx-char.hwa { border-color: color-mix(in srgb, var(--hwa) 35%, var(--paper)); }
+.fx-char.to { border-color: color-mix(in srgb, var(--to) 35%, var(--paper)); }
+.fx-char.geum { border-color: color-mix(in srgb, var(--geum) 35%, var(--paper)); }
+.fx-char.su { border-color: color-mix(in srgb, var(--su) 35%, var(--paper)); }
+.fx-col.me .fx-char:first-of-type { box-shadow: 0 0 0 2px var(--accent); }
+
+.fx-bar { display: grid; grid-template-columns: 74px 1fr 78px; align-items: center; gap: 10px; margin: 8px 0; }
+.fx-track { height: 10px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
+.fx-track i { display: block; height: 100%; border-radius: 999px; }
+.fx-track i.mok { background: var(--mok); } .fx-track i.hwa { background: var(--hwa); } .fx-track i.to { background: var(--to); }
+.fx-track i.geum { background: var(--geum); } .fx-track i.su { background: var(--su); }
+
+.fx-months { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+.fx-month { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+.fx-mhead { display: flex; align-items: baseline; gap: 8px; }
+.fx-mhead b { font-family: var(--serif); font-size: 1.1rem; }
+.fx-mpillar { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.fx-mscore { display: flex; gap: 4px; align-items: center; }
+.fx-mline { grid-column: 1 / -1; margin: 2px 0 0; font-size: .92rem; }
+
+.fx-dl { display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px; margin: 0; }
+.fx-dl dt { color: var(--muted); font-size: .86rem; }
+.fx-dl dd { margin: 0; }
+
+.fx-promo { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-top: 18px; }
+.fx-promo p { margin: 4px 0 0; }
+
+@media (max-width: 720px) {
+  .fx-pillars { gap: 6px; }
+  .fx-char b { font-size: 1.5rem; }
+  .fx-months { grid-template-columns: 1fr; }
+  .fx-bar { grid-template-columns: 64px 1fr 70px; }
+}
+
+/* 신년운세 — 대운 */
+.fx-dw { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; }
+.fx-dw-cell { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: var(--radius); background: var(--paper-2); }
+.fx-dw-cell b { font-family: var(--serif); font-size: 1.4rem; line-height: 1.1; }
+.fx-dw-cell b.mok { color: var(--mok); } .fx-dw-cell b.hwa { color: var(--hwa); } .fx-dw-cell b.to { color: var(--to); }
+.fx-dw-cell b.geum { color: var(--geum); } .fx-dw-cell b.su { color: var(--su); }
+.fx-dw-cell.now { background: var(--accent-tint); outline: 2px solid var(--accent); }
+.fx-now { position: absolute; top: -10px; font-size: .68rem; background: var(--accent); color: #fff; padding: 1px 7px; border-radius: 999px; }
+
+/* 신년운세 — 커플 월별 */
+.fx-cm-head, .fx-cm-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; align-items: center; padding: 8px 0; }
+.fx-cm-head { font-size: .82rem; color: var(--muted); border-bottom: 1px solid var(--line); }
+.fx-cm-row { border-bottom: 1px solid var(--line-soft); }
+.fx-cm-row > span:not(:first-child) { display: flex; gap: 4px; }
+
+@media (max-width: 720px) {
+  .fx-dw { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px 6px; }
+}
+
+/* 신년운세 — 매장 출력용 한 장 (A5) */
+#fx-sheet { display: none; }
+@media print {
+  body.fx-print-sheet > *:not(#fx-sheet) { display: none !important; }
+  body.fx-print-sheet { background: #fff; }
+  body.fx-print-sheet #fx-sheet { display: block; }
+}
+.fx-sheet-page { font-family: var(--sans); color: #252D30; page-break-after: always; break-after: page; font-size: 9.5pt; line-height: 1.55; }
+.fx-sheet-page:last-child { page-break-after: auto; break-after: auto; }
+.fx-sheet-page header { display: flex; justify-content: space-between; font-size: 7.5pt; letter-spacing: .08em; color: #626A6D; border-bottom: 1px solid #D3D6D1; padding-bottom: 4mm; }
+.fx-sheet-page h1 { font-family: var(--serif); font-size: 18pt; margin: 5mm 0 0; text-align: center; }
+.fx-sheet-page .sub { text-align: center; margin: 1mm 0 4mm; color: #626A6D; }
+.fx-sheet-page .pillars { display: flex; justify-content: center; gap: 4mm; margin-bottom: 4mm; }
+.fx-sheet-page .pillars div { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 1mm; border: 1px solid #D3D6D1; border-radius: 3mm; padding: 2mm 2.5mm; min-width: 21mm; }
+.fx-sheet-page .pillars div.me { border-color: #252D30; border-width: 1.5px; }
+.fx-sheet-page .pillars div.none { opacity: .5; }
+.fx-sheet-page .pillars span { font-size: 7pt; color: #626A6D; }
+.fx-sheet-page .pillars .ico { width: 13mm; height: 13mm; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #E3E5E1;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.fx-sheet-page .pillars .ico > svg, .fx-sheet-page .pillars .ico > .zodiac-img { width: 70%; height: 70%; }
+.fx-sheet-page .pillars .ico .zodiac-img { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.fx-sheet-page .pillars b { font-family: var(--serif); font-size: 11pt; line-height: 1.2; }
+.fx-sheet-page .pillars .hj { font-family: var(--serif); font-size: 15pt; line-height: 1.25; min-height: 13mm; display: grid; place-items: center; text-align: center; padding-top: .5mm; }
+.fx-sheet-page .pillars .hj i, .fx-sheet-page .pillars b i { font-style: normal; display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.fx-sheet-page .pillars b i { display: inline; }
+/* 출력용 오행 색 — 한지에서도 보이도록 화면보다 한 단계 진하게 */
+.fx-sheet-page .pillars i.mok { color: #2F5E3C; } .fx-sheet-page .pillars i.hwa { color: #A23A2E; }
+.fx-sheet-page .pillars i.to { color: #7E5A1E; } .fx-sheet-page .pillars i.geum { color: #4F5C6B; }
+.fx-sheet-page .pillars i.su { color: #24486F; }
+.fx-sheet-page .pillars em { font-style: normal; font-size: 7pt; color: #465054; }
+.fx-sheet-page h2 { font-family: var(--serif); font-size: 13pt; margin: 3mm 0 1mm; text-align: center; }
+.fx-sheet-page h3 { font-size: 8.5pt; margin: 3mm 0 .5mm; color: #364D50; letter-spacing: .04em; }
+.fx-sheet-page p { margin: 0; }
+.fx-sheet-page .two { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.fx-sheet-page footer { margin-top: 5mm; padding-top: 3mm; border-top: 1px solid #D3D6D1; font-size: 7pt; color: #626A6D; text-align: center; }
+.point-list b { white-space: nowrap; }
