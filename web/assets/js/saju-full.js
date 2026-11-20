@@ -258,6 +258,9 @@
       sajuYear: sajuYear,
       monthIndex: mIdx,
       sunLongitude: lon,
+      jdBirth: jdBirth,
+      birthYear: y,
+      gender: input.gender || '',
       notes: notes,
       ilju: ilju
     };

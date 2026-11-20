@@ -44,6 +44,7 @@
   function eun(w) { return w + (jong(w) ? '은' : '는'); }
   function i(w) { return w + (jong(w) ? '이' : '가'); }
   function wa(w) { return w + (jong(w) ? '과' : '와'); }
+  function ro(w) { var j = jong(w); return w + (!j || j === 8 ? '로' : '으로'); }
 
   /* ─────────────── 십신 ─────────────── */
   /** 일간(me)이 다른 천간(other)을 보는 자리 */
@@ -415,12 +416,169 @@
       relations: relations, stemRels: stemRels,
       match: match, score: score,
       months: months, luck: luck, story: story, healthExtra: healthExtra,
-      action: FAV_ACTION[favGroup]
+      action: FAV_ACTION[favGroup],
+      sinsal: sinsal(saju, months),
+      top: topMonths(months),
+      daewoon: daewoon(saju, saju.gender),
+      tips: ELEM_TIP[fav], lack: ELEMS.filter(function (e) { return count[e] === 0; }),
+      aptitude: aptitude(gods)
     };
   }
 
+
+  /* ─────────────── 신살 — 도화 · 역마 · 화개 ───────────────
+   * 일지(또는 년지)가 속한 삼합으로 정합니다.
+   *   인오술 → 도화 묘 · 역마 신 · 화개 술      신자진 → 도화 유 · 역마 인 · 화개 진
+   *   사유축 → 도화 오 · 역마 해 · 화개 축      해묘미 → 도화 자 · 역마 사 · 화개 미 */
+  var SINSAL_BASE = {
+    인: '인오술', 오: '인오술', 술: '인오술', 신: '신자진', 자: '신자진', 진: '신자진',
+    사: '사유축', 유: '사유축', 축: '사유축', 해: '해묘미', 묘: '해묘미', 미: '해묘미'
+  };
+  var SINSAL_MAP = {
+    인오술: { 도화: '묘', 역마: '신', 화개: '술' }, 신자진: { 도화: '유', 역마: '인', 화개: '진' },
+    사유축: { 도화: '오', 역마: '해', 화개: '축' }, 해묘미: { 도화: '자', 역마: '사', 화개: '미' }
+  };
+  var SINSAL_TEXT = {
+    도화: { short: '사람을 끄는 별', body: '눈에 띄고 사람을 끌어당기는 기운입니다. 매력과 인기, 연애운으로 드러나고, 사람을 상대하는 일에서 강점이 됩니다.', on: '이 달에는 새 인연과 호감이 잘 들어옵니다.' },
+    역마: { short: '움직이는 별', body: '한자리에 머물기보다 움직일 때 운이 붙는 기운입니다. 이동, 여행, 이사, 해외, 바깥 활동과 인연이 깊습니다.', on: '이 달에는 이동·출장·여행·이사 이야기가 생기기 쉽습니다.' },
+    화개: { short: '깊어지는 별', body: '혼자 파고들어 깊어지는 기운입니다. 예술, 공부, 종교와 철학, 손으로 하는 정교한 작업에 재능이 있습니다.', on: '이 달에는 혼자 몰입하는 일, 배우는 일이 잘 됩니다.' }
+  };
+
+  function sinsal(saju, months) {
+    var p = saju.pillars;
+    var bases = [{ from: '일지', b: p.day.branch }, { from: '년지', b: p.year.branch }];
+    var natal = [p.year, p.month, p.day, p.hour].filter(Boolean);
+    var out = [];
+    ['도화', '역마', '화개'].forEach(function (name) {
+      var targets = {};
+      bases.forEach(function (x) { targets[SINSAL_MAP[SINSAL_BASE[x.b]][name]] = x.from; });
+      var tgt = Object.keys(targets);
+      var present = natal.filter(function (q) { return tgt.indexOf(q.branch) !== -1; }).map(function (q) { return q.role; });
+      var yearOn = tgt.indexOf('미') !== -1;
+      var monthOn = [];
+      months.forEach(function (m, k) { if (tgt.indexOf(m.pillar.branch) !== -1) monthOn.push(k); });
+      var t = SINSAL_TEXT[name];
+      out.push({
+        name: name, short: t.short, body: t.body, branches: tgt,
+        present: present, yearOn: yearOn, monthOn: monthOn,
+        line: (present.length ? '원국의 ' + present.join(' · ') + '에 ' + name + '가 있습니다. ' : '원국에는 ' + name + '가 없습니다. ') +
+          (yearOn ? '2027년 미(未)가 바로 ' + name + '라 한 해 내내 이 기운이 켜집니다. ' : '') +
+          (monthOn.length ? t.on : '')
+      });
+    });
+    return out;
+  }
+
+  /* ─────────────── 좋은 달 · 조심할 달 ─────────────── */
+  function topMonths(months) {
+    var idx = months.map(function (m, k) { return k; });
+    var best = idx.slice().sort(function (a, b) { return months[b].score - months[a].score || a - b; }).slice(0, 3);
+    var care = idx.slice().sort(function (a, b) { return months[a].score - months[b].score || a - b; }).slice(0, 3);
+    return { best: best.sort(function (a, b) { return a - b; }), care: care.sort(function (a, b) { return a - b; }) };
+  }
+
+  /* ─────────────── 대운 — 성별이 있어야 방향이 정해집니다 ───────────────
+   * 양년생 남자 · 음년생 여자는 순행, 반대는 역행.
+   * 태어난 순간부터 다음(순행) 또는 지난(역행) 절기까지의 날 수 ÷ 3 = 대운이 시작되는 나이. */
+  var DAEWOON_TEXT = {
+    비겁: '내 힘으로 서는 10년입니다. 독립과 자립, 동료와의 경쟁이 주제가 됩니다.',
+    식상: '재능을 꺼내 쓰는 10년입니다. 표현하고 만들고 보여 주는 일이 길을 엽니다.',
+    재성: '현실의 결과를 쌓는 10년입니다. 돈과 일의 성과, 생활의 기반이 주제가 됩니다.',
+    관성: '자리와 책임의 10년입니다. 조직, 명예, 사회적인 위치가 정해지는 시기입니다.',
+    인성: '채우고 배우는 10년입니다. 공부, 자격, 귀인의 도움이 힘이 됩니다.'
+  };
+
+  function daewoon(saju, gender) {
+    if (gender !== 'f' && gender !== 'm') return null;
+    var yearYang = saju.pillars.year.stemIdx % 2 === 0;
+    var forward = (yearYang && gender === 'm') || (!yearYang && gender === 'f');
+    var jd = saju.jdBirth;
+    var terms = [];
+    [-1, 0, 1].forEach(function (d) { terms = terms.concat(S.jeolgiOfYear(saju.birthYear + d)); });
+    terms.sort(function (a, b) { return a.jd - b.jd; });
+    var target = null;
+    if (forward) { for (var k = 0; k < terms.length; k++) if (terms[k].jd > jd) { target = terms[k]; break; } }
+    else { for (var j = terms.length - 1; j >= 0; j--) if (terms[j].jd <= jd) { target = terms[j]; break; } }
+    var days = Math.abs(target.jd - jd);
+    var start = Math.max(1, Math.round(days / 3));
+    var monthIdx60 = 0;
+    for (var n = 0; n < 60; n++) if (n % 10 === saju.pillars.month.stemIdx && n % 12 === saju.pillars.month.branchIdx) monthIdx60 = n;
+    var me = saju.pillars.day.stem;
+    var list = [];
+    for (var c = 1; c <= 9; c++) {
+      var pl = S.pillarFromIndex(monthIdx60 + (forward ? c : -c), '대운');
+      var g = sipsin(me, pl.stem);
+      list.push({ pillar: pl, age: start + (c - 1) * 10, god: g, group: GROUP[g], branchGod: sipsinOfBranch(me, pl.branch) });
+    }
+    var age2027 = YEAR - saju.birthYear;      // 2027년 중에 맞는 만 나이
+    var cur = null;
+    list.forEach(function (d, k) { if (age2027 >= d.age && (k === list.length - 1 || age2027 < list[k + 1].age)) cur = k; });
+    var now = cur === null ? null : list[cur];
+    var text = now
+      ? '2027년(만 ' + age2027 + '세)은 ' + now.age + '세부터 시작된 ' + now.pillar.id + '(' + now.pillar.hanja + ') 대운 안에 있습니다. ' + DAEWOON_TEXT[now.group] +
+        (now.age + 10 - age2027 <= 2 ? ' 다음 대운으로 넘어가는 문턱이라, 생활의 큰 틀이 바뀌는 느낌을 받기 쉽습니다.' : '')
+      : '2027년은 아직 첫 대운(' + start + '세) 전이라 월주의 기운 안에서 자라는 시기입니다.';
+    return { forward: forward, start: start, list: list, current: cur, age2027: age2027, text: text };
+  }
+
+  /* ─────────────── 부족한 오행 생활 팁 ─────────────── */
+  var ELEM_TIP = {
+    목: { food: '푸른 잎채소, 새싹, 신맛 나는 과일', habit: '아침 산책, 화분 키우기, 새로운 걸 배우기 시작하기', place: '숲·공원, 동쪽으로 난 창가' },
+    화: { food: '붉은 과일, 따뜻한 차, 쓴맛 나는 커피·초콜릿 한 조각', habit: '햇볕 쬐기, 사람 만나기, 좋아하는 걸 소리 내어 말하기', place: '밝고 따뜻한 곳, 남향' },
+    토: { food: '고구마·호박·잡곡, 단맛 나는 뿌리채소', habit: '정해진 시간에 먹고 자기, 집과 책상 정리하기', place: '집, 오래 앉아 있을 수 있는 익숙한 곳' },
+    금: { food: '무·배·도라지 같은 흰 음식, 매운맛 조금', habit: '물건 정리하고 버리기, 계획을 글로 적기, 좋은 물건 하나 오래 쓰기', place: '정돈된 공간, 서쪽' },
+    수: { food: '해조류·검은콩·검은깨, 짭짤한 국물', habit: '물 자주 마시기, 일찍 자기, 혼자 생각하는 시간 갖기', place: '물가, 조용한 밤 시간, 북쪽' }
+  };
+
+  /* ─────────────── 적성 · 일하는 방식 ─────────────── */
+  var APT_TEXT = {
+    비겁: { title: '내 이름으로 서는 사람', body: '스스로 정하고 스스로 책임질 때 실력이 나옵니다. 독립, 1인 사업, 프리랜서, 팀을 이끄는 자리가 잘 맞습니다.', fields: '창업 · 프리랜서 · 운동 · 영업 리더' },
+    식상: { title: '만들고 보여 주는 사람', body: '머릿속에 있는 것을 밖으로 꺼낼 때 빛납니다. 손으로 만드는 일, 말과 글, 콘텐츠, 기획이 잘 맞습니다.', fields: '공예 · 디자인 · 콘텐츠 · 요리 · 강의' },
+    재성: { title: '판을 읽고 결과를 내는 사람', body: '현실 감각이 빠르고 숫자에 강합니다. 사고팔고 관리하고 성과를 숫자로 확인하는 일이 잘 맞습니다.', fields: '사업 · 유통 · 재무 · 마케팅' },
+    관성: { title: '자리를 지키고 신뢰를 쌓는 사람', body: '규칙과 책임이 있는 곳에서 단단해집니다. 조직, 전문직, 관리, 공적인 일이 잘 맞습니다.', fields: '공직 · 전문직 · 관리직 · 법·의료' },
+    인성: { title: '배우고 가르치고 돌보는 사람', body: '깊이 알고 차분히 익히는 데 강합니다. 연구, 교육, 상담, 문서와 자격이 중요한 일이 잘 맞습니다.', fields: '교육 · 연구 · 상담 · 기획 · 출판' }
+  };
+  function aptitude(gods) {
+    var order = Object.keys(gods).sort(function (a, b) { return gods[b] - gods[a]; });
+    var main = order[0], sub = gods[order[1]] > 0 ? order[1] : null;
+    return { main: main, sub: sub, mainText: APT_TEXT[main], subText: sub ? APT_TEXT[sub] : null };
+  }
+
+  /* ─────────────── 둘이 함께 보는 2027 ─────────────── */
+  function couple(fa, fb, names) {
+    var A = names && names.a ? names.a + ' 님' : fa.saju.pillars.day.id + ' 일주';
+    var B = names && names.b ? names.b + ' 님' : fb.saju.pillars.day.id + ' 일주';
+    var da = fa.saju.pillars.day, db = fb.saju.pillars.day;
+    var months = fa.months.map(function (ma, k) {
+      var mb = fb.months[k];
+      var clash = (branchRelation(da.branch, ma.pillar.branch) || {}).type === '충' || (branchRelation(db.branch, ma.pillar.branch) || {}).type === '충';
+      return { k: k, a: ma.score, b: mb.score, avg: (ma.score + mb.score) / 2, clash: clash, pillar: ma.pillar, from: ma.from };
+    });
+    var best = months.slice().sort(function (x, y) { return y.avg - x.avg || x.k - y.k; }).slice(0, 3).sort(function (x, y) { return x.k - y.k; });
+    var rest = months.filter(function (m) { return best.indexOf(m) === -1; });   // 좋은 달과 겹치지 않게
+    var careList = rest.filter(function (m) { return m.clash; });
+    if (careList.length < 2) careList = careList.concat(rest.slice().sort(function (x, y) { return x.avg - y.avg; }).filter(function (m) { return careList.indexOf(m) === -1; })).slice(0, 2);
+    careList = careList.slice(0, 3).sort(function (x, y) { return x.k - y.k; });
+
+    var rel = branchRelation(da.branch, db.branch);
+    var relText = !rel || rel.type === '같음' ? '두 사람의 일지(배우자 자리)는 서로 부딪치지 않고 각자의 자리를 지킵니다.'
+      : rel.type === '합' ? '두 사람의 일지가 ' + rel.label + '을 이룹니다. 생활의 결이 잘 맞물려 함께 있을수록 편해지는 조합입니다.'
+      : rel.type === '충' ? '두 사람의 일지가 충(沖)으로 마주 봅니다. 서로 자극이 되는 만큼, 생활 방식은 미리 맞춰 두면 좋습니다.'
+      : '두 사람의 일지가 ' + ro(rel.label) + ' 살짝 엇갈립니다. 작은 서운함은 그날 풀고 넘어가세요.';
+
+    var lead = fa.score === fb.score ? null : (fa.score > fb.score ? A : B);
+    var follow = lead === A ? B : A;
+    var leadText = lead ? '2027년은 ' + lead + '의 흐름이 조금 더 밝습니다. 큰 결정은 ' + i(lead) + ' 앞에서 끌고, ' + i(follow) + ' 속도를 조절해 주면 좋습니다.'
+      : '2027년은 두 사람의 흐름이 비슷한 높이로 갑니다. 한 사람이 끌기보다 나란히 걷는 해입니다.';
+    var sameFav = fa.fav === fb.fav;
+    var favText = sameFav ? '두 사람 모두 ' + fa.fav + '의 기운이 필요합니다. 같은 색의 원석을 나눠 가지면 의미가 큽니다.'
+      : eun(A) + ' ' + fa.fav + ', ' + eun(B) + ' ' + fb.fav + '의 기운이 필요합니다. 서로의 행운의 원석을 하나씩 바꿔 끼우는 커플링도 좋습니다.';
+    var ilju = ONM.compat && ONM.ILJU ? ONM.compat.compare(ONM.ILJU[da.id], ONM.ILJU[db.id], { a: names && names.a, b: names && names.b }) : null;
+    return { A: A, B: B, months: months, best: best, care: careList, relText: relText, leadText: leadText, favText: favText, ilju: ilju };
+  }
+
   ONM.fortune2027 = {
-    YEAR: YEAR, analyze: analyze, sipsin: sipsin, GROUP: GROUP, GROUP_WORD: GROUP_WORD,
+    YEAR: YEAR, analyze: analyze, couple: couple, ELEM_TIP: ELEM_TIP, sipsin: sipsin, GROUP: GROUP, GROUP_WORD: GROUP_WORD,
     LUCK: LUCK, BY_STEM: BY_STEM, josa: { eun: eun, i: i, wa: wa }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

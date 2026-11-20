@@ -1192,3 +1192,45 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
   .fx-months { grid-template-columns: 1fr; }
   .fx-bar { grid-template-columns: 64px 1fr 70px; }
 }
+
+/* 신년운세 — 대운 */
+.fx-dw { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; }
+.fx-dw-cell { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: var(--radius); background: var(--paper-2); }
+.fx-dw-cell b { font-family: var(--serif); font-size: 1.4rem; line-height: 1.1; }
+.fx-dw-cell b.mok { color: var(--mok); } .fx-dw-cell b.hwa { color: var(--hwa); } .fx-dw-cell b.to { color: var(--to); }
+.fx-dw-cell b.geum { color: var(--geum); } .fx-dw-cell b.su { color: var(--su); }
+.fx-dw-cell.now { background: var(--accent-tint); outline: 2px solid var(--accent); }
+.fx-now { position: absolute; top: -10px; font-size: .68rem; background: var(--accent); color: #fff; padding: 1px 7px; border-radius: 999px; }
+
+/* 신년운세 — 커플 월별 */
+.fx-cm-head, .fx-cm-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; align-items: center; padding: 8px 0; }
+.fx-cm-head { font-size: .82rem; color: var(--muted); border-bottom: 1px solid var(--line); }
+.fx-cm-row { border-bottom: 1px solid var(--line-soft); }
+.fx-cm-row > span:not(:first-child) { display: flex; gap: 4px; }
+
+@media (max-width: 720px) {
+  .fx-dw { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px 6px; }
+}
+
+/* 신년운세 — 매장 출력용 한 장 (A5) */
+#fx-sheet { display: none; }
+@media print {
+  body.fx-print-sheet > *:not(#fx-sheet) { display: none !important; }
+  body.fx-print-sheet { background: #fff; }
+  body.fx-print-sheet #fx-sheet { display: block; }
+}
+.fx-sheet-page { font-family: var(--sans); color: #252D30; page-break-after: always; break-after: page; font-size: 9.5pt; line-height: 1.55; }
+.fx-sheet-page:last-child { page-break-after: auto; break-after: auto; }
+.fx-sheet-page header { display: flex; justify-content: space-between; font-size: 7.5pt; letter-spacing: .08em; color: #626A6D; border-bottom: 1px solid #D3D6D1; padding-bottom: 4mm; }
+.fx-sheet-page h1 { font-family: var(--serif); font-size: 18pt; margin: 5mm 0 0; text-align: center; }
+.fx-sheet-page .sub { text-align: center; margin: 1mm 0 4mm; color: #626A6D; }
+.fx-sheet-page .pillars { display: flex; justify-content: center; gap: 4mm; margin-bottom: 4mm; }
+.fx-sheet-page .pillars div { display: flex; flex-direction: column; align-items: center; border: 1px solid #D3D6D1; border-radius: 3mm; padding: 2mm 3mm; min-width: 14mm; }
+.fx-sheet-page .pillars span { font-size: 7pt; color: #626A6D; }
+.fx-sheet-page .pillars b { font-family: var(--serif); font-size: 15pt; line-height: 1.2; }
+.fx-sheet-page h2 { font-family: var(--serif); font-size: 13pt; margin: 3mm 0 1mm; text-align: center; }
+.fx-sheet-page h3 { font-size: 8.5pt; margin: 3mm 0 .5mm; color: #364D50; letter-spacing: .04em; }
+.fx-sheet-page p { margin: 0; }
+.fx-sheet-page .two { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.fx-sheet-page footer { margin-top: 5mm; padding-top: 3mm; border-top: 1px solid #D3D6D1; font-size: 7pt; color: #626A6D; text-align: center; }
+.point-list b { white-space: nowrap; }

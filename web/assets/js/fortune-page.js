@@ -21,15 +21,15 @@
 
   /* 시각 셀렉트 — 일주 리포트와 같은 모양 */
   var SIJU = ['자시', '축시', '인시', '묘시', '진시', '사시', '오시', '미시', '신시', '유시', '술시', '해시'];
-  (function () {
-    var sel = $('fx-h');
+  ['fx-h', 'fx-h2'].forEach(function (id) {
+    var sel = $(id);
     for (var h = 0; h < 24; h++) {
       var o = document.createElement('option');
       o.value = String(h);
       o.textContent = pad(h) + ':00 ~ ' + pad(h) + ':59  (' + SIJU[Math.floor(((h + 1) % 24) / 2)] + ')';
       sel.appendChild(o);
     }
-  })();
+  });
 
   function givenName(full) {
     var n = String(full || '').trim().replace(/\s+/g, '');
@@ -47,21 +47,34 @@
 
   var state = {};
 
-  function run(input) {
-    var saju;
+  function run(input, inputB) {
+    var saju, sajuB = null;
     try {
       saju = ONM.saju.getSaju(input);
     } catch (e) {
       showError(e.message || '생년월일을 다시 확인해 주세요.');
       return;
     }
+    if (inputB) {
+      try {
+        sajuB = ONM.saju.getSaju(inputB);
+      } catch (e2) {
+        showError('두 번째 분 — ' + (e2.message || '생년월일을 다시 확인해 주세요.'));
+        return;
+      }
+    }
     showError('');
     state.input = input;
+    state.inputB = inputB || null;
     state.name = givenName(input.name);
+    state.nameB = inputB ? givenName(inputB.name) : '';
     var f = F.analyze(saju);
+    state.f = f;
+    state.fB = sajuB ? F.analyze(sajuB) : null;
     render(f);
+    renderCouple();
     $('fx-report').classList.remove('is-hidden');
-    syncUrl(input);
+    syncUrl(input, inputB);
     setTimeout(function () { $('fx-report').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
   }
 
@@ -127,6 +140,12 @@
 
     renderMonths(f);
     renderLucky(f);
+    renderTop(f);
+    renderDaewoon(f);
+    renderSinsal(f);
+    renderAptTips(f);
+    renderRings(f);
+    $('fx-story-box').classList.add('is-hidden');
 
     $('fx-closing').textContent = '2027년, ' + f.fav + '의 기운을 손끝에 두세요. ' + f.luck.stones[0] + '처럼 작은 것 하나가 한 해의 균형을 잡아 줍니다.';
     var q = '?y=' + state.input.year + '&m=' + state.input.month + '&d=' + state.input.day +
@@ -225,11 +244,281 @@
     $('fx-ring').textContent = '공방에서 반지 원석이나 소원팔찌로 고르실 때 2027년 행운의 원석을 말씀해 주세요.';
   }
 
+
+  function monthName(k, m) { return k === 11 ? '2028년 1월' : m.from.month + '월'; }
+
+  function renderTop(f) {
+    $('fx-best').innerHTML = f.top.best.map(function (k) {
+      var m = f.months[k];
+      return '<li><b>' + monthName(k, m) + '</b> · ' + esc(m.pillar.id) + ' — ' + esc(m.line) + '</li>';
+    }).join('');
+    $('fx-care').innerHTML = f.top.care.map(function (k) {
+      var m = f.months[k];
+      return '<li><b>' + monthName(k, m) + '</b> · ' + esc(m.pillar.id) + ' — ' + esc(m.extra || m.line) + '</li>';
+    }).join('');
+  }
+
+  function renderDaewoon(f) {
+    var sec = $('fx-dw-sec');
+    var d = f.daewoon;
+    if (!d) {
+      sec.classList.remove('is-hidden');
+      $('fx-dw-lead').textContent = '대운은 성별에 따라 흐르는 방향이 달라집니다. 위에서 성별을 고르시면 10년 단위의 큰 흐름과 2027년이 그중 어디에 있는지 보여 드립니다.';
+      $('fx-dw').innerHTML = '';
+      return;
+    }
+    $('fx-dw-lead').textContent = d.text;
+    $('fx-dw').innerHTML = d.list.map(function (x, k) {
+      return '<div class="fx-dw-cell' + (k === d.current ? ' now' : '') + '">' +
+        '<span class="small">' + x.age + '세</span>' +
+        '<b class="' + ELEM_CLASS[x.pillar.stemElem] + '">' + x.pillar.hanja[0] + '</b>' +
+        '<b class="' + ELEM_CLASS[x.pillar.branchElem] + '">' + x.pillar.hanja[1] + '</b>' +
+        '<span class="small">' + esc(x.god) + '</span>' +
+        (k === d.current ? '<span class="fx-now">2027</span>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  function renderSinsal(f) {
+    $('fx-sinsal').innerHTML = f.sinsal.map(function (x) {
+      var months = x.monthOn.map(function (k) { return monthName(k, f.months[k]); });
+      var on = x.present.length || x.yearOn;
+      return '<div class="card' + (on ? ' tone-green' : '') + '">' +
+        '<p class="eyebrow">' + esc(x.short) + '</p>' +
+        '<h3>' + esc(x.name) + (on ? ' <span class="badge">있음</span>' : '') + '</h3>' +
+        '<p>' + esc(x.body) + '</p>' +
+        '<p class="small" style="margin:0">' + esc(x.line) + (months.length ? ' (' + months.join(', ') + ')' : '') + '</p>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderAptTips(f) {
+    var a = f.aptitude;
+    $('fx-apt').innerHTML = '<p class="eyebrow">적성 · 일하는 방식</p><h3>' + esc(a.mainText.title) + '</h3>' +
+      '<p>' + esc(a.mainText.body) + '</p>' +
+      '<p class="small" style="margin:0 0 8px">잘 맞는 분야 · ' + esc(a.mainText.fields) + '</p>' +
+      (a.subText ? '<p class="small" style="margin:0">두 번째로 강한 결 — ' + esc(a.subText.title) + '. ' + esc(a.subText.fields) + '</p>' : '');
+    var t = f.tips;
+    $('fx-tips').innerHTML = '<p class="eyebrow">' + f.fav + '의 기운 채우기</p><h3>생활 속 보완법</h3>' +
+      (f.lack.length ? '<p class="small" style="margin:0 0 10px">원국에 없는 오행: ' + f.lack.join(', ') + '</p>' : '') +
+      '<dl class="fx-dl"><dt>음식</dt><dd>' + esc(t.food) + '</dd><dt>습관</dt><dd>' + esc(t.habit) + '</dd><dt>장소</dt><dd>' + esc(t.place) + '</dd></dl>';
+  }
+
+  /* 2027 행운의 반지 — 내 일주에 맞는 디자인 중 행운의 오행과 겹치는 것을 먼저 */
+  function renderRings(f) {
+    var R = ONM.rings;
+    var rec = ONM.ILJU[f.saju.pillars.day.id];
+    $('fx-rings-lead').textContent = '내 일주에 어울리는 디자인 가운데, 2027년에 보태면 좋은 ' + f.fav + '의 결을 가진 반지를 골랐습니다. 원석은 2027 행운의 원석으로 바꿔 끼울 수 있습니다.';
+    if (!R || !rec) { $('fx-rings').innerHTML = ''; return; }
+    var list = R.recommend(rec, { seed: 1, limit: R.MODELS.length, mood: 'all' });
+    var withFav = list.filter(function (it) { return it.model.elements && it.model.elements.indexOf(f.fav) !== -1; });
+    var pick = withFav.concat(list.filter(function (it) { return withFav.indexOf(it) === -1; })).slice(0, 3);
+    $('fx-rings').innerHTML = pick.map(function (item) {
+      var spec = item.spec, q = R.specToQuery(spec);
+      var favHit = withFav.indexOf(item) !== -1;
+      return '<article class="card ring-card">' +
+        '<div class="preview-box stage-bg">' + R.ringSvg(spec, { size: 180 }) + '</div>' +
+        '<h3 style="margin:8px 0 2px">' + esc(spec.modelName) + '</h3>' +
+        '<p class="small" style="margin:0 0 6px">' + esc(item.family.label) + (favHit ? ' · ' + f.fav + '의 결' : '') + '</p>' +
+        '<p class="reason">' + esc(item.reason) + '</p>' +
+        '<div class="btn-row no-print"><a class="btn btn-sm btn-primary" href="studio.html?' + q + '">3D로 조절하기</a>' +
+        '<a class="btn btn-sm" href="order.html?' + q + '">주문 상담</a></div>' +
+      '</article>';
+    }).join('');
+  }
+
+  /* ───────────── 둘이 함께 ───────────── */
+  function renderCouple() {
+    var sec = $('fx-couple-sec');
+    if (!state.fB) { sec.classList.add('is-hidden'); return; }
+    sec.classList.remove('is-hidden');
+    var fa = state.f, fb = state.fB;
+    var c = F.couple(fa, fb, { a: state.name, b: state.nameB });
+    state.c = c;
+    $('fx-c-title').textContent = c.A + ' × ' + c.B + ' · 둘이 함께 보는 2027';
+    $('fx-c-lead').textContent = c.ilju ? c.ilju.headline + ' (일주 어울림 ' + c.ilju.score + '점)' : '';
+    $('fx-c-people').innerHTML = [[c.A, fa], [c.B, fb]].map(function (x) {
+      var d = x[1].saju.pillars.day;
+      return '<div class="card"><p class="eyebrow">' + esc(x[0]) + ' · ' + esc(d.id) + ' 일주</p>' +
+        '<h3>' + esc(x[1].story.title) + '</h3>' +
+        '<p class="small" style="margin:0">2027 흐름 ' + x[1].score + ' / 5 · 보태면 좋은 기운 ' + x[1].fav + ' · 행운의 원석 ' + esc(x[1].luck.stones[0]) + '</p></div>';
+    }).join('');
+    $('fx-c-best').innerHTML = c.best.map(function (m) {
+      return '<li><b>' + monthName(m.k, fa.months[m.k]) + '</b> · ' + esc(m.pillar.id) + ' — 두 사람 모두 흐름이 좋은 달. 기념일, 여행, 중요한 약속을 잡기 좋습니다.</li>';
+    }).join('');
+    $('fx-c-care').innerHTML = c.care.map(function (m) {
+      return '<li><b>' + monthName(m.k, fa.months[m.k]) + '</b> · ' + esc(m.pillar.id) + ' — ' +
+        (m.clash ? '한 사람의 일지와 충(沖)이 드는 달. 이사·이동이나 감정 기복이 생기기 쉬우니 서로의 속도를 맞춰 주세요.' : '둘 다 기운이 낮은 달. 큰 결정보다 쉬어 가는 데이트가 좋습니다.') + '</li>';
+    }).join('');
+    $('fx-c-notes').innerHTML = [c.leadText, c.relText, c.favText].map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+    $('fx-c-months').innerHTML = '<div class="fx-cm-head"><span></span><span>' + esc(c.A) + '</span><span>' + esc(c.B) + '</span></div>' +
+      c.months.map(function (m) {
+        return '<div class="fx-cm-row"><span><b>' + monthName(m.k, fa.months[m.k]) + '</b> <span class="small">' + m.pillar.id + '</span></span>' +
+          '<span>' + dotsHtml(m.a) + '</span><span>' + dotsHtml(m.b) + '</span></div>';
+      }).join('');
+  }
+
+  function dotsHtml(v) {
+    var h = '';
+    for (var n = 1; n <= 5; n++) h += '<span class="fx-dot sm' + (v >= n ? ' on' : (v >= n - 0.5 ? ' half' : '')) + '"></span>';
+    return h;
+  }
+
+  /* ───────────── 인스타 스토리 카드 (1080 × 1920) ───────────── */
+  /* 띄어쓰기 단위로 줄을 나눕니다 — 한 단어가 너무 길 때만 글자 단위로 자릅니다 */
+  function wrapLines(x, text, maxW) {
+    var out = [], line = '';
+    String(text).split(' ').forEach(function (word) {
+      var t = line ? line + ' ' + word : word;
+      if (x.measureText(t).width <= maxW) { line = t; return; }
+      if (line) out.push(line);
+      line = word;
+      while (x.measureText(line).width > maxW && line.length > 1) {
+        var cut = line.length - 1;
+        while (cut > 1 && x.measureText(line.slice(0, cut)).width > maxW) cut--;
+        out.push(line.slice(0, cut)); line = line.slice(cut);
+      }
+    });
+    if (line) out.push(line);
+    return out;
+  }
+
+  function storyCard(f, name) {
+    var W = 1080, H = 1920;
+    var c = document.createElement('canvas'); c.width = W; c.height = H;
+    var x = c.getContext('2d');
+    var SERIF = '"Noto Serif KR","Nanum Myeongjo","Apple SD Gothic Neo",serif';
+    var SANS = '"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+    var day = f.saju.pillars.day, rec = ONM.ILJU[day.id];
+    var col = rec && ONM.zodiacColor ? ONM.zodiacColor(rec) : { solid: '#B34E42', ink: '#7a2f27' };
+    x.fillStyle = '#F1EFE9'; x.fillRect(0, 0, W, H);
+    x.fillStyle = '#FCFBF8'; x.fillRect(60, 60, W - 120, H - 120);
+    x.strokeStyle = '#D3D6D1'; x.lineWidth = 2; x.strokeRect(60, 60, W - 120, H - 120);
+    x.textAlign = 'center';
+    x.fillStyle = '#626A6D'; x.font = '600 30px ' + SANS; x.fillText('2027 丁未年 · 붉은 양의 해', W / 2, 190);
+    x.fillStyle = '#252D30'; x.font = '700 64px ' + SERIF; x.fillText(name ? name + ' 님의 2027' : '나의 2027', W / 2, 290);
+    // 일주 도장
+    x.fillStyle = col.solid; x.beginPath(); x.arc(W / 2, 470, 120, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#fff'; x.font = '700 92px ' + SERIF; x.fillText(day.hanja, W / 2, 500);
+    x.fillStyle = '#252D30'; x.font = '600 40px ' + SERIF; x.fillText(day.id + ' 일주' + (rec && ONM.iljuPhrase ? ' · ' + ONM.iljuPhrase(rec) : ''), W / 2, 670);
+    // 한 해 제목
+    // 마지막 줄에 한두 글자만 남지 않도록 글자 크기를 조금씩 줄여 봅니다
+    var size = 62, lines;
+    do {
+      x.font = '700 ' + size + 'px ' + SERIF;
+      lines = wrapLines(x, f.story.title, W - 220);
+      size -= 4;
+    } while (size >= 46 && lines.length > 1 && lines[lines.length - 1].length <= 2);
+    x.fillStyle = col.ink || '#252D30';
+    var y = 800;
+    lines.forEach(function (l) { x.fillText(l, W / 2, y); y += Math.round((size + 4) * 1.3); });
+    // 점수
+    y += 20;
+    for (var n = 0; n < 5; n++) {
+      x.beginPath(); x.arc(W / 2 - 120 + n * 60, y, 18, 0, Math.PI * 2);
+      x.lineWidth = 4; x.strokeStyle = col.solid; x.stroke();
+      if (f.score >= n + 1) { x.fillStyle = col.solid; x.fill(); }
+    }
+    y += 110;
+    // 좋은 달 · 행운
+    function row(label, val) {
+      x.fillStyle = '#626A6D'; x.font = '500 32px ' + SANS; x.fillText(label, W / 2, y); y += 56;
+      x.fillStyle = '#252D30'; x.font = '600 44px ' + SERIF;
+      wrapLines(x, val, W - 260).forEach(function (l) { x.fillText(l, W / 2, y); y += 60; });
+      y += 44;
+    }
+    row('좋은 달', f.top.best.map(function (k) { return monthName(k, f.months[k]); }).join(' · '));
+    row('행운의 원석', f.luck.stones.join(' · '));
+    row('행운의 색 · 방향', f.luck.color + ' · ' + f.luck.dir);
+    row('올해 해 볼 한 가지', f.action.split('. ')[0].replace(/\.$/, ''));
+    // 바닥글
+    x.fillStyle = '#626A6D'; x.font = '600 34px ' + SERIF; x.fillText('ONMYEONG · 온명 반지공방', W / 2, H - 170);
+    x.font = '28px ' + SANS; x.fillText('사주 여덟 글자로 읽는 2027 신년운세', W / 2, H - 120);
+    return new Promise(function (res) { c.toBlob(res, 'image/png'); });
+  }
+
+  $('fx-story').addEventListener('click', function () {
+    if (!state.f) return;
+    var btn = this, label = btn.textContent;
+    btn.textContent = '카드를 만드는 중…';
+    var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    ready.then(function () { return storyCard(state.f, state.name); }).then(function (blob) {
+      if (!blob) throw new Error('fail');
+      var box = $('fx-story-box');
+      box.innerHTML = '<img alt="2027 신년운세 스토리 카드" style="max-width:280px" src="' + URL.createObjectURL(blob) + '">' +
+        '<p class="small" style="margin-top:8px">이미지를 길게 눌러 저장하거나, 내려받은 파일을 스토리에 올려 주세요.</p>';
+      box.classList.remove('is-hidden');
+      var file = ONM.share && ONM.share.toFile ? ONM.share.toFile(blob, 'onmyeong-2027.png') : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: '나의 2027 신년운세' }).catch(function () {});
+      } else if (ONM.share) {
+        ONM.share.download(blob, 'onmyeong-2027.png');
+      }
+      btn.textContent = '저장했어요';
+      setTimeout(function () { btn.textContent = label; }, 1800);
+    }).catch(function () {
+      btn.textContent = '카드 저장에 실패했어요';
+      setTimeout(function () { btn.textContent = label; }, 1800);
+    });
+  });
+
+  /* ───────────── 매장 출력용 한 장 (A5) ───────────── */
+  function sheetHtml(f, name, coupleLine) {
+    var s = f.saju;
+    var cols = [['시', s.pillars.hour], ['일', s.pillars.day], ['월', s.pillars.month], ['년', s.pillars.year]];
+    var firstTwo = (f.story.overall.match(/[^.]+\.(\s|$)/g) || [f.story.overall]).slice(0, 2).join('').trim();
+    return '<article class="fx-sheet-page">' +
+      '<header><span>ONMYEONG · 온명 반지공방</span><span>2027 丁未年 신년운세</span></header>' +
+      '<h1>' + esc(name ? name + ' 님의 2027' : '나의 2027') + '</h1>' +
+      '<p class="sub">' + esc(s.pillars.day.id + '(' + s.pillars.day.hanja + ') 일주') + '</p>' +
+      '<div class="pillars">' + cols.map(function (c) {
+        var p = c[1];
+        return '<div><span>' + c[0] + '주</span><b>' + (p ? p.hanja[0] : '·') + '</b><b>' + (p ? p.hanja[1] : '·') + '</b></div>';
+      }).join('') + '</div>' +
+      '<h2>' + esc(f.story.title) + '</h2>' +
+      '<p>' + esc(firstTwo) + '</p>' +
+      '<div class="two"><div><h3>좋은 달</h3><p>' + f.top.best.map(function (k) { return monthName(k, f.months[k]); }).join(' · ') + '</p></div>' +
+      '<div><h3>조심할 달</h3><p>' + f.top.care.map(function (k) { return monthName(k, f.months[k]); }).join(' · ') + '</p></div></div>' +
+      '<div class="two"><div><h3>행운의 원석</h3><p>' + esc(f.luck.stones.join(' · ')) + '</p></div>' +
+      '<div><h3>행운의 색 · 방향 · 숫자</h3><p>' + esc(f.luck.color + ' · ' + f.luck.dir + ' · ' + f.luck.num) + '</p></div></div>' +
+      '<h3>올해 해 볼 한 가지</h3><p>' + esc(f.action) + '</p>' +
+      (coupleLine ? '<h3>둘이 함께</h3><p>' + esc(coupleLine) + '</p>' : '') +
+      '<footer>사주 여덟 글자와 2027년 세운으로 본 참고용 풀이입니다 · 온명 반지공방</footer>' +
+    '</article>';
+  }
+
+  $('fx-sheet-btn').addEventListener('click', function () {
+    if (!state.f) return;
+    var cl = '';
+    if (state.fB && state.c) {
+      cl = '함께 좋은 달 ' + state.c.best.map(function (m) { return monthName(m.k, state.f.months[m.k]); }).join(' · ') + '. ' + state.c.favText;
+    }
+    var html = sheetHtml(state.f, state.name, cl);
+    if (state.fB) html += sheetHtml(state.fB, state.nameB, cl);
+    $('fx-sheet').innerHTML = html;
+    var st = document.createElement('style');
+    st.id = 'fx-page-a5';
+    st.textContent = '@page { size: A5; margin: 10mm; }';
+    document.head.appendChild(st);
+    document.body.classList.add('fx-print-sheet');
+    var done = function () {
+      document.body.classList.remove('fx-print-sheet');
+      var old = document.getElementById('fx-page-a5');
+      if (old) old.parentNode.removeChild(old);
+      window.removeEventListener('afterprint', done);
+    };
+    window.addEventListener('afterprint', done);
+    setTimeout(function () { window.print(); }, 50);
+  });
+
   /* ───────────── 주소 ───────────── */
-  function syncUrl(input) {
-    var q = '?y=' + input.year + '&m=' + input.month + '&d=' + input.day +
-      (input.hour !== '' ? '&h=' + input.hour : '') + (input.minute !== '' ? '&mi=' + input.minute : '') +
-      (state.name ? '&n=' + encodeURIComponent(state.name) : '');
+  function personQuery(input, sfx, name) {
+    return '&y' + sfx + '=' + input.year + '&m' + sfx + '=' + input.month + '&d' + sfx + '=' + input.day +
+      (input.hour !== '' ? '&h' + sfx + '=' + input.hour : '') + (input.minute !== '' && input.minute !== undefined ? '&mi' + sfx + '=' + input.minute : '') +
+      (input.gender ? '&g' + sfx + '=' + input.gender : '') + (name ? '&n' + sfx + '=' + encodeURIComponent(name) : '');
+  }
+  function syncUrl(input, inputB) {
+    var q = '?' + personQuery(input, '', state.name).slice(1) + (inputB ? personQuery(inputB, '2', state.nameB) : '');
     try { history.replaceState(null, '', location.pathname + q); } catch (e) { /* 미리보기 등에서는 무시 */ }
   }
 
@@ -241,22 +530,39 @@
     else prompt('링크를 복사해 주세요', url);
   });
 
+  function readPerson(sfx) {
+    return {
+      name: $('fx-name' + sfx).value,
+      year: $('fx-y' + sfx).value, month: $('fx-m' + sfx).value, day: $('fx-d' + sfx).value,
+      hour: $('fx-h' + sfx).value, minute: $('fx-h' + sfx).value === '' ? '' : $('fx-min' + sfx).value,
+      gender: $('fx-g' + sfx).value
+    };
+  }
+  function fillPerson(sfx, p) {
+    $('fx-name' + sfx).value = p.name; $('fx-y' + sfx).value = p.year; $('fx-m' + sfx).value = p.month; $('fx-d' + sfx).value = p.day;
+    $('fx-h' + sfx).value = p.hour; $('fx-min' + sfx).value = p.minute; $('fx-g' + sfx).value = p.gender;
+  }
+  $('fx-pair').addEventListener('change', function () {
+    $('fx-b').classList.toggle('is-hidden', !this.checked);
+  });
+
   $('fx-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    run({
-      name: $('fx-name').value,
-      year: $('fx-y').value, month: $('fx-m').value, day: $('fx-d').value,
-      hour: $('fx-h').value, minute: $('fx-h').value === '' ? '' : $('fx-min').value
-    });
+    run(readPerson(''), $('fx-pair').checked ? readPerson('2') : null);
   });
 
   /* 주소로 들어온 경우 바로 보여 줍니다 */
   (function () {
     var p = new URLSearchParams(location.search);
     if (!p.get('y') || !p.get('m') || !p.get('d')) return;
-    var input = { name: p.get('n') || '', year: p.get('y'), month: p.get('m'), day: p.get('d'), hour: p.get('h') || '', minute: p.get('mi') || '' };
-    $('fx-name').value = input.name; $('fx-y').value = input.year; $('fx-m').value = input.month; $('fx-d').value = input.day;
-    $('fx-h').value = input.hour; $('fx-min').value = input.minute;
-    run(input);
+    function from(sfx) {
+      return { name: p.get('n' + sfx) || '', year: p.get('y' + sfx), month: p.get('m' + sfx), day: p.get('d' + sfx),
+        hour: p.get('h' + sfx) || '', minute: p.get('mi' + sfx) || '', gender: p.get('g' + sfx) || '' };
+    }
+    var input = from('');
+    var inputB = p.get('y2') && p.get('m2') && p.get('d2') ? from('2') : null;
+    fillPerson('', input);
+    if (inputB) { fillPerson('2', inputB); $('fx-pair').checked = true; $('fx-b').classList.remove('is-hidden'); }
+    run(input, inputB);
   })();
 })();
