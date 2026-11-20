@@ -494,11 +494,13 @@
           var bg = rec && ONM.zodiacColor ? ONM.zodiacColor(rec).solid : '#364D50';
           return '<div class="me"><span>일주 · 나</span>' +
             '<i class="ico" style="background:' + bg + '">' + (ONM.zodiacSvg ? ONM.zodiacSvg(p.branch) : '') + '</i>' +
-            '<b>' + p.hanja + '</b><em>' + p.id + ' · ' + p.animal + '</em></div>';
+            '<b><i class="' + ELEM_CLASS[p.stemElem] + '">' + p.hanja[0] + '</i><i class="' + ELEM_CLASS[p.branchElem] + '">' + p.hanja[1] + '</i></b>' +
+            '<em>' + p.id + ' · ' + p.animal + ' · ' + p.stemElem + '·' + p.branchElem + '</em></div>';
         }
+        // 글자색 = 오행 색 (목 초록 · 화 빨강 · 토 황토 · 금 회색 · 수 남색), 흑백 출력용으로 오행 글자도 함께
         return '<div><span>' + c[0] + '주</span>' +
-          '<strong class="hj">' + p.hanja[0] + '<br>' + p.hanja[1] + '</strong>' +
-          '<em>' + p.id + '</em></div>';
+          '<strong class="hj"><i class="' + ELEM_CLASS[p.stemElem] + '">' + p.hanja[0] + '</i><i class="' + ELEM_CLASS[p.branchElem] + '">' + p.hanja[1] + '</i></strong>' +
+          '<em>' + p.id + ' · ' + p.stemElem + '·' + p.branchElem + '</em></div>';
       }).join('') + '</div>' +
       '<h2>' + esc(f.story.title) + '</h2>' +
       '<p>' + esc(firstTwo) + '</p>' +

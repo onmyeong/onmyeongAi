@@ -1235,6 +1235,12 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 .fx-sheet-page .pillars .ico .zodiac-img { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .fx-sheet-page .pillars b { font-family: var(--serif); font-size: 11pt; line-height: 1.2; }
 .fx-sheet-page .pillars .hj { font-family: var(--serif); font-size: 15pt; line-height: 1.25; min-height: 13mm; display: grid; place-items: center; text-align: center; padding-top: .5mm; }
+.fx-sheet-page .pillars .hj i, .fx-sheet-page .pillars b i { font-style: normal; display: block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.fx-sheet-page .pillars b i { display: inline; }
+/* 출력용 오행 색 — 한지에서도 보이도록 화면보다 한 단계 진하게 */
+.fx-sheet-page .pillars i.mok { color: #2F5E3C; } .fx-sheet-page .pillars i.hwa { color: #A23A2E; }
+.fx-sheet-page .pillars i.to { color: #7E5A1E; } .fx-sheet-page .pillars i.geum { color: #4F5C6B; }
+.fx-sheet-page .pillars i.su { color: #24486F; }
 .fx-sheet-page .pillars em { font-style: normal; font-size: 7pt; color: #465054; }
 .fx-sheet-page h2 { font-family: var(--serif); font-size: 13pt; margin: 3mm 0 1mm; text-align: center; }
 .fx-sheet-page h3 { font-size: 8.5pt; margin: 3mm 0 .5mm; color: #364D50; letter-spacing: .04em; }
