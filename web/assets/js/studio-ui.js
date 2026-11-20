@@ -600,6 +600,8 @@
       erase:  '잘못 새긴 자리를 문질러 지웁니다.',
       stone:  '반지를 짚으면 그 자리에 알이 놓이고, 놓인 알을 다시 짚으면 빠집니다.',
       star:   '반지를 짚으면 그 자리에 별이 새겨집니다. 새긴 별을 다시 짚으면 지워집니다.',
+      pierce: '반지를 짚으면 그 자리에 구멍이 뚫립니다. 뚫린 자리를 다시 짚으면 메워집니다. 넓은 반지일수록 구멍을 크게 낼 수 있습니다.',
+      dent:   '반지를 짚으면 그 자리가 숟가락으로 떠낸 듯 둥글게 움푹 파입니다. 파인 자리를 다시 짚으면 메워집니다.',
       draw:   '반지 위에 그대로 그으면 검정으로 칠해집니다. 굵기는 아래에서 고르세요.',
       unpaint: '지우고 싶은 선을 짚으면 그 선이 통째로 지워집니다.'
     };
@@ -633,12 +635,13 @@
       box.classList.toggle('is-hidden', !on);
       $('turn-row').classList.toggle('is-hidden', !on);
       var t = tool();
-      var tap = (t === 'stone' || t === 'star' || t === 'unpaint');
+      var tap = (t === 'stone' || t === 'star' || t === 'unpaint' || t === 'pierce' || t === 'dent');
       hint.textContent = (HINTS[t] || '') +
         (tap || t === 'draw' ? '' : ' 끌면서 옆으로 움직이면 붓처럼 이어집니다.') +
         ' 다듬는 중에도 오른쪽 버튼(태블릿은 두 손가락)으로 끌면 반지가 돌아갑니다.';
       // 크기 조절칸은 그 도구를 고른 동안에만 꺼냅니다
       $('f-starsize').classList.toggle('is-hidden', t !== 'star');
+      $('f-hole').classList.toggle('is-hidden', t !== 'pierce' && t !== 'dent');
       $('f-drawsize').classList.toggle('is-hidden', t !== 'draw');
       clear.classList.toggle('is-hidden', !R.hasSculpt(spec) && !on);
     }
@@ -690,6 +693,20 @@
       $('c-drawsize').addEventListener('input', function () {
         spec.drawSize = parseFloat(this.value) || 0.8;
         $('o-drawsize').textContent = spec.drawSize.toFixed(1) + ' mm';
+      });
+
+      $('hole-shape').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-shape]');
+        if (!b) return;
+        Array.prototype.forEach.call(this.querySelectorAll('[data-shape]'), function (x) {
+          x.setAttribute('aria-pressed', String(x === b));
+        });
+        spec.holeShape = b.getAttribute('data-shape');
+      });
+
+      $('c-holesize').addEventListener('input', function () {
+        spec.holeSize = parseFloat(this.value) || 4;
+        $('o-holesize').textContent = spec.holeSize.toFixed(1) + ' mm';
       });
 
       $('c-starsize').addEventListener('input', function () {
@@ -1030,6 +1047,14 @@
     if (spec.stoneAt) bits.push('알 자리 지정');
     var st = R.starList(spec);
     if (st.length) bits.push('별 조각 ' + st.length + '개');
+    // 디자인에 원래 있는 구멍·파기는 손댄 것으로 치지 않습니다
+    var mdl = R.getModel(spec.modelId);
+    if (spec.holes && !(mdl && mdl.preset && mdl.preset.holes === spec.holes)) {
+      var hl = R.holeList(spec);
+      var np = hl.filter(function (x) { return x.kind === 'pierce'; }).length;
+      if (np) bits.push('구멍 ' + np + '개');
+      if (hl.length - np) bits.push('움푹 파기 ' + (hl.length - np) + '곳');
+    }
     var dr = R.drawStrokes(spec);
     if (dr.length) bits.push('그림 ' + dr.length + '획');
     return bits.length ? ' · 손으로 다듬음 (' + bits.join('·') + ')' : '';

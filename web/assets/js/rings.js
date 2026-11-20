@@ -542,7 +542,42 @@
       tags: ['포용', '인내', '편안', '균형', '온기', '자연스러운 질감'],
       preset: { organic: 1 },
       desc: '흙을 손으로 빚듯 왁스를 주물러 만든 넓은 밴드입니다. 가장자리가 고르지 않게 ' +
-        '오르내리고, 곱게 눌러 낸 무광 덕에 손에 닿는 결이 부드럽습니다.' }
+        '오르내리고, 곱게 눌러 낸 무광 덕에 손에 닿는 결이 부드럽습니다.' },
+
+    /* ── 레퍼런스로 더한 디자인 (녹은 은 · 깎은 바위 · 뚫린 창 · 가는 물줄기) ── */
+    { id: 'onm-molten', name: '녹음', family: 'organic', profile: 'dshape', texture: 'polish', setting: 'none',
+      width: [4, 5.5, 7], thickness: [1.6, 2.2, 3.0], wave: 0.3, twist: 0, taper: 0, facets: 0,
+      elements: ['수', '금'], moods: ['커플', '시그니처'],
+      tags: ['유연', '빛', '감성', '변화', '자연스러운 질감', '특별함'],
+      preset: { organic: 1, holes: 'd_o_0_0.05_7,d_o_50_-0.1_6,d_c_100_0.08_4,d_o_150_-0.05_6.5,d_o_205_0.1_5.5,d_c_255_-0.1_4,d_o_305_0.05_6' },
+      desc: '은이 녹아 흘러내리다 그대로 굳은 듯한 넓은 밴드입니다. 표면 곳곳을 둥글게 떠내 ' +
+        '거울처럼 광을 올리면, 움푹한 자리마다 빛이 모였다 흩어집니다. 커플로 폭만 달리 맞추기 좋습니다.' },
+
+    { id: 'onm-cliff', name: '벼랑', family: 'rugged', profile: 'flat', texture: 'fine', setting: 'none',
+      width: [4, 5.5, 8], thickness: [2.0, 2.8, 4.0], wave: 0.2, twist: 0, taper: 0, facets: 0,
+      band: 'hammer', bandAmt: 1.5, hammerCell: 1.8,
+      elements: ['토', '금'], moods: ['시그니처'],
+      tags: ['강인', '우직', '단단함', '개척', '자연에서 영감', '끈기'],
+      preset: { organic: 0.6 },
+      desc: '정으로 바위를 쪼아 낸 것처럼 겉면을 잘게 깎아 냈습니다. 쪼갠 면이 저마다 다른 방향을 보고 있어 ' +
+        '무광인데도 빛이 잘게 부서지고, 가장자리까지 거칠게 남겨 원석 덩어리 같은 느낌을 줍니다.' },
+
+    { id: 'onm-window', name: '들숨', family: 'signature', profile: 'round', texture: 'soft', setting: 'none',
+      width: [7, 9, 12], thickness: [1.8, 2.4, 3.2], wave: 0.15, twist: 0, taper: 0, facets: 0,
+      elements: ['목', '토'], moods: ['시그니처', '선물'],
+      tags: ['개성', '여유', '감성', '자유', '편안', '자연스러운 질감'],
+      preset: { organic: 0.6, holes: 'h_o_-38_0.08_5.5,h_o_8_-0.1_5,h_c_48_0.08_3.5' },
+      desc: '넓은 밴드에 둥근 창을 몇 개 뚫어 숨이 드나드는 듯 가볍게 만들었습니다. ' +
+        '폭은 넓어도 무게가 덜하고, 창으로 손가락 살결이 비쳐 낄 때마다 모양이 달라 보입니다.' },
+
+    { id: 'onm-brook', name: '개울', family: 'organic', profile: 'round', texture: 'polish', setting: 'none',
+      width: [2, 2.8, 3.6], thickness: [1.4, 1.8, 2.4], wave: 0.4, twist: 0, taper: 0, facets: 0,
+      band: 'wavy', bandAmt: 0.45,
+      elements: ['수', '목'], moods: ['데일리', '커플'],
+      tags: ['섬세', '유연', '흐름', '편안', '감성', '일상'],
+      preset: { organic: 1 },
+      desc: '가는 은줄을 손으로 구부려 이은 듯, 굵기와 결이 조금씩 일렁이며 한 바퀴를 돕니다. ' +
+        '가늘어서 매일 끼기 편하고, 다른 반지와 겹쳐 껴도 잘 어울립니다.' }
   ];
 
   /* 뺀 디자인 — 예전에 보낸 링크(modelId=…)가 엉뚱한 첫 반지로 열리지 않도록
@@ -806,6 +841,9 @@
       stoneAt: '',            // 돌을 놓은 자리들 (도, 쉼표로 구분)
       stars: '',              // 별 조각을 새긴 자리들 ('각도_크기', 쉼표로 구분)
       starSize: 3,            // 새로 놓을 별 조각의 지름 (mm)
+      holes: '',              // 구멍 · 움푹 파기 ('종류_모양_각도_폭위치_크기', 쉼표로 구분)
+      holeShape: 'oval',      // 새로 놓을 구멍 모양 (circle 원형 · oval 타원)
+      holeSize: 4,            // 새로 놓을 구멍의 긴 지름 (mm)
       draw: '',               // 검정 브러쉬로 그린 선들 (아래 DRAW 참고)
       drawSize: 0.8,          // 브러쉬 굵기 (mm)
       matte: '',              // 부분 무광으로 칠한 자리 (예전 방식 — 둘레만, 폭 전체)
@@ -1123,7 +1161,7 @@
   /** 손으로 손댄 흔적이 하나라도 있는가 */
   function hasSculpt(spec) {
     return !!(spec.sculpt || spec.sculptW || spec.relief || spec.sculptWa || spec.sculptWb ||
-      spec.matte || spec.matteMap || spec.engrave || spec.stoneAt || spec.stars || spec.draw);
+      spec.matte || spec.matteMap || spec.engrave || spec.stoneAt || spec.stars || spec.holes || spec.draw);
   }
 
   /** 손으로 폭을 넓힌 자리가 한 군데라도 있는가 (가장자리 따로 · 예전 양쪽 함께) */
@@ -1425,6 +1463,41 @@
     }).join(',');
   }
 
+  /* ── 구멍 뚫기 · 움푹 파기 ──
+   * 왁스에 구멍을 내거나(뚫기) 둥글게 파 내는(파기) 가공입니다.
+   * 주소에는 '종류_모양_각도_폭위치_크기' 를 쉼표로 이어 담습니다.
+   *   종류 h = 뚫기, d = 파기 · 모양 c = 원형, o = 타원 (둘레 방향으로 긴 타원)
+   *   각도 = 손등 쪽 한가운데가 0도 · 폭위치 = -0.5 ~ 0.5 (0 = 가운데) · 크기 = 긴 지름 mm
+   * 예: h_o_0_0_5,d_c_60_0.1_3
+   */
+  var HOLE_MIN = 1.5, HOLE_MAX = 9, HOLE_CAP = 12;
+
+  function holeList(spec) {
+    if (!spec.holes) return [];
+    return String(spec.holes).split(',').map(function (piece) {
+      var b = piece.split('_');
+      if (b.length < 5) return null;
+      var kind = b[0] === 'd' ? 'dent' : b[0] === 'h' ? 'pierce' : null;
+      var a = parseFloat(b[2]), v = parseFloat(b[3]), mm = parseFloat(b[4]);
+      if (!kind || isNaN(a)) return null;
+      return {
+        kind: kind,
+        shape: b[1] === 'c' ? 'circle' : 'oval',
+        angle: a,
+        v: isNaN(v) ? 0 : Math.max(-0.45, Math.min(0.45, v)),
+        size: Math.max(HOLE_MIN, Math.min(HOLE_MAX, isNaN(mm) ? 4 : mm))
+      };
+    }).filter(Boolean).slice(0, HOLE_CAP);
+  }
+
+  function holeWrite(list) {
+    if (!list || !list.length) return '';
+    return list.slice(0, HOLE_CAP).map(function (h) {
+      return (h.kind === 'dent' ? 'd' : 'h') + '_' + (h.shape === 'circle' ? 'c' : 'o') + '_' +
+        Math.round(h.angle) + '_' + (Math.round(h.v * 100) / 100) + '_' + (Math.round(h.size * 10) / 10);
+    }).join(',');
+  }
+
   /** 돌을 놓은 자리들(도 단위). 비어 있으면 개수대로 고르게 나눠 앉힙니다 */
   function stoneAngles(spec) {
     if (spec.stoneAt) {
@@ -1569,7 +1642,7 @@
   /* ──────────────── 페이지 간 사양 전달 (URL 쿼리) ──────────────── */
 
   var SPEC_KEYS = ['modelId', 'width', 'thickness', 'size', 'metal', 'texture', 'grain', 'profile',
-    'plateSize', 'backThickness', 'comfort', 'organic', 'sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'matteMap', 'engrave', 'stoneAt', 'stars', 'draw',
+    'plateSize', 'backThickness', 'comfort', 'organic', 'sculpt', 'sculptW', 'relief', 'sculptWa', 'sculptWb', 'matte', 'matteMap', 'engrave', 'stoneAt', 'stars', 'holes', 'draw',
     'stoneHeight', 'stoneAngle', 'stoneCount', 'epoxyLines', 'setting', 'stoneType', 'stone', 'stoneSize', 'stoneShape', 'cubicColor', 'plating', 'oxidize', 'epoxy', 'epoxyCoverage',
     'engraving', 'reviewEvent', 'ilju', 'qty'];
 
@@ -1628,6 +1701,7 @@
     if (p.get('engrave')) spec.engrave = p.get('engrave').slice(0, ENGRAVE_X * ENGRAVE_Y);
     if (p.has('stoneAt')) spec.stoneAt = p.get('stoneAt') || '';
     if (p.has('stars')) spec.stars = starWrite(starList({ stars: p.get('stars') || '' }));
+    if (p.has('holes')) spec.holes = holeWrite(holeList({ holes: p.get('holes') || '' }));
     if (p.has('draw')) spec.draw = drawWrite(drawStrokes({ draw: p.get('draw') || '' }));
     if (p.get('stoneCount')) spec.stoneCount = Math.max(1, Math.min(8, parseInt(p.get('stoneCount'), 10) || 1));
     if (p.get('epoxyLines')) spec.epoxyLines = Math.max(1, Math.min(3, parseInt(p.get('epoxyLines'), 10) || 1));
@@ -1685,6 +1759,8 @@
     stoneAngles: stoneAngles,
     starList: starList,
     starWrite: starWrite,
+    holeList: holeList,
+    holeWrite: holeWrite,
     drawStrokes: drawStrokes,
     drawWrite: drawWrite,
     STAR_MIN: STAR_MIN,
