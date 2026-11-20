@@ -388,6 +388,7 @@
   /* ───────────── 둘이 함께 ───────────── */
   function renderCouple() {
     var sec = $('fx-couple-sec');
+    $('fx-review').href = 'reviews.html?kind=' + (state.fB ? 'couple' : 'fortune') + '#write';
     if (!state.fB) { sec.classList.add('is-hidden'); return; }
     sec.classList.remove('is-hidden');
     var fa = state.f, fb = state.fB;
@@ -639,6 +640,27 @@
     e.preventDefault();
     run(readPerson(''), $('fx-pair').checked ? readPerson('2') : null);
   });
+
+
+  /* ───────────── 회원 — 내 사주 저장 · 저장된 사주로 채우기 ───────────── */
+  var MB = ONM.member;
+  if (MB) {
+    $('fx-save').addEventListener('click', function () {
+      if (!state.input) return;
+      if (!MB.require('로그인하면 내 사주를 저장해 두고 언제든 다시 볼 수 있어요.')) return;
+      var b = state.input, btn = this;
+      var birth = { y: Number(b.year), m: Number(b.month), d: Number(b.day), h: b.hour, mi: b.minute, g: b.gender || '' };
+      MB.saveBirth(birth, state.f.saju.pillars.day.id).then(function () {
+        btn.textContent = '저장했어요 ✓';
+      }).catch(function () { btn.textContent = '저장 실패 — 다시 눌러 주세요'; });
+    });
+    // 주소에 생일이 없으면, 저장해 둔 내 사주로 입력칸을 채워 둡니다
+    MB.ready.then(function () {
+      var b = MB.profile && MB.profile.birth;
+      if (!b || new URLSearchParams(location.search).get('y')) return;
+      fillPerson('', { name: MB.profile.nickname || '', year: b.y, month: b.m, day: b.d, hour: b.h == null ? '' : b.h, minute: b.mi == null ? '' : b.mi, gender: b.g || '' });
+    });
+  }
 
   /* 주소로 들어온 경우 바로 보여 줍니다 */
   (function () {

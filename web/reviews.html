@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온명 반지공방 · 리뷰</title>
+<meta name="robots" content="index">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/onmyeong.css">
+<link rel="stylesheet" href="assets/css/themes.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="온명 홈"><b>ONMYEONG</b><span>온명 반지공방</span></a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="./">일주 리포트</a>
+      <a href="fortune.html" class="nav-new">2027 신년운세</a>
+      <a href="studio.html">반지 스튜디오</a>
+      <a href="order.html">커스텀 주문</a>
+      <a href="pair.html">궁합 보기</a>
+      <a href="reviews.html" aria-current="page">리뷰</a>
+      <a href="about.html">공방 소개</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Reviews</p>
+      <h1>온명 리뷰</h1>
+      <p class="lead">일주 리포트와 2027 신년운세를 본 분들의 이야기예요. 반지 제작 후기는 네이버 플레이스에 모여 있어요.</p>
+
+      <div class="card tone-warm rv-bokchae" style="margin-top:20px">
+        <div>
+          <b>🧧 복채는 리뷰로 내셔도 돼요!</b>
+          <p class="small" style="margin:4px 0 0">한 줄이면 충분해요. 로그인한 분은 누구나 남길 수 있어요.</p>
+        </div>
+        <a class="btn btn-primary" href="#write">리뷰 남기기</a>
+      </div>
+
+      <div class="card" id="rv-event" style="margin-top:16px">
+        <p class="eyebrow" style="margin:0">Event</p>
+        <h2 id="rv-ev-title" style="margin:4px 0 6px"></h2>
+        <p id="rv-ev-desc" style="margin:0"></p>
+        <div class="ev-steps">
+          <div><b>①</b>여기서 리뷰 남기기</div>
+          <div><b>②</b>신년운세 스토리나 게시물에 @온명 태그</div>
+          <div><b>③</b>인증하고 신청 번호 받기</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="write" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head"><h2>리뷰 남기기</h2></div>
+      <div class="card" id="rv-write-box">
+        <div id="rv-guest">
+          <p style="margin:0 0 12px">리뷰는 로그인한 분만 쓸 수 있어요. 카카오로 3초면 돼요.</p>
+          <button class="btn btn-primary" type="button" id="rv-login">로그인하고 리뷰 쓰기</button>
+        </div>
+        <form id="rv-form" class="is-hidden" novalidate>
+          <div class="grid grid-2" style="align-items:end">
+            <div class="field">
+              <label for="rv-kind">무엇을 보셨나요?</label>
+              <select id="rv-kind">
+                <option value="fortune">2027 신년운세</option>
+                <option value="saju">일주 리포트</option>
+                <option value="couple">궁합 · 커플 신년운세</option>
+              </select>
+            </div>
+            <div class="field">
+              <span class="small" style="display:block;margin-bottom:6px">별점</span>
+              <div class="rv-stars-input" role="radiogroup" aria-label="별점">
+                <input type="radio" name="rv-rating" id="rv-r5" value="5" checked><label for="rv-r5" title="5점">★</label>
+                <input type="radio" name="rv-rating" id="rv-r4" value="4"><label for="rv-r4" title="4점">★</label>
+                <input type="radio" name="rv-rating" id="rv-r3" value="3"><label for="rv-r3" title="3점">★</label>
+                <input type="radio" name="rv-rating" id="rv-r2" value="2"><label for="rv-r2" title="2점">★</label>
+                <input type="radio" name="rv-rating" id="rv-r1" value="1"><label for="rv-r1" title="1점">★</label>
+              </div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label for="rv-body">한 줄 후기</label>
+            <textarea id="rv-body" rows="4" maxlength="1000" placeholder="예: 별점이랑 날씨로 보니까 바로 이해됐어요! 9월이 기대돼요 ☀️"></textarea>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label for="rv-photo">사진 <span class="small">(선택 · 5MB까지)</span></label>
+            <input id="rv-photo" type="file" accept="image/*">
+          </div>
+          <p class="notice warn is-hidden" id="rv-error" role="alert" style="margin-top:12px"></p>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn btn-primary" type="submit" id="rv-submit">리뷰 올리기</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 이벤트 신청 — 리뷰를 쓴 뒤 열립니다 -->
+      <div class="card tone-green is-hidden" id="ev-box" style="margin-top:16px">
+        <h3 style="margin-top:0">이벤트 신청하기</h3>
+        <div id="ev-form-wrap">
+          <p style="margin:0 0 12px">신년운세 스토리나 게시물을 올리고 <b>@온명</b>을 태그했다면, 인증해 주세요. 둘 중 하나만 있으면 돼요.</p>
+          <div class="field">
+            <label for="ev-url">게시물 링크 <span class="small">(인스타그램 게시물 주소)</span></label>
+            <input id="ev-url" type="url" placeholder="https://www.instagram.com/p/…">
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label for="ev-img">스토리 캡처 <span class="small">(스토리는 24시간 뒤 사라져서 캡처로 받아요)</span></label>
+            <input id="ev-img" type="file" accept="image/*">
+          </div>
+          <label class="checkline" style="display:flex;gap:8px;align-items:flex-start;margin-top:12px">
+            <input type="checkbox" id="ev-agree"> <span class="small">당첨 안내를 위해 인증 자료를 이벤트가 끝나고 30일 동안 보관하는 데 동의해요.</span>
+          </label>
+          <p class="notice warn is-hidden" id="ev-error" role="alert" style="margin-top:12px"></p>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn btn-primary" type="button" id="ev-submit">신청하고 번호 받기</button>
+          </div>
+        </div>
+        <div id="ev-done" class="is-hidden center">
+          <p class="small" style="margin:0">이벤트 신청 번호</p>
+          <p class="ev-code" id="ev-code"></p>
+          <p class="small" style="margin:0">마이페이지에서도 언제든 확인할 수 있어요. 당첨되면 인스타그램 DM으로 연락드려요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head"><h2>모든 리뷰</h2><p class="lead" id="rv-summary"></p></div>
+      <div class="rv-tabs" role="group" aria-label="리뷰 고르기">
+        <button type="button" data-kind="" aria-pressed="true">전체</button>
+        <button type="button" data-kind="fortune" aria-pressed="false">2027 신년운세</button>
+        <button type="button" data-kind="saju" aria-pressed="false">일주 리포트</button>
+        <button type="button" data-kind="couple" aria-pressed="false">궁합</button>
+      </div>
+      <div class="rv-list" id="rv-list"><p class="rv-empty">리뷰를 불러오는 중이에요…</p></div>
+      <div class="btn-row is-hidden" id="rv-more-row" style="justify-content:center;margin-top:16px">
+        <button class="btn" type="button" id="rv-more">더 보기</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <span>© ONMYEONG · 온명 반지공방 · <a href="refund.html">환불 정책</a> · <a href="privacy.html">개인정보처리방침</a></span>
+    <span>사주 해석은 전통 명리 자료를 바탕으로 한 참고용 콘텐츠입니다.</span>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/vendor/supabase/supabase.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/reviews.js"></script>
+</body>
+</html>

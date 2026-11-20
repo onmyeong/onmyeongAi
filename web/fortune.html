@@ -26,6 +26,7 @@
       <a href="studio.html">반지 스튜디오</a>
       <a href="order.html">커스텀 주문</a>
       <a href="pair.html">궁합 보기</a>
+      <a href="reviews.html">리뷰</a>
       <a href="about.html">공방 소개</a>
     </nav>
   </div>
@@ -222,6 +223,17 @@
           </div>
           <p class="small no-print" style="margin:10px 0 0">'공유하기'는 생일 없이 한 줄 운세와 신년운세 페이지만 보내요. '내 결과 링크'에는 생일이 담겨 있으니 나만 보관해 주세요.</p>
           <div class="share-card-box no-print is-hidden" id="fx-story-box"></div>
+
+          <div class="card tone-warm rv-bokchae no-print" style="margin-top:22px;text-align:left">
+            <div>
+              <b>🧧 복채는 리뷰로 내셔도 돼요!</b>
+              <p class="small" style="margin:4px 0 0">한 줄이면 충분해요. 리뷰를 남기면 커플링 이벤트에도 참여할 수 있어요.</p>
+            </div>
+            <div class="btn-row">
+              <a class="btn btn-primary" id="fx-review" href="reviews.html?kind=fortune#write">리뷰 남기기</a>
+              <button class="btn" type="button" id="fx-save">내 사주로 저장</button>
+            </div>
+          </div>
           <div class="btn-row no-print" style="justify-content:center;margin-top:12px">
             <a class="btn" id="fx-go-ring" href="./">일주 리포트에서 반지 더 보기</a>
           </div>
@@ -290,7 +302,7 @@
 
 <footer class="site-foot">
   <div class="wrap">
-    <span>© ONMYEONG · 온명 반지공방 · <a href="refund.html">환불 정책</a></span>
+    <span>© ONMYEONG · 온명 반지공방 · <a href="refund.html">환불 정책</a> · <a href="privacy.html">개인정보처리방침</a></span>
     <span>사주 해석은 전통 명리 자료를 바탕으로 한 참고용 콘텐츠입니다.</span>
   </div>
 </footer>
@@ -299,6 +311,8 @@
 <div id="fx-sheet" aria-hidden="true"></div>
 
 <script src="assets/js/config.js"></script>
+<script src="assets/vendor/supabase/supabase.js"></script>
+<script src="assets/js/auth.js"></script>
 <script src="assets/js/ilju-data.js"></script>
 <script src="assets/js/zodiac.js"></script>
 <script src="assets/js/stones.js"></script>
