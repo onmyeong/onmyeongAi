@@ -99,8 +99,14 @@
     $('fx-person').textContent = state.name ? state.name + ' 님의 2027년' : '나의 2027년';
     $('fx-day').textContent = day.id + ' (' + day.hanja + ') 일주';
     $('fx-day-sub').textContent = rec && ONM.iljuPhrase ? ONM.iljuPhrase(rec) : '';
-    $('fx-title').textContent = f.story.title;
-    $('fx-overall').textContent = f.story.overall;
+    $('fx-title').textContent = '“' + f.easy.line + '”';
+    $('fx-overall').textContent = f.easy.overall;
+    $('fx-tags').innerHTML = f.easy.tags.map(function (t) { return '<span class="badge">#' + esc(t) + '</span>'; }).join('');
+    $('fx-quick').innerHTML = '<span>좋은 달 <b>' + f.top.best.map(function (k) { return monthName(k, f.months[k]); }).join(' · ') + '</b></span>' +
+      '<span>행운의 원석 <b>' + esc(f.luck.stones[0]) + '</b></span><span>행운의 색 <b>' + esc(f.luck.color.split(' · ')[0]) + '</b></span>';
+    renderStars(f);
+    renderWeather(f);
+    $('fx-action').textContent = f.action;
     document.title = '온명 반지공방 · ' + (state.name ? state.name + ' 님의 ' : '') + '2027 신년운세';
 
     // 한 해 흐름 점수 — 다섯 칸
@@ -147,7 +153,8 @@
     renderRings(f);
     $('fx-story-box').classList.add('is-hidden');
 
-    $('fx-closing').textContent = '2027년, ' + f.fav + '의 기운을 손끝에 두세요. ' + f.luck.stones[0] + '처럼 작은 것 하나가 한 해의 균형을 잡아 줍니다.';
+    $('fx-closing').textContent = '2027년엔 ' + f.fav + '의 기운을 손끝에 두세요. ' + f.luck.stones[0] + ' 하나가 한 해의 균형을 잡아 줘요.';
+    if (ONM.terms) $('fx-gloss').innerHTML = ONM.terms.glossaryHtml(GLOSS);
     var q = '?y=' + state.input.year + '&m=' + state.input.month + '&d=' + state.input.day +
       (state.input.hour !== '' ? '&h=' + state.input.hour : '') + (state.name ? '&n=' + encodeURIComponent(state.name) : '');
     $('fx-go-ring').href = './' + q;
@@ -245,6 +252,57 @@
   }
 
 
+  /* 용어 풀이 — 신년운세에서 새로 쓰는 낱말을 더해 둡니다 */
+  if (ONM.terms && ONM.terms.all) {
+    var T = ONM.terms.all;
+    T['사주팔자'] = T['사주팔자'] || ['태어난 해·달·날·시 네 기둥, 여덟 글자', '기둥마다 하늘 글자(천간) 하나와 땅 글자(지지) 하나가 있어 모두 여덟 글자예요.'];
+    T['세운'] = T['세운'] || ['그해의 기운', '2027년은 정미(丁未)년이에요. 이 두 글자가 내 사주와 어떻게 만나는지 보는 것이 신년운세예요.'];
+    T['대운'] = T['대운'] || ['10년마다 바뀌는 큰 흐름', '계절처럼 10년 단위로 바뀌는 배경이에요. 성별과 태어난 날로 방향과 시작 나이가 정해져요.'];
+    T['신강'] = T['신강'] || ['나를 돕는 기운이 넉넉한 사주', '힘을 밖으로 쓸 때 — 표현하고 벌고 책임질 때 운이 열려요.'];
+    T['신약'] = T['신약'] || ['나를 받쳐 주는 기운이 가벼운 사주', '배움과 사람의 도움을 받아들일 때 운이 크게 열려요.'];
+    T['도화'] = T['도화'] || ['사람을 끄는 별', '매력과 인기, 연애운으로 드러나요.'];
+    T['역마'] = T['역마'] || ['움직이는 별', '이동, 여행, 이사, 해외와 인연이 깊어요.'];
+    T['화개'] = T['화개'] || ['깊어지는 별', '예술, 공부, 손으로 하는 정교한 일에 재능이 있어요.'];
+  }
+  var GLOSS = ['사주팔자', '천간', '지지', '일간', '일지', '오행', '십신', '신강', '신약', '세운', '대운', '십이운성', '육합', '충', '형', '해', '도화', '역마', '화개'];
+
+  var AREA = [['work', '💼', '일 · 사업'], ['money', '💰', '돈'], ['love', '💕', '연애 · 관계'], ['health', '🌿', '건강']];
+  function starText(n) { var t = ''; for (var k = 1; k <= 5; k++) t += k <= n ? '★' : '☆'; return t; }
+
+  function renderStars(f) {
+    $('fx-stars').innerHTML = AREA.map(function (a) {
+      return '<div class="card trait fx-star-card"><h3><span aria-hidden="true">' + a[1] + '</span> ' + a[2] +
+        ' <span class="fx-stars" aria-label="5점 중 ' + f.stars[a[0]] + '점">' + starText(f.stars[a[0]]) + '</span></h3>' +
+        '<p>' + esc(f.easy[a[0]]) + '</p></div>';
+    }).join('');
+  }
+
+  function renderWeather(f) {
+    $('fx-weather').innerHTML = f.months.map(function (m, k) {
+      return '<div class="fx-wx ' + (m.score >= 4 ? 'sun' : (m.score >= 3 ? 'cloud' : 'rain')) + '">' +
+        '<b>' + (k === 11 ? '1월' : m.from.month + '월') + '</b>' +
+        '<span class="fx-wx-ico" role="img" aria-label="' + m.weather.word + '">' + m.weather.icon + '</span>' +
+        '<span class="fx-wx-key">' + esc(m.key) + '</span></div>';
+    }).join('');
+  }
+
+  /* 공유하기 — 생일은 빼고, 한 줄 운세와 신년운세 페이지 주소만 보냅니다 */
+  $('fx-share').addEventListener('click', function () {
+    if (!state.f) return;
+    var btn = this, label = btn.textContent;
+    var url = location.origin + location.pathname;
+    var text = (state.name ? state.name + ' 님의 ' : '나의 ') + '2027년은 “' + state.f.easy.line + '” ' +
+      state.f.easy.tags.map(function (t) { return '#' + t; }).join(' ') + '\n너의 2027년도 궁금하면 →';
+    function flash(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = label; }, 1800); }
+    if (navigator.share) {
+      navigator.share({ title: '2027 정미년 신년운세 · 온명', text: text, url: url }).catch(function () {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text + ' ' + url).then(function () { flash('문구와 링크를 복사했어요'); }, function () { prompt('복사해 주세요', text + ' ' + url); });
+    } else {
+      prompt('복사해 주세요', text + ' ' + url);
+    }
+  });
+
   function monthName(k, m) { return k === 11 ? '2028년 1월' : m.from.month + '월'; }
 
   function renderTop(f) {
@@ -340,24 +398,28 @@
     $('fx-c-people').innerHTML = [[c.A, fa], [c.B, fb]].map(function (x) {
       var d = x[1].saju.pillars.day;
       return '<div class="card"><p class="eyebrow">' + esc(x[0]) + ' · ' + esc(d.id) + ' 일주</p>' +
-        '<h3>' + esc(x[1].story.title) + '</h3>' +
+        '<h3>' + esc(x[1].easy.line) + '</h3>' +
         '<p class="small" style="margin:0">2027 흐름 ' + x[1].score + ' / 5 · 보태면 좋은 기운 ' + x[1].fav + ' · 행운의 원석 ' + esc(x[1].luck.stones[0]) + '</p></div>';
     }).join('');
     $('fx-c-best').innerHTML = c.best.map(function (m) {
-      return '<li><b>' + monthName(m.k, fa.months[m.k]) + '</b> · ' + esc(m.pillar.id) + ' — 두 사람 모두 흐름이 좋은 달. 기념일, 여행, 중요한 약속을 잡기 좋습니다.</li>';
+      return '<li><b>' + monthName(m.k, fa.months[m.k]) + '</b> · ' + esc(m.pillar.id) + ' — 둘 다 흐름이 좋아요. 기념일, 여행, 중요한 약속을 잡기 좋아요.</li>';
     }).join('');
     $('fx-c-care').innerHTML = c.care.map(function (m) {
       return '<li><b>' + monthName(m.k, fa.months[m.k]) + '</b> · ' + esc(m.pillar.id) + ' — ' +
-        (m.clash ? '한 사람의 일지와 충(沖)이 드는 달. 이사·이동이나 감정 기복이 생기기 쉬우니 서로의 속도를 맞춰 주세요.' : '둘 다 기운이 낮은 달. 큰 결정보다 쉬어 가는 데이트가 좋습니다.') + '</li>';
+        (m.clash ? '한 사람에게 변화가 생기기 쉬운 달이에요. 서로의 속도를 맞춰 주세요.' : '둘 다 기운이 낮은 달이에요. 큰 결정보다 쉬어 가는 데이트가 좋아요.') + '</li>';
     }).join('');
     $('fx-c-notes').innerHTML = [c.leadText, c.relText, c.favText].map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
     $('fx-c-months').innerHTML = '<div class="fx-cm-head"><span></span><span>' + esc(c.A) + '</span><span>' + esc(c.B) + '</span></div>' +
       c.months.map(function (m) {
         return '<div class="fx-cm-row"><span><b>' + monthName(m.k, fa.months[m.k]) + '</b> <span class="small">' + m.pillar.id + '</span></span>' +
-          '<span>' + dotsHtml(m.a) + '</span><span>' + dotsHtml(m.b) + '</span></div>';
+          '<span>' + wx(m.a) + '</span><span>' + wx(m.b) + '</span></div>';
       }).join('');
   }
 
+  function wx(v) {
+    var w = v >= 4 ? ['☀️', '맑음'] : (v >= 3 ? ['⛅', '무난'] : ['🌧️', '조심']);
+    return '<span class="fx-cwx" role="img" aria-label="' + w[1] + '">' + w[0] + '</span> <span class="small">' + w[1] + '</span>';
+  }
   function dotsHtml(v) {
     var h = '';
     for (var n = 1; n <= 5; n++) h += '<span class="fx-dot sm' + (v >= n ? ' on' : (v >= n - 0.5 ? ' half' : '')) + '"></span>';
@@ -408,7 +470,7 @@
     var size = 62, lines;
     do {
       x.font = '700 ' + size + 'px ' + SERIF;
-      lines = wrapLines(x, f.story.title, W - 220);
+      lines = wrapLines(x, f.easy.line, W - 220);
       size -= 4;
     } while (size >= 46 && lines.length > 1 && lines[lines.length - 1].length <= 2);
     x.fillStyle = col.ink || '#252D30';
@@ -480,7 +542,6 @@
   function sheetHtml(f, name, coupleLine) {
     var s = f.saju;
     var cols = [['시', s.pillars.hour], ['일', s.pillars.day], ['월', s.pillars.month], ['년', s.pillars.year]];
-    var firstTwo = (f.story.overall.match(/[^.]+\.(\s|$)/g) || [f.story.overall]).slice(0, 2).join('').trim();
     return '<article class="fx-sheet-page">' +
       '<header><span>ONMYEONG · 온명 반지공방</span><span>2027 丁未年 신년운세</span></header>' +
       '<h1>' + esc(name ? name + ' 님의 2027' : '나의 2027') + '</h1>' +
@@ -502,8 +563,9 @@
           '<strong class="hj"><i class="' + ELEM_CLASS[p.stemElem] + '">' + p.hanja[0] + '</i><i class="' + ELEM_CLASS[p.branchElem] + '">' + p.hanja[1] + '</i></strong>' +
           '<em>' + p.id + ' · ' + p.stemElem + '·' + p.branchElem + '</em></div>';
       }).join('') + '</div>' +
-      '<h2>' + esc(f.story.title) + '</h2>' +
-      '<p>' + esc(firstTwo) + '</p>' +
+      '<h2>“' + esc(f.easy.line) + '”</h2>' +
+      '<p class="tags">' + f.easy.tags.map(function (t) { return '#' + esc(t); }).join(' ') + '</p>' +
+      '<p>' + esc(f.easy.overall) + '</p>' +
       '<div class="two"><div><h3>좋은 달</h3><p>' + f.top.best.map(function (k) { return monthName(k, f.months[k]); }).join(' · ') + '</p></div>' +
       '<div><h3>조심할 달</h3><p>' + f.top.care.map(function (k) { return monthName(k, f.months[k]); }).join(' · ') + '</p></div></div>' +
       '<div class="two"><div><h3>행운의 원석</h3><p>' + esc(f.luck.stones.join(' · ')) + '</p></div>' +
@@ -552,7 +614,7 @@
   $('fx-copy').addEventListener('click', function () {
     var btn = this;
     var url = location.href;
-    function done() { btn.textContent = '복사했어요'; setTimeout(function () { btn.textContent = '결과 링크 복사'; }, 1600); }
+    function done() { btn.textContent = '복사했어요'; setTimeout(function () { btn.textContent = '내 결과 링크 복사'; }, 1600); }
     if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, function () { prompt('링크를 복사해 주세요', url); });
     else prompt('링크를 복사해 주세요', url);
   });
