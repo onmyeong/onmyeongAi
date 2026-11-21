@@ -76,6 +76,68 @@
     $('fx-report').classList.remove('is-hidden');
     syncUrl(input, inputB);
     setTimeout(function () { $('fx-report').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+    armBokchae();
+  }
+
+  /* ───────────── 복채 팝업 ─────────────
+   * 결과를 절반쯤 읽었거나 25초가 지나면 한 번 띄웁니다.
+   * 하루에 한 번만, 이미 리뷰 버튼을 눌렀으면 띄우지 않습니다. */
+  var POP_KEY = 'onm-bokchae-pop';
+  var popTimer = null, popScroll = null;
+
+  function popSeenToday() {
+    try { return localStorage.getItem(POP_KEY) === new Date().toDateString(); } catch (e) { return false; }
+  }
+  function popMark() {
+    try { localStorage.setItem(POP_KEY, new Date().toDateString()); } catch (e) { /* 저장 못 해도 괜찮음 */ }
+  }
+
+  function armBokchae() {
+    if (popSeenToday()) return;
+    if (popTimer) clearTimeout(popTimer);
+    if (popScroll) window.removeEventListener('scroll', popScroll);
+    var started = Date.now();
+    popScroll = function () {
+      if (Date.now() - started < 4000) return;            // 결과로 내려가는 자동 스크롤은 빼고
+      var r = $('fx-report').getBoundingClientRect();
+      if (r.top + r.height * 0.5 < window.innerHeight) showBokchae();
+    };
+    window.addEventListener('scroll', popScroll, { passive: true });
+    popTimer = setTimeout(showBokchae, 25000);
+  }
+
+  function showBokchae() {
+    if (popTimer) { clearTimeout(popTimer); popTimer = null; }
+    if (popScroll) { window.removeEventListener('scroll', popScroll); popScroll = null; }
+    if (popSeenToday() || $('fx-report').classList.contains('is-hidden')) return;
+    popMark();
+    var box = document.getElementById('fx-bokchae-pop');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'fx-bokchae-pop';
+      box.className = 'onm-modal no-print';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-labelledby', 'fx-bokchae-title');
+      box.innerHTML =
+        '<div class="onm-modal-card">' +
+          '<button type="button" class="onm-modal-x" aria-label="닫기">&times;</button>' +
+          '<div style="font-size:2rem;line-height:1">🧧</div>' +
+          '<h2 id="fx-bokchae-title" style="margin:10px 0 8px;font-size:1.25rem">복채는 리뷰로 내셔도 돼요 🤍</h2>' +
+          '<p class="small" style="margin:0 0 18px">운세 재밌게 보셨나요? 한 줄 리뷰가 온명에 큰 힘이 돼요.<br>' +
+            '리뷰를 남기면 <b>신년운세 보고 커플링 받자</b> 이벤트에도 참여할 수 있어요.</p>' +
+          '<a class="btn btn-primary" id="fx-pop-go" style="width:100%;justify-content:center">복채 리뷰 쓰러 가기 🤍</a>' +
+          '<button type="button" class="btn" id="fx-pop-later" style="width:100%;justify-content:center;margin-top:8px">다음에 할게요</button>' +
+        '</div>';
+      document.body.appendChild(box);
+      var close = function () { box.classList.remove('open'); };
+      box.addEventListener('click', function (e) {
+        if (e.target === box || e.target.closest('.onm-modal-x') || e.target.id === 'fx-pop-later') close();
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    }
+    document.getElementById('fx-pop-go').href = $('fx-review').href;
+    box.classList.add('open');
   }
 
   /* ───────────── 그리기 ───────────── */
@@ -389,6 +451,10 @@
   function renderCouple() {
     var sec = $('fx-couple-sec');
     $('fx-review').href = 'reviews.html?kind=' + (state.fB ? 'couple' : 'fortune') + '#write';
+    if (!$('fx-review').dataset.popHook) {
+      $('fx-review').dataset.popHook = '1';
+      $('fx-review').addEventListener('click', popMark);   // 이미 리뷰하러 갔으면 팝업은 안 띄움
+    }
     if (!state.fB) { sec.classList.add('is-hidden'); return; }
     sec.classList.remove('is-hidden');
     var fa = state.f, fb = state.fB;
