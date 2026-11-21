@@ -80,7 +80,7 @@
   }
 
   /* ───────────── 복채 팝업 ─────────────
-   * 결과를 절반쯤 읽었거나 25초가 지나면 한 번 띄웁니다.
+   * 페이지를 90% 넘게 내려 다 읽었을 때만 한 번 띄웁니다 (읽는 중간에는 안 뜸).
    * 하루에 한 번만, 이미 리뷰 버튼을 눌렀으면 띄우지 않습니다. */
   var POP_KEY = 'onm-bokchae-pop';
   var popTimer = null, popScroll = null;
@@ -99,11 +99,11 @@
     var started = Date.now();
     popScroll = function () {
       if (Date.now() - started < 4000) return;            // 결과로 내려가는 자동 스크롤은 빼고
-      var r = $('fx-report').getBoundingClientRect();
-      if (r.top + r.height * 0.5 < window.innerHeight) showBokchae();
+      var doc = document.documentElement;
+      var seen = (window.pageYOffset || doc.scrollTop) + window.innerHeight;
+      if (seen >= doc.scrollHeight * 0.9) showBokchae();
     };
     window.addEventListener('scroll', popScroll, { passive: true });
-    popTimer = setTimeout(showBokchae, 25000);
   }
 
   function showBokchae() {
