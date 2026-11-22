@@ -1153,6 +1153,27 @@
     document.body.appendChild(a); a.click(); a.remove();
   });
 
+  /* 주물용 STL — 로그인한 관리자에게만 버튼이 보입니다 */
+  (function stlButton() {
+    var M = ONM.member, btn = $('stl');
+    if (!M || !btn) return;
+    function paint() {
+      btn.classList.toggle('is-hidden', !(M.user && M.profile && M.profile.is_admin));
+    }
+    M.onChange(paint);
+    M.ready.then(paint);
+    btn.addEventListener('click', function () {
+      if (!(M.user && M.profile && M.profile.is_admin)) return;
+      var blob = studio.ready3d && studio.exportSTL ? studio.exportSTL() : null;
+      if (!blob) { alert('3D 보기가 준비되지 않아 STL 을 만들 수 없어요.'); return; }
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'onmyeong-' + spec.modelId + '-' + spec.size + 'ho-w' + spec.width + '-t' + spec.thickness + 'mm.stl';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    });
+  })();
+
   $('spin').addEventListener('click', function () {
     if (!studio.ready3d || !studio.toggleSpin) return;
     this.textContent = studio.toggleSpin() ? '회전 멈춤' : '회전 시작';
