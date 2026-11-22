@@ -2445,6 +2445,42 @@ function rebuild() {
   controls.minDistance = outerD * 1.25;
 }
 
+/* 주물용 STL — 반지 몸체(밴드)만 mm 단위 그대로 내보냅니다.
+ * 원석과 세팅(발·테두리), 색 채움 수지는 빠집니다. 보기용으로 기울인 각도도 빼고
+ * 반지 구멍이 Z축을 따라 서 있는 원래 자세로 씁니다. 바이너리 STL. */
+function bandSTL() {
+  let band = null;
+  ringGroup.traverse((o) => { if (o.userData.band) band = o; });
+  if (!band) return null;
+  const geo = band.geometry;
+  const pos = geo.attributes.position;
+  const idx = geo.index;
+  const count = idx ? idx.count / 3 : pos.count / 3;
+  const buf = new ArrayBuffer(84 + count * 50);
+  const dv = new DataView(buf);
+  const head = 'ONMYEONG ring STL (mm)';
+  for (let i = 0; i < head.length; i++) dv.setUint8(i, head.charCodeAt(i));
+  dv.setUint32(80, count, true);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const ab = new THREE.Vector3(), ac = new THREE.Vector3();
+  let off = 84;
+  for (let f = 0; f < count; f++) {
+    const i0 = idx ? idx.getX(f * 3) : f * 3;
+    const i1 = idx ? idx.getX(f * 3 + 1) : f * 3 + 1;
+    const i2 = idx ? idx.getX(f * 3 + 2) : f * 3 + 2;
+    a.fromBufferAttribute(pos, i0); b.fromBufferAttribute(pos, i1); c.fromBufferAttribute(pos, i2);
+    ab.subVectors(b, a); ac.subVectors(c, a);
+    const n = ab.cross(ac).normalize();
+    [n, a, b, c].forEach((v) => {
+      dv.setFloat32(off, v.x, true); dv.setFloat32(off + 4, v.y, true); dv.setFloat32(off + 8, v.z, true);
+      off += 12;
+    });
+    dv.setUint16(off, 0, true);
+    off += 2;
+  }
+  return new Blob([buf], { type: 'model/stl' });
+}
+
 /* ─────────────────── 시작 ─────────────────── */
 try {
   // 렌더러가 올바른 크기로 잡히려면 화면에 먼저 나타나 있어야 한다
@@ -2457,6 +2493,7 @@ try {
     renderer.render(scene, camera);
     return renderer.domElement.toDataURL('image/png');
   };
+  studio.exportSTL = bandSTL;
   studio.toggleSpin = () => {
     controls.autoRotate = !controls.autoRotate;
     return controls.autoRotate;
