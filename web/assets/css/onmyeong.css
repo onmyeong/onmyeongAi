@@ -1261,6 +1261,18 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 /* 신년운세 — 쉬운 버전 */
 .fx-line { font-family: var(--serif); font-size: clamp(1.5rem, 3.2vw, 2.1rem); line-height: 1.35; margin: 4px 0 10px; }
 .fx-tags .badge { font-size: .84rem; color: var(--accent-ink, var(--green-deep)); border-color: var(--accent); background: var(--accent-tint); }
+.fx-summary { max-width: 40rem; }
+.fx-summary p { margin: 0 0 8px; font-size: .95rem; }
+.fx-area-month { margin: 8px 0 0; font-size: .86rem; color: var(--muted); }
+.fx-area-month b { color: var(--ink); margin-left: 4px; }
+.fx-mguide { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+.fx-mg { padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+.fx-mg-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fx-mg-head b { font-family: var(--serif); font-size: 1.1rem; }
+.fx-mg-line { margin: 6px 0 0; font-size: .92rem; }
+.fx-mg-note { margin: 6px 0 0; }
+.fx-mg-todo { margin: 6px 0 0; font-size: .86rem; color: var(--muted); }
+.fx-mg-todo b { color: var(--ink); }
 .fx-quick { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; font-size: .92rem; color: var(--muted); }
 .fx-quick b { color: var(--ink); margin-left: 4px; }
 .fx-star-card h3 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -1285,6 +1297,7 @@ body.is-shop .shop-bar span { color: var(--muted); font-size: .8rem; letter-spac
 
 @media (max-width: 720px) {
   .fx-weather { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fx-mguide { grid-template-columns: 1fr; }
   .fx-more-body { padding: 4px 12px 20px; }
 }
 @media print { .fx-more-body { display: block !important; } }
