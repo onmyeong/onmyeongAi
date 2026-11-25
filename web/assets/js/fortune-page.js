@@ -665,8 +665,18 @@
     '</article>';
   }
 
+  /* 매장 출력용 A5 — 로그인한 관리자에게만 버튼이 보입니다 */
+  function isAdmin() { var M = ONM.member; return !!(M && M.user && M.profile && M.profile.is_admin); }
+  (function sheetButton() {
+    var M = ONM.member, btn = $('fx-sheet-btn');
+    function paint() { btn.classList.toggle('is-hidden', !isAdmin()); }
+    if (!M) return;
+    M.onChange(paint);
+    M.ready.then(paint);
+  })();
+
   $('fx-sheet-btn').addEventListener('click', function () {
-    if (!state.f) return;
+    if (!state.f || !isAdmin()) return;
     var cl = '';
     if (state.fB && state.c) {
       cl = '함께 좋은 달 ' + state.c.best.map(function (m) { return monthName(m.k, state.f.months[m.k]); }).join(' · ') + '. ' + state.c.favText;
