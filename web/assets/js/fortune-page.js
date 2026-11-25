@@ -162,12 +162,14 @@
     $('fx-day').textContent = day.id + ' (' + day.hanja + ') 일주';
     $('fx-day-sub').textContent = rec && ONM.iljuPhrase ? ONM.iljuPhrase(rec) : '';
     $('fx-title').textContent = '“' + f.easy.line + '”';
-    $('fx-overall').textContent = f.easy.overall;
+    $('fx-overall').textContent = f.easy.overall + ' ' + f.easyMore.overall;
+    $('fx-summary').innerHTML = f.summary.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('');
     $('fx-tags').innerHTML = f.easy.tags.map(function (t) { return '<span class="badge">#' + esc(t) + '</span>'; }).join('');
     $('fx-quick').innerHTML = '<span>좋은 달 <b>' + f.top.best.map(function (k) { return monthName(k, f.months[k]); }).join(' · ') + '</b></span>' +
       '<span>행운의 원석 <b>' + esc(f.luck.stones[0]) + '</b></span><span>행운의 색 <b>' + esc(f.luck.color.split(' · ')[0]) + '</b></span>';
     renderStars(f);
     renderWeather(f);
+    renderMonthGuide(f);
     $('fx-action').textContent = f.action;
     document.title = '온명 반지공방 · ' + (state.name ? state.name + ' 님의 ' : '') + '2027 신년운세';
 
@@ -335,7 +337,27 @@
     $('fx-stars').innerHTML = AREA.map(function (a) {
       return '<div class="card trait fx-star-card"><h3><span aria-hidden="true">' + a[1] + '</span> ' + a[2] +
         ' <span class="fx-stars" aria-label="5점 중 ' + f.stars[a[0]] + '점">' + starText(f.stars[a[0]]) + '</span></h3>' +
-        '<p>' + esc(f.easy[a[0]]) + '</p></div>';
+        '<p>' + esc(f.easy[a[0]] + ' ' + f.easyMore[a[0]]) + '</p>' + areaMonthLine(f, a[0]) + '</div>';
+    }).join('');
+  }
+  var AREA_MONTH_WORD = { work: '일에 힘 싣기 좋은 달', money: '돈 흐름이 좋은 달', love: '인연·관계가 좋은 달', health: '컨디션 챙길 달' };
+  function areaMonthLine(f, key) {
+    var ks = f.areaMonths[key];
+    if (!ks || !ks.length) return '';
+    return '<p class="fx-area-month">' + AREA_MONTH_WORD[key] + ' <b>' + ks.map(function (k) { return monthName(k, f.months[k]); }).join(' · ') + '</b></p>';
+  }
+
+  /* 달마다 한눈에 — 결과 화면에 바로 보이는 열두 달 풀이 */
+  function renderMonthGuide(f) {
+    $('fx-mguide').innerHTML = f.months.map(function (m, k) {
+      var extra = [m.extra].concat(m.notes).filter(Boolean);
+      return '<div class="fx-mg">' +
+        '<div class="fx-mg-head"><b>' + monthName(k, m) + '</b><span role="img" aria-label="' + m.weather.word + '">' + m.weather.icon + '</span>' +
+          '<span class="small">' + esc(m.season) + '</span></div>' +
+        '<p class="fx-mg-line"><b>' + esc(m.head) + '</b> ' + esc(m.more) + '</p>' +
+        (extra.length ? '<p class="small fx-mg-note">' + extra.map(esc).join('<br>') + '</p>' : '') +
+        '<p class="fx-mg-todo">이 달에 해 볼 일 · <b>' + esc(m.todo) + '</b></p>' +
+      '</div>';
     }).join('');
   }
 
@@ -370,11 +392,11 @@
   function renderTop(f) {
     $('fx-best').innerHTML = f.top.best.map(function (k) {
       var m = f.months[k];
-      return '<li><b>' + monthName(k, m) + '</b> · ' + esc(m.pillar.id) + ' — ' + esc(m.line) + '</li>';
+      return '<li><b>' + monthName(k, m) + '</b> · ' + esc(m.pillar.id) + ' — ' + esc(m.head) + '</li>';
     }).join('');
     $('fx-care').innerHTML = f.top.care.map(function (k) {
       var m = f.months[k];
-      return '<li><b>' + monthName(k, m) + '</b> · ' + esc(m.pillar.id) + ' — ' + esc(m.extra || m.line) + '</li>';
+      return '<li><b>' + monthName(k, m) + '</b> · ' + esc(m.pillar.id) + ' — ' + esc(m.extra || m.head) + '</li>';
     }).join('');
   }
 
